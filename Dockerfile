@@ -22,9 +22,10 @@ ARG REA_VERSION=6.4.0
 ENV DEBIAN_FRONTEND=noninteractive
 
 # 基础工具：下载 / 解压 / 编译
-# libc6-dev 显式安装（--no-install-recommends 不会自动带入，否则缺 stdio.h）
+# libc6-dev / python3 显式安装（--no-install-recommends 不会自动带入）：
+# libc6-dev 提供 stdio.h，python3 供 verify.sh 解析 JSON
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates curl unzip xz-utils gcc make libc6-dev \
+      ca-certificates curl unzip xz-utils gcc make libc6-dev python3 \
     && rm -rf /var/lib/apt/lists/*
 
 # Temurin JDK 21（amd64）
