@@ -120,13 +120,21 @@ fetch_artifact() {
     expected="$(cs_manifest_sha "$manifest" "$name" 2>/dev/null || true)"
   fi
 
-  # 2) 选来源：离线目录中的同名文件，否则联网下载
+  # 2) 选来源：离线目录中的同名文件，否则联网下载（走健壮下载内核 + 多源 failover）
   if [ -n "${OFFLINE_DIR:-}" ] && [ -f "$OFFLINE_DIR/$name" ]; then
     src="$OFFLINE_DIR/$name"
     cp -f "$src" "$out"
     echo "[离线] 使用 $OFFLINE_DIR/$name"
   else
-    if ! curl -fSL "$url" -o "$out"; then
+    local dl_urls="$url"
+    # Ghidra 大文件（约 400MB）走「官方直连 + GitHub 代理池」多源回退；
+    # Node/JDK 本版仍只走官方源（国内镜像在后续版本）。
+    if [ "$kind" = "ghidra" ]; then
+      dl_urls="$(github_proxy_urls "$url")"
+    fi
+    # $dl_urls 为空格分隔的候选 URL，这里故意不加引号展开
+    # shellcheck disable=SC2086
+    if ! download "$out" $dl_urls; then
       echo "下载失败：$url" >&2
       return 2
     fi

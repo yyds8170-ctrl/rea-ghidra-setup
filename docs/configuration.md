@@ -124,6 +124,18 @@ bash scripts/doctor.sh         # 本项目的跨平台环境预检（Linux/macOS
   ```powershell
   $env:HTTPS_PROXY='http://127.0.0.1:7890'; $env:HTTP_PROXY='http://127.0.0.1:7890'
   ```
+  下载内核（v2.3+）会自动把大写 `HTTP_PROXY/HTTPS_PROXY/NO_PROXY` 补成小写
+  `http_proxy/https_proxy/no_proxy`（curl 默认只认小写），无需手写两份。
+
+- **GitHub release 代理池（Ghidra 约 400MB）**：默认按「官方直连 → 内置 `https://gh-proxy.com/`」
+  顺序多源回退；可用 `REA_GITHUB_PROXIES` 追加/覆盖前缀（逗号/分号/空格分隔），设为 `none` 只走官方：
+  ```bash
+  export REA_GITHUB_PROXIES='https://gh-proxy.com/,https://ghfast.top/'
+  ```
+  代理只用于公开 release，产物仍必须通过 GitHub API 的 SHA-256 digest 强校验才落地。
+
+- **下载内核调优**：`REA_DL_RETRIES`（单源重试次数，默认 5）、`REA_DL_CONNECT_TIMEOUT`
+  （连接超时秒，默认 15）、`REA_DL_MAX_TIME`（单源总超时秒，默认 1800，大文件可再调大）。
 - **npm 镜像**（仅影响 `rea-agents` 安装，不影响 Ghidra/JDK）：
   ```bash
   npm config set registry https://registry.npmmirror.com

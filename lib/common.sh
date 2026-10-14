@@ -14,6 +14,10 @@
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
 
+# 健壮下载内核（download / github_proxy_urls）；所有交付物下载统一走它
+# shellcheck source=lib/download.sh
+. "$LIB_DIR/download.sh"
+
 # ---- 确保 UTF-8 locale ------------------------------------------------------
 # CI（尤其 macOS 的 bash -e step）可能未设 LANG，回退为 C/POSIX 环境，
 # 此时 "$VAR" 后紧跟的中文多字节字符会被当作变量名的一部分（unbound）。
@@ -133,7 +137,7 @@ install_node_portable() {
   if type -t fetch_artifact >/dev/null 2>&1; then
     fetch_artifact node "$name" "$(node_tarball_url "$os" "$arch")" "$tmp/$name"
   else
-    curl -fSL "$(node_tarball_url "$os" "$arch")" -o "$tmp/$name"
+    download "$tmp/$name" "$(node_tarball_url "$os" "$arch")"
   fi
   tar -xzf "$tmp/$name" -C "$tools_dir"
   rm -rf "$tmp"

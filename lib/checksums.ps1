@@ -93,12 +93,17 @@ function Get-VerifiedArtifact {
   $expected = $null
   if ($manifest) { $expected = Get-ManifestSha -Manifest $manifest -Name $Name }
 
-  # 离线目录优先
+  # 离线目录优先；否则走健壮下载内核（Ghidra 大文件多源 failover）
   if ($offlineDir -and (Test-Path -LiteralPath (Join-Path $offlineDir $Name))) {
     Copy-Item -LiteralPath (Join-Path $offlineDir $Name) -Destination $Out -Force
     Write-Output "[离线] 使用 $(Join-Path $offlineDir $Name)"
   } else {
-    Get-RemoteFile -Url $Url -Destination $Out
+    if ($Kind -eq 'ghidra') {
+      $candidates = Get-GithubProxyUrls -BaseUrl $Url
+    } else {
+      $candidates = @($Url)
+    }
+    Save-RemoteFile -Url $candidates -OutFile $Out
   }
 
   if (-not $expected) {

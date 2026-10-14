@@ -39,7 +39,12 @@ function Save-AndVerify {
     Write-Output "[已存在且校验通过] $Name"; return
   }
   Write-Output "[下载] $Name"
-  Get-RemoteFile -Url $Url -Destination $dest
+  if ($Name -eq $GhidraName) {
+    # Ghidra 大文件走官方 + GitHub 代理池多源回退
+    Save-RemoteFile -Url (Get-GithubProxyUrls -BaseUrl $Url) -OutFile $dest
+  } else {
+    Get-RemoteFile -Url $Url -Destination $dest
+  }
   $actual = Get-Sha256Hex $dest
   if ($actual -ne $Expected) { Remove-Item -LiteralPath $dest -Force; throw "校验失败：$Name（期望 $Expected，实际 $actual）" }
   Write-Output "[校验一致] $Name"

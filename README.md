@@ -200,6 +200,8 @@ npx -y rea-agents@latest doctor --provider ghidra
 | `REA_ANALYSIS_PROVIDER` | 多个引擎时强制指定（如 `ghidra`） | 自动选择 |
 | `REA_GHIDRA_LANGUAGE_ID` / `REA_GHIDRA_COMPILER_SPEC_ID` | 强制处理器语言/编译器规格（如 Borland PE） | 自动识别 |
 | `REA_GHIDRA_DISABLED_ANALYZERS` | 关闭指定自动分析器（逗号分隔） | 默认全开 |
+| `REA_DL_RETRIES` / `REA_DL_CONNECT_TIMEOUT` / `REA_DL_MAX_TIME` | 下载内核单源重试次数 / 连接超时秒 / 单源总超时秒 | `5` / `15` / `1800` |
+| `REA_GITHUB_PROXIES` | Ghidra 等 GitHub release 的代理前缀列表（逗号/分号/空格分隔）；`none` 只走官方 | 内置 `https://gh-proxy.com/` |
 
 ## 卸载
 
@@ -262,8 +264,10 @@ bash uninstall.sh --yes  # 跳过确认
 ├── config/
 │   └── versions.env          # 版本号单一事实源（Ghidra/JDK/Node/REA）
 ├── lib/
-│   ├── common.sh / common.ps1        # 共用：版本加载/URL/架构/环境识别/下载
-│   └── checksums.sh / checksums.ps1  # 下载物 SHA-256 校验（上游 + 离线清单）
+│   ├── common.sh / common.ps1        # 共用：版本加载/URL/架构/环境识别
+│   ├── download.sh                    # 健壮下载内核：重试/超时/续传/原子落地/多源 failover（bash）
+│   ├── checksums.sh / checksums.ps1    # 下载物 SHA-256 校验（上游 + 离线清单）
+│   └── （common.ps1 内含 Save-RemoteFile 等 PS 等价下载内核）
 ├── docs/                     # 按「操作系统 × 运行环境」组织的文档（见 docs/README.md）
 │   ├── README.md             # 文档导航（按平台快速选择）
 │   ├── platform-linux.md     # Linux：物理机/虚拟机/WSL/Docker/VDI
@@ -289,12 +293,14 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── prepare-offline.ps1   # 同上（Windows x64）
 │   ├── verify-check.js       # 跨平台统一的 analyze/decompile 断言（Node，三个 verify 共用）
 │   ├── selfcheck-checksums.sh # 校验和链路自检（三源 + 真实下载 Node）
+│   ├── selftest-download.sh   # 下载内核单测（failover/无半截文件/续传 416，离线可跑）
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
 │   ├── Makefile              # 编译 demo（含符号）与 demo_stripped（剥离）
 │   └── bin/windows-x64/      # 仓库自带的预编译 Windows PE fixture（demo.exe / demo-stripped.exe）
 ├── VERSION                   # 当前版本号
+├── CHANGELOG.md              # 版本变更记录（Keep a Changelog）
 ├── .github/
 │   ├── workflows/ci.yml      # CI：lint（每次）/ e2e 三平台 matrix + docker amd64/arm64 + 校验和（每周·手动）
 │   ├── workflows/release.yml # 推 v* 标签时创建 GitHub Release（含源码快照）
@@ -306,6 +312,12 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.3（2026-10-15）**
+  - **健壮下载内核**：新增 `lib/download.sh`（`download`/`github_proxy_urls`）与 PowerShell `lib/common.ps1`（`Save-RemoteFile`/`Get-GithubProxyUrls`）等价实现——指数退避重试（默认 5 次，`REA_DL_RETRIES` 可配）、连接/总超时（`REA_DL_CONNECT_TIMEOUT`=15s、`REA_DL_MAX_TIME`=1800s）、断点续传（bash `curl -C -`→`wget -c`；PS 显式 `curl.exe -C -`→`Start-BitsTransfer`→`Invoke-WebRequest`）、先下到 `.part` 再原子落地、多源 failover；bash 兼容 macOS 自带 bash 3.2，curl 新参数先探测后再加；自动把大写代理变量补成小写透传。所有交付物下载（`fetch_artifact`/`install_node_portable`/`prepare-offline` 及 PS 对应）由裸 `curl` 切到该内核，**校验和逻辑不变且在多源之后强校验**。
+  - **Ghidra 大文件 GitHub 代理池多源回退**：候选顺序 = 官方直连 → 内置 `https://gh-proxy.com/` 前缀（`<代理><原始 github url>`）；可用 `REA_GITHUB_PROXIES` 追加/覆盖（设为 `none` 只走官方）。代理只用于公开 release，产物仍须过 GitHub API digest。Node/JDK 本版仍走官方源（国内镜像在后续版本）。
+  - 新增 `scripts/selftest-download.sh`：本地 Range 感知 http 服务，离线验证「主源坏→第二源成功且哈希正确」「全坏源→非零退出且无半截文件」「预置等大 `.part`→416 当成功」三场景，全部通过。
+  - 新建 [CHANGELOG.md](CHANGELOG.md)（Keep a Changelog 风格，追溯 1.0→2.3）。
+  - 本机实测：`shellcheck -x` 零告警、`scripts/selfcheck-checksums.sh` 通过（真实下载 Node 并强校验）、Ghidra 官方 Range 探测 206（代理不可达时优雅回退）、`verify.sh` 仍 **9/9**。
 - **v2.2（2026-10-14）**
   - **下载物 SHA-256 校验**：新增 `lib/checksums.sh` / `lib/checksums.ps1`，三个平台安装器（`install.sh`/`install-macos.sh`/`install.ps1`）对 JDK（Adoptium JSON `package.checksum`）、Node（官方 `SHASUMS256.txt`）、Ghidra（GitHub release `digest`）逐一强校验；**不匹配即删除中止**，离线/限流无清单时才警告放行。本机实测：JDK/Node/Ghidra 三源校验全部一致，篡改样本被拒（退出 1）
   - **离线安装**：新增 `scripts/prepare-offline.sh` 与 `scripts/prepare-offline.ps1`，在有网机器生成已校验离线包（JDK+Node+Ghidra+`rea-agents.tgz`+`SHA256SUMS.txt`/`MANIFEST.txt`），目标机用 `OFFLINE_DIR=<目录> bash install.sh` 离线安装；本机完整生成离线包并验证“离线取包→清单校验”与“篡改拒绝”链路。新增 [docs/offline.md](docs/offline.md)

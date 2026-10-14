@@ -100,19 +100,102 @@ function Get-JdkMajor {
   } catch { return 0 }
 }
 
-# ---- 幂等下载（优先 curl.exe：Win10 1803+ 自带，快且支持重定向）-------------
+# ---- 健壮下载内核（与 lib/download.sh 对应；PS 5.1 兼容）---------------------
+# 环境变量可覆盖：REA_DL_RETRIES / REA_DL_CONNECT_TIMEOUT / REA_DL_MAX_TIME
+$script:ReaDlRetries = 5
+if ($env:REA_DL_RETRIES) { [int]::TryParse($env:REA_DL_RETRIES, [ref]$script:ReaDlRetries) | Out-Null }
+$script:ReaDlConnectTimeout = 15
+if ($env:REA_DL_CONNECT_TIMEOUT) { [int]::TryParse($env:REA_DL_CONNECT_TIMEOUT, [ref]$script:ReaDlConnectTimeout) | Out-Null }
+$script:ReaDlMaxTime = 1800
+if ($env:REA_DL_MAX_TIME) { [int]::TryParse($env:REA_DL_MAX_TIME, [ref]$script:ReaDlMaxTime) | Out-Null }
+
+# GitHub release 候选 URL：官方直连在前，代理前缀在后（与 bash github_proxy_urls 一致）
+function Get-GithubProxyUrls {
+  param([Parameter(Mandatory)][string]$BaseUrl)
+  $urls = @($BaseUrl)
+  $over = $env:REA_GITHUB_PROXIES
+  if ([string]::IsNullOrWhiteSpace($over)) { $over = 'https://gh-proxy.com/' }
+  if ($over -ne 'none') {
+    foreach ($p in ($over -split '[,; ]')) {
+      $pp = $p.Trim()
+      if ($pp) { $urls += ($pp + $BaseUrl) }
+    }
+  }
+  return $urls
+}
+
+# 用 Range: bytes=0-0 的 GET 取远端总字节数（不依赖 HEAD）；失败返回 0
+function Get-RemoteSizeBytes {
+  param([Parameter(Mandatory)][string]$Url)
+  $hdr = & curl.exe -sL -D - -o NUL --connect-timeout $script:ReaDlConnectTimeout --max-time 60 -H 'Range: bytes=0-0' $Url 2>$null
+  $total = [int64]0
+  foreach ($line in $hdr) {
+    if ($line -match '(?i)^content-range:.*?/(\d+)') { $total = [int64]$Matches[1] }
+    elseif ($line -match '(?i)^content-length:\s*(\d+)') { if ($total -eq 0) { $total = [int64]$Matches[1] } }
+  }
+  return $total
+}
+
+# 多源 failover 下载：先下到 <OutFile>.part，成功后 Move-Item 原子落地。
+# 优先 curl.exe（Win10 1803+ 自带，-C - 断点续传），回退 Start-BitsTransfer（自带续传/重试），
+# 再回退 Invoke-WebRequest。全部失败抛错，且不留半截目标文件。
+function Save-RemoteFile {
+  param(
+    [Parameter(Mandatory)][string[]]$Url,
+    [Parameter(Mandatory)][string]$OutFile
+  )
+  $outDir = Split-Path -Parent $OutFile
+  if ($outDir) { New-Item -ItemType Directory -Force -Path $outDir | Out-Null }
+  $part = "$OutFile.part"
+  $tried = $false
+
+  foreach ($u in $Url) {
+    if ($tried) { Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue }
+    $tried = $true
+    $ok = $false
+
+    if (Get-Command curl.exe -ErrorAction SilentlyContinue) {
+      # 注意：PS 5.1 里 curl 是 Invoke-WebRequest 的别名，必须显式 curl.exe
+      & curl.exe -fL --show-error --connect-timeout $script:ReaDlConnectTimeout --max-time $script:ReaDlMaxTime --retry $script:ReaDlRetries --retry-delay 2 -C - -o $part $u
+      $rc = $LASTEXITCODE
+      if ($rc -eq 0) {
+        $ok = $true
+      } elseif ($rc -eq 22 -or $rc -eq 33) {
+        # 可能是续传一个其实已下完的文件（HTTP 416）：本地 .part 与远端等大则视为成功
+        if ((Test-Path -LiteralPath $part) -and (Get-Item -LiteralPath $part).Length -gt 0) {
+          $remote = Get-RemoteSizeBytes -Url $u
+          if ($remote -gt 0 -and (Get-Item -LiteralPath $part).Length -eq $remote) { $ok = $true }
+        }
+      }
+    }
+    elseif (Get-Command Start-BitsTransfer -ErrorAction SilentlyContinue) {
+      try {
+        Start-BitsTransfer -Source $u -Destination $part -ErrorAction Stop
+        $ok = $true
+      } catch { $ok = $false }
+    }
+    else {
+      try {
+        Invoke-WebRequest -Uri $u -OutFile $part -UseBasicParsing -TimeoutSec $script:ReaDlMaxTime
+        $ok = $true
+      } catch { $ok = $false }
+    }
+
+    if ($ok -and (Test-Path -LiteralPath $part) -and (Get-Item -LiteralPath $part).Length -gt 0) {
+      Move-Item -LiteralPath $part -Destination $OutFile -Force
+      return $true
+    }
+  }
+  Remove-Item -LiteralPath $part -Force -ErrorAction SilentlyContinue
+  throw "所有下载源均失败：$($Url -join ' , ')"
+}
+
+# 兼容旧调用：单 URL 下载（保留幂等：目标已存在则跳过）
 function Get-RemoteFile {
   param([Parameter(Mandatory)][string]$Url,
         [Parameter(Mandatory)][string]$Destination)
   if (Test-Path -LiteralPath $Destination) { return }
-  $curl = Get-Command curl.exe -ErrorAction SilentlyContinue
-  if ($curl) {
-    & curl.exe -L --fail --silent --show-error --retry 3 --retry-delay 2 -o $Destination $Url
-    if ($LASTEXITCODE -ne 0) { throw "curl 下载失败（exit $LASTEXITCODE）：$Url" }
-  } else {
-    Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing
-  }
-  if (-not (Test-Path -LiteralPath $Destination)) { throw "下载后文件不存在：$Destination" }
+  Save-RemoteFile -Url $Url -OutFile $Destination
 }
 
 # ---- 解压 zip 到指定父目录 ---------------------------------------------------

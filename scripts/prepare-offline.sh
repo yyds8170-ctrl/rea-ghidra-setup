@@ -59,7 +59,14 @@ dl_and_verify() {
     return 0
   fi
   echo "[下载] $name"
-  curl -fSL --retry 3 "$url" -o "$name"
+  local dl_urls="$url"
+  # Ghidra 大文件走官方 + GitHub 代理池多源回退
+  if [ "$name" = "$GHIDRA_PKG" ]; then
+    dl_urls="$(github_proxy_urls "$url")"
+  fi
+  # $dl_urls 为空格分隔的候选 URL，故意不加引号展开
+  # shellcheck disable=SC2086
+  download "$name" $dl_urls
   if cs_verify "$name" "$expected"; then
     echo "[校验一致] $name"
   else
