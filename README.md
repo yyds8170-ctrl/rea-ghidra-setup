@@ -201,6 +201,8 @@ bash uninstall.sh --yes  # 跳过确认
   - 新增 `CONTRIBUTING.md`、`SECURITY.md`
   - 新增 Dependabot（GitHub Actions、Docker 基础镜像）
   - 核对上游：Ghidra 12.1.4、REA 6.4.0 仍为最新
+  - CI 实测：宿主机 e2e 与容器内（docker run verify.sh）均 9/9 通过；
+    期间通过容器内验证逐步补全 libc6-dev、python3 等缺失依赖
 - **v1.1（2026-10-14）**
   - 新增 `verify.sh` 端到端自检（编译 + analyze/decompile + 断言，8 项检查）
   - 新增 `uninstall.sh` 卸载脚本
