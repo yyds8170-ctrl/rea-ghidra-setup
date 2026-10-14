@@ -160,5 +160,8 @@ bash uninstall.sh --yes  # 跳过确认
   - 新增 `examples/Makefile`，并修复 `demo.c` 缺失的 `#include <stdlib.h>`
   - 新增 GitHub Actions CI：ShellCheck + 编译（每次），完整端到端（每周/手动）
   - `install.sh` 增加磁盘空间检查；环境变量块改为始终同步最新路径（支持升级版本）
+  - CI 适配：`install.sh` 检测到 GitHub Actions 时写 `GITHUB_ENV`/`GITHUB_PATH`；
+    `verify.sh` 校验 JDK 版本，预置 JDK 低于 21 时自动改用 `~/tools/jdk-21`
   - 核对上游：REA 6.4.0、Ghidra 12.1.4；补充故障排查、环境变量调优文档
+  - 已在 CI 干净 runner 实测：lint-build 与完整 e2e 均 success，8/8 检查通过
 - **v1.0（2026-10）**：首次发布，云电脑一键部署 JDK21 + Ghidra 12.1.4，含逆向技能与实测
