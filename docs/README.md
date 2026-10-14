@@ -15,6 +15,10 @@
 > 上表中 macOS / Windows / ChromeOS / Docker 专档会在对应版本逐步补齐；进度见
 > [platform-support-matrix.md](platform-support-matrix.md)。
 
+> **不确定选哪行？** 先运行 `bash scripts/detect-env.sh`（或 `--json` / `--shell`），
+> 它会报告你的操作系统、CPU 架构、运行环境（physical / wsl / crostini / docker / vm）、
+> Ghidra native 目录及推荐安装脚本。
+
 ## 通用文档
 
 - [platform-support-matrix.md](platform-support-matrix.md)：4 系统 × 5 运行环境（物理机 / 虚拟机 / WSL / Docker / 云电脑 VDI）支持矩阵，逐项标注「支持 / 部分 / 受限 / 不支持」及原因。

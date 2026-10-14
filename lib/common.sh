@@ -145,3 +145,39 @@ is_crostini() {
   # Crostini 容器常见标记：/dev/.cros_milestone 或 cros-env
   [ -f /dev/.cros_milestone ] || grep -q container=lxc /proc/1/environ 2>/dev/null
 }
+
+# 检测是否运行在 Docker / 其它容器（K8s/containerd）
+is_docker() {
+  [ -f /.dockerenv ] && return 0
+  grep -qE 'docker|containerd|kubepods|lxc' /proc/1/cgroup 2>/dev/null
+}
+
+# 稳定的运行环境标记：physical | wsl | crostini | docker | vm
+env_token() {
+  if is_wsl; then
+    echo wsl
+  elif is_crostini; then
+    echo crostini
+  elif is_docker; then
+    echo docker
+  elif command -v systemd-detect-virt >/dev/null 2>&1; then
+    case "$(systemd-detect-virt 2>/dev/null || echo none)" in
+      none) echo physical ;;
+      *)    echo vm ;;
+    esac
+  else
+    echo physical
+  fi
+}
+
+# 运行环境的中文标签（供各脚本打印）
+env_label() {
+  case "$(env_token)" in
+    wsl)      echo 'WSL2（Windows 上的 Linux 子系统）' ;;
+    crostini) echo 'ChromeOS Crostini（Linux 开发环境）' ;;
+    docker)   echo 'Docker 容器' ;;
+    vm)       echo '虚拟机/云电脑（VDI）' ;;
+    *)        echo '物理本机' ;;
+  esac
+}
+

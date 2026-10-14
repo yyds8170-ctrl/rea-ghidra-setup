@@ -30,23 +30,7 @@ GHIDRA_URL="$(ghidra_release_url)"
 JDK_API="$(adoptium_jdk_url linux "$JDK_ARCH")"
 
 # ---- 运行环境识别（信息性，不影响安装）--------------------------------------
-detect_environment() {
-  local where="物理本机"
-  if is_wsl; then
-    where="WSL2（Windows 上的 Linux 子系统）"
-  elif is_crostini; then
-    where="ChromeOS Crostini（Linux 开发环境）"
-  elif command -v systemd-detect-virt >/dev/null 2>&1; then
-    local v
-    v="$(systemd-detect-virt 2>/dev/null || echo none)"
-    case "$v" in
-      none) where="物理本机" ;;
-      *)    where="虚拟机/容器（${v}）" ;;
-    esac
-  fi
-  echo "$where"
-}
-ENV_NAME="$(detect_environment)"
+ENV_NAME="$(env_label)"
 . /etc/os-release 2>/dev/null || true
 echo "=========================================================="
 echo " REA + Ghidra 部署（Linux）"

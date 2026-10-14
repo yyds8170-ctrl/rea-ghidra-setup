@@ -73,6 +73,31 @@ bash verify-macos.sh
 - Apple Silicon 上自动构建 `mac_arm_64` native decompiler（需 Xcode 命令行工具），并解除 Gatekeeper 隔离
 - 详见 [docs/platform-macos.md](docs/platform-macos.md)
 
+## 一键安装（ChromeOS：Linux 开发环境 / Crostini）
+
+ChromeOS 本体不能直接运行 JDK/Ghidra；先在 **设置 → 高级 → 开发者 → Linux 开发环境** 打开 Crostini（Debian 容器），然后在「终端」里走与 Linux 完全相同的流程：
+
+```bash
+sudo apt update && sudo apt install -y curl unzip tar make gcc build-essential
+git clone https://github.com/yyds8170-ctrl/rea-ghidra-setup.git
+cd rea-ghidra-setup
+bash scripts/detect-env.sh    # 确认 Crostini / 架构 / native 是否需自建
+bash install.sh && bash verify.sh
+```
+
+- x86_64 Chromebook 完整支持（官方预编译 native）；ARM64 Chromebook 需在容器内构建 `linux_arm_64`（安装器自动处理）
+- 详见 [docs/platform-chromeos.md](docs/platform-chromeos.md)
+
+## 不确定该用哪个脚本？先识别环境
+
+```bash
+bash scripts/detect-env.sh            # 人类可读：系统 / 发行版 / 架构 / 运行环境 / native 目录 / 推荐安装器
+bash scripts/detect-env.sh --shell    # KEY=VALUE，便于脚本 eval
+bash scripts/detect-env.sh --json     # JSON
+```
+
+可识别 `physical`（物理本机）/ `wsl` / `crostini`（ChromeOS）/ `docker` / `vm`（虚拟机与云电脑 VDI），并给出对应 Ghidra native 目录（`linux_x86_64`、`linux_arm_64`、`mac_arm_64`、`win_x86_64`…）与推荐安装命令。
+
 ## 端到端验证
 
 ```bash
@@ -220,12 +245,17 @@ bash uninstall.sh --yes  # 跳过确认
 │   └── common.ps1            # Windows PowerShell 共用函数
 ├── docs/                     # 按「操作系统 × 运行环境」组织的文档（见 docs/README.md）
 │   ├── README.md             # 文档导航（按平台快速选择）
+│   ├── platform-linux.md     # Linux：物理机/虚拟机/WSL/Docker/VDI
+│   ├── platform-windows.md   # Windows：物理机/虚拟机/VDI/ARM64
+│   ├── platform-macos.md     # macOS：Intel/Apple Silicon
+│   ├── platform-chromeos.md  # ChromeOS：Crostini（x86_64 完整 / ARM64 受限）
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
 ├── Dockerfile                # 容器镜像（JDK21 + Node22 + Ghidra + rea）
 ├── skill/SKILL.md            # 逆向工程智能体技能（可装入 Agent）
 ├── scripts/
 │   ├── DecompileAll.java     # Ghidra 原生批量反编译脚本
 │   ├── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装
+│   ├── detect-env.sh         # 识别 OS/架构/运行环境（physical/wsl/crostini/docker/vm）
 │   ├── build-ghidra-native.sh # 从源码构建 arm64/macOS native decompiler
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
@@ -243,6 +273,11 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v1.7（2026-10-14）**
+  - 新增 **ChromeOS 支持（文档化）**：[docs/platform-chromeos.md](docs/platform-chromeos.md)，明确 ChromeOS 本体不支持、唯一途径为 **Crostini（Linux 开发环境 / Debian 容器）**，容器内复用 Linux 流程；x86_64 完整支持、ARM64 需构建 `linux_arm_64`、Crostini 内可装 Docker、不支持通用嵌套虚拟化；给出磁盘/内存建议、`/mnt/chromeos` 文件共享、登出即停等注意事项
+  - 新增 [`scripts/detect-env.sh`](scripts/detect-env.sh)：一键识别 OS / 发行版 / CPU 架构 / 运行环境（`physical`/`wsl`/`crostini`/`docker`/`vm`），输出对应 Ghidra native 目录、native 是否需自建与推荐安装器；支持 `--json` / `--shell` 机器可读输出
+  - `lib/common.sh` 新增 `is_docker()`、`env_token()`、`env_label()`，集中运行环境识别（`install.sh` 改为复用，顺带识别 Docker 容器）
+  - CI 侧修复 macOS（Mach-O 符号带 `_` 前缀，用 `search --kind procedures` 解析真实函数名后再 decompile）与 Windows（fixture 复制到本地 C: 临时卷，满足 REA Windows P0「本地 NTFS、拒绝重解析点」；失败时打印 stderr 与非 JSON stdout）
 - **v1.6（2026-10-14）**
   - 新增 **Windows 支持（PowerShell）**：`install.ps1` / `verify.ps1` / `uninstall.ps1` + `lib/common.ps1`，覆盖 Windows 10/11 x64
   - 全程**用户态、免管理员**：Temurin JDK21 / Ghidra / 便携 Node 以 zip 解压到 `%USERPROFILE%\tools`，用 `[Environment]::SetEnvironmentVariable(...,'User')` 写用户级变量，PATH 分号分隔且幂等；自动把 `%APPDATA%\npm` 加入 PATH；校验路径不含 `!`/`^`
