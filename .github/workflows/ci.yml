@@ -19,8 +19,13 @@ jobs:
       - name: 安装依赖
         run: sudo apt-get update && sudo apt-get install -y shellcheck make gcc
 
-      - name: ShellCheck
-        run: shellcheck -x install.sh verify.sh uninstall.sh scripts/ghidra-decompile.sh
+      - name: ShellCheck（全部 bash 脚本）
+        run: |
+          shopt -s globstar nullglob
+          shellcheck -x install.sh verify.sh uninstall.sh lib/*.sh scripts/*.sh
+
+      - name: 版本一致性检查
+        run: bash scripts/check-versions.sh
 
       - name: 编译 demo
         run: make -C examples

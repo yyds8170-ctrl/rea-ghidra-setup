@@ -40,7 +40,12 @@ source ~/.bashrc
 - 无需 root，JDK 与 Ghidra 装在 `~/tools`，脚本幂等可重复运行
 - 安装前自动检查磁盘空间（`~/tools` 约 2.6GB、临时目录约 0.8GB）
 - 环境要求：Linux x86_64、`curl`、`unzip`；REA 需 Node 22.19+ / 24.11+ / 26+
-- 可选自定义版本：`GHIDRA_VERSION=12.1.4 GHIDRA_BUILD=Ghidra_12.1.4_build GHIDRA_DATE=20260921 bash install.sh`
+- **版本集中管理**：Ghidra / JDK / Node / REA 的锁定版本统一在 [`config/versions.env`](config/versions.env)，升级只改这一个文件；`bash scripts/check-versions.sh` 可检查一致性并探测上游最新版
+- 临时覆盖版本仍可用环境变量：`GHIDRA_VERSION=12.1.4 GHIDRA_BUILD=Ghidra_12.1.4_build GHIDRA_DATE=20260921 bash install.sh`
+
+> **其它操作系统 / 运行环境**：Windows、macOS、ChromeOS 以及虚拟机 / WSL /
+> Docker / 云电脑（VDI）的安装与验证，请见 [docs/README.md](docs/README.md) 文档导航与
+> [平台×环境支持矩阵](docs/platform-support-matrix.md)。
 
 ## 端到端验证
 
@@ -173,17 +178,26 @@ bash uninstall.sh --yes  # 跳过确认
 
 ```
 .
-├── install.sh                # 一键安装 JDK21 + Ghidra + 环境变量
-├── uninstall.sh              # 卸载脚本（仅删本项目安装内容）
-├── verify.sh                 # 端到端自检（编译 + 真实分析 + 断言）
+├── install.sh                # Linux 一键安装 JDK21 + Ghidra + 环境变量
+├── uninstall.sh              # Linux 卸载脚本（仅删本项目安装内容）
+├── verify.sh                 # Linux 端到端自检（编译 + 真实分析 + 断言）
+├── config/
+│   └── versions.env          # 版本号单一事实源（Ghidra/JDK/Node/REA）
+├── lib/
+│   └── common.sh             # 各平台脚本共用的版本加载/URL/日志函数
+├── docs/                     # 按「操作系统 × 运行环境」组织的文档（见 docs/README.md）
+│   ├── README.md             # 文档导航（按平台快速选择）
+│   └── platform-support-matrix.md  # 平台×环境支持矩阵
 ├── Dockerfile                # 容器镜像（JDK21 + Node22 + Ghidra + rea）
 ├── skill/SKILL.md            # 逆向工程智能体技能（可装入 Agent）
 ├── scripts/
 │   ├── DecompileAll.java     # Ghidra 原生批量反编译脚本
-│   └── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装
+│   ├── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装
+│   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
 │   └── Makefile              # 编译 demo（含符号）与 demo_stripped（剥离）
+├── VERSION                   # 当前版本号
 ├── .github/
 │   ├── workflows/ci.yml      # CI：lint-build（每次）/ e2e + docker（每周·手动）
 │   └── dependabot.yml        # Actions 与 Docker 基础镜像更新提醒
@@ -194,6 +208,15 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v1.3（2026-10-14）**
+  - 新增版本号「单一事实源」[`config/versions.env`](config/versions.env)：Ghidra / JDK / Node / REA 版本集中管理；`install.sh`、`verify.sh`、`Dockerfile` 全部改为读取它，不再各自硬编码（刻意用 `REA_NODE_VERSION` 避免与 fnm/nvm 注入的 `NODE_VERSION` 冲突）
+  - 新增 [`lib/common.sh`](lib/common.sh)：跨平台 bash 共用的版本加载、下载 URL 构造、日志与架构/WSL/Crostini 检测函数
+  - 新增 [`scripts/check-versions.sh`](scripts/check-versions.sh)：校验版本字段齐全、检测脚本/Dockerfile 是否重新硬编码版本，并探测 npm 与 GitHub 上游最新版（离线/限流自动跳过）
+  - `Dockerfile` 改为从 `versions.env` 读取版本，并用版本无关软链 `/opt/tools/ghidra`、`/opt/tools/jdk21` 定位，升级版本无需改 ENV
+  - 新增 `docs/` 文档目录：[文档导航](docs/README.md) 与 [平台×环境支持矩阵](docs/platform-support-matrix.md)（4 系统 × 5 运行环境，后续版本逐格补齐）；新增 `VERSION` 文件
+  - CI lint 增加全量 ShellCheck（含 `lib/`、`scripts/`）与版本一致性检查
+  - 本机实测：`install.sh` 幂等通过、`rea doctor` 报告 ghidra healthy（native decompiler 匹配 linux/x64）、`verify.sh` 9/9
+  - 核对上游：Ghidra 12.1.4、rea-agents 6.4.0 仍为最新
 - **v1.2（2026-10-14）**
   - 新增 Docker 支持（`Dockerfile` + `.dockerignore`）：镜像含 JDK21 + Node22 + Ghidra + 全局 `rea`；CI 构建镜像并在容器内跑 `verify.sh`
   - 新增原生 Ghidra 批量反编译：`scripts/DecompileAll.java` + `scripts/ghidra-decompile.sh`（`separate`/`combined`，不依赖 REA/Node）

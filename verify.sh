@@ -14,8 +14,10 @@
 set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+load_versions   # REA_VERSION 等默认值来自 config/versions.env
 EX_DIR="$SCRIPT_DIR/examples"
-REA_VERSION="${REA_VERSION:-6.4.0}"
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 

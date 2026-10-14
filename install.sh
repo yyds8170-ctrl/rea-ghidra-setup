@@ -7,13 +7,15 @@
 # =============================================================================
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/common.sh
+source "$SCRIPT_DIR/lib/common.sh"
+load_versions   # 从 config/versions.env 载入默认版本；已 export 的同名变量优先
+
 # ---- 可调参数（可通过环境变量覆盖）-----------------------------------------
 TOOLS_DIR="${TOOLS_DIR:-$HOME/tools}"
-GHIDRA_VERSION="${GHIDRA_VERSION:-12.1.4}"
-GHIDRA_BUILD="${GHIDRA_BUILD:-Ghidra_12.1.4_build}"
-GHIDRA_DATE="${GHIDRA_DATE:-20260921}"
-GHIDRA_URL="https://github.com/NationalSecurityAgency/ghidra/releases/download/${GHIDRA_BUILD}/ghidra_${GHIDRA_VERSION}_PUBLIC_${GHIDRA_DATE}.zip"
-JDK_API="https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jdk/hotspot/normal/eclipse"
+GHIDRA_URL="$(ghidra_release_url)"
+JDK_API="$(adoptium_jdk_url linux x64)"
 
 # ---- 前置检查 ---------------------------------------------------------------
 ARCH="$(uname -m)"
