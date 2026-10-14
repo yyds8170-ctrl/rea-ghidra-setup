@@ -97,20 +97,20 @@ _dl_one_curl() {
     if [ -n "$rsize" ] && [ "$rsize" != "0" ] && [ -s "$part" ]; then
       lsize="$(wc -c < "$part" | tr -d '[:space:]')"
       if [ "$lsize" = "$rsize" ]; then
-        echo "[续传] 本地文件已完整（HTTP $rc），直接落地" >&2
+        echo "[续传] 本地文件已完整（HTTP ${rc}），直接落地" >&2
         mv -f "$part" "$out"
         return 0
       fi
     fi
   fi
-  echo "[下载失败] $url（curl exit $rc）" >&2
+  echo "[下载失败] ${url}（curl exit ${rc}）" >&2
   return 1
 }
 
 # wget 回退（无 curl 时）。wget -c 自带断点续传。
 _dl_one_wget() {
   local out="$1" url="$2" part="$3"
-  echo "[下载] $url（wget）"
+  echo "[下载] ${url}（wget）"
   wget -c --tries="$REA_DL_RETRIES" \
        --timeout="$REA_DL_CONNECT_TIMEOUT" \
        -O "$part" "$url"
@@ -120,7 +120,7 @@ _dl_one_wget() {
     mv -f "$part" "$out"
     return 0
   fi
-  echo "[下载失败] $url（wget exit $rc）" >&2
+  echo "[下载失败] ${url}（wget exit ${rc}）" >&2
   return 1
 }
 

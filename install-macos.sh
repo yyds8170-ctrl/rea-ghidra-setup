@@ -203,3 +203,5 @@ echo "  2) 自检：bash verify-macos.sh   诊断：bash scripts/doctor.sh"
 if [ "$(rea_mode)" = "cn" ]; then
   echo "  （当前镜像模式=cn；海外/CI 可用 REA_MIRROR=global 走官方）"
 fi
+echo "  3) 把 REA 接到 MCP 客户端（先预览再确认）：bash scripts/mcp-setup.sh --list"
+echo "     bash scripts/mcp-setup.sh --client claude-desktop --yes   （或 --dry-run 预览；--check 自检）"

@@ -104,7 +104,7 @@ print_dry_run_if_requested() {
   local arch mode offline skip_native prov
   arch="$(normalize_arch 2>/dev/null || echo unknown)"
   mode="$(rea_mode 2>/dev/null || echo auto)"
-  [ -n "$OFFLINE_DIR" ] && offline="是（$OFFLINE_DIR）" || offline="否"
+  [ -n "$OFFLINE_DIR" ] && offline="是（${OFFLINE_DIR}）" || offline="否"
   [ "$SKIP_NATIVE" = "1" ] && skip_native="是" || skip_native="否"
   if [ -n "$REA_ANALYSIS_PROVIDER" ]; then prov="$REA_ANALYSIS_PROVIDER"; else prov="(自动选择)"; fi
   echo "========== Dry-run：将要执行的安装计划（不会做任何改动）=========="

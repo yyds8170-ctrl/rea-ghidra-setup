@@ -166,3 +166,16 @@ Windows：`pwsh -File .\install.ps1 -DryRun -Mirror cn -Yes`。
 `--provider <名>` / `--offline-dir <dir>` / `--ghidra-version|--node-version|--rea-version`。
 版本覆盖会在 `load_versions` 之前 export，复用“已有环境变量优先”；未知参数退出码 2。
 `--dry-run` 在解析后、任何下载/解压/写 rc 之前退出，故在 CI 的 ubuntu 上跑 install-macos.sh 也安全。
+
+## 五、MCP 客户端对接
+
+把 REA 注册为 MCP server（Claude Desktop / Cursor / VS Code / Claude Code）并做 stdio 握手自检：
+
+```bash
+bash scripts/mcp-setup.sh --list                 # 检测客户端
+bash scripts/mcp-setup.sh --client claude-desktop --yes   # 备份 .bak 后只合并 rea 条目
+bash scripts/mcp-setup.sh --check                # initialize 握手 + Ghidra provider 体检
+```
+
+Windows：`pwsh -File .\scripts\mcp-setup.ps1 -Client claude-desktop -Yes`。
+详见 [mcp.md](mcp.md)。

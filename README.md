@@ -85,6 +85,20 @@ Windows PowerShell：`pwsh -File .\install.ps1 -DryRun`、`-Yes -SkipNode` 等�
 
 未知参数打印用法到 stderr 并退出码 **2**。
 
+### 把 REA 接到 MCP 客户端（Claude Desktop / Cursor 等）
+
+装完后用一条命令把 REA 注册为 MCP server（先预览、再确认、自动备份、幂等）：
+
+```bash
+bash scripts/mcp-setup.sh --list                 # 检测本机客户端与目标路径
+bash scripts/mcp-setup.sh --dry-run --client claude-desktop
+bash scripts/mcp-setup.sh --client claude-desktop --yes
+bash scripts/mcp-setup.sh --check                # 原生 stdio 握手 + Ghidra provider 自检
+```
+
+Windows：`pwsh -File .\scripts\mcp-setup.ps1 -List/-DryRun/-Client claude-desktop -Yes/-Check`。
+详见 [docs/mcp.md](docs/mcp.md)。
+
 - 无需 root，JDK 与 Ghidra 装在 `~/tools`，脚本幂等可重复运行；自动识别运行环境与 CPU 架构
 - 安装前自动检查磁盘空间（`~/tools` 约 2.6GB、临时目录约 0.8GB）
 - 环境要求：Linux **x86_64**（完整支持）或 **arm64**（自动构建 native decompiler）、`curl`、`unzip`、`tar`；REA 需 Node 22.19+ / 24.11+ / 26+（缺失时安装器自动装便携 Node 22）
@@ -314,6 +328,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── platform-docker.md    # Docker：linux/amd64 + linux/arm64（多架构 buildx）
 │   ├── configuration.md      # 环境变量调优 + MCP 接入（mcp add/setup）+ 代理镜像
 │   ├── mirrors.md            # 国内镜像加速（REA_MIRROR=cn）+ 校验防篡改说明
+│   ├── mcp.md                 # MCP 客户端一键注册 + stdio 连接自检（--list/--dry-run/--check）
 │   ├── offline.md            # 离线/内网安装（prepare-offline + OFFLINE_DIR + 镜像 save/load）
 │   ├── troubleshooting.md    # 跨平台故障排查
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
@@ -333,6 +348,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── selfcheck-checksums.sh # 校验和链路自检（三源 + 真实下载 Node）
 │   ├── selftest-download.sh   # 下载内核单测（failover/无半截文件/续传 416，离线可跑）
 │   ├── check-mirrors.sh        # 镜像/源连通性与 Range 探测（REA_MIRROR=cn 实测各源）
+│   ├── mcp-setup.sh / mcp-setup.ps1  # MCP server 一键注册 + stdio 握手自检（--list/--dry-run/--client/--check）
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
@@ -351,6 +367,11 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.6（2026-10-15）**
+  - **MCP 一键对接 + 连接自检**：新增 `scripts/mcp-setup.sh`/`scripts/mcp-setup.ps1`。`--list` 检测 Claude Desktop/Cursor/VS Code/Claude Code；`--dry-run` 预览标准 stdio JSON（npx 绝对路径 + `--mcp` + env）；`--client <名> --yes` 备份 `.bak` 后只合并 `mcpServers.rea`、不删其它条目、幂等；`--check` 做原生 MCP stdio `initialize` 握手（实测 JSONL 无 Content-Length 帧），有 Ghidra 时再跑 `doctor --provider ghidra --json` 断言 provider 可用。
+  - 安装器结尾只打印 MCP 注册提示，不静默改客户端配置；新增 [docs/mcp.md](docs/mcp.md)。
+  - CI：lint-build/lint-ps 加 mcp-setup 自检；e2e 三平台跑 `--check` 并用临时 HOME 真实注册、断言注册 JSON。
+  - 本机实测：bash 与 pwsh 7.6.7 下 `--list/--dry-run/--check` 全过（握手 `server=rea 6.4.0`、Ghidra provider `12.1.4`）；临时 HOME 注册备份/合并/幂等正确。
 - **v2.5（2026-10-15）**
   - **非交互参数化安装**：bash 新增共享解析器 `lib/args.sh`（install.sh/install-macos.sh 复用），PowerShell 在 install.ps1/uninstall.ps1 用 `param()` 等价实现。统一参数：`--help/--dry-run/--yes/--prefix/--mirror/--skip-node/--no-native/--provider/--offline-dir/--ghidra-version/--node-version/--rea-version`（PS 为 `-Help/-DryRun/-Yes/-ToolsDir/-Mirror/-SkipNode/-NoNative/-Provider/-OfflineDir/-GhidraVersion/-NodeVersion/-ReaVersion`）。
   - **`--dry-run`**：零副作用预览安装计划（平台/架构/有效镜像模式/TOOLS_DIR/各组件版本/provider/是否离线/是否跳过 Node·native/磁盘需求/步骤预览），退出 0。参数解析在 load_versions 与平台专属动作之前，CI 的 ubuntu 上跑 install-macos.sh 也能 `--help/--dry-run` 提前退出。

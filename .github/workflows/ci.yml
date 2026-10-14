@@ -24,6 +24,16 @@ jobs:
           shopt -s globstar nullglob
           shellcheck -x *.sh lib/*.sh scripts/*.sh
 
+      - name: bash3.2 兼容（macOS：禁止 $变量 紧跟非 ASCII 字节）
+        run: |
+          # macOS 自带 bash 3.2 在 set -u 下会把全角中文标点的字节误并入变量名，
+          # 例如 "$ver）" 会被当成未定义变量。统一要求用 ${var} 显式界定。
+          if LC_ALL=C grep -rnP '\$[A-Za-z_][A-Za-z0-9_]*[\x80-\xff]' *.sh lib/*.sh scripts/*.sh; then
+            echo "::error::发现 \$变量 后紧跟非 ASCII 字节（macOS bash 3.2 会误判变量名），请改写为 \${var}"
+            exit 1
+          fi
+          echo "bash3.2 非 ASCII 紧邻检查通过"
+
       - name: 版本一致性检查
         run: bash scripts/check-versions.sh
 
@@ -49,6 +59,20 @@ jobs:
           grep -q '有效 = cn' /tmp/dry2.txt
           grep -q 'REA 9.9.9' /tmp/dry2.txt
           echo "CLI 参数自检通过"
+
+      - name: MCP 对接脚本自检（--list/--dry-run/握手）
+        env:
+          REA_MIRROR: global
+        run: |
+          set -e
+          bash scripts/mcp-setup.sh --list | tee /tmp/mcp_list.txt
+          grep -q 'claude-desktop' /tmp/mcp_list.txt
+          bash scripts/mcp-setup.sh --dry-run --client claude-desktop | tee /tmp/mcp_dry.txt
+          grep -q '"command"' /tmp/mcp_dry.txt
+          grep -q -- '--mcp' /tmp/mcp_dry.txt
+          # lint 环境无 Ghidra：只要求原生 stdio 握手 a 通过（doctor b 会优雅跳过）
+          bash scripts/mcp-setup.sh --check
+          echo "MCP 脚本自检通过"
 
       - name: 编译 demo
         run: make -C examples
@@ -114,6 +138,17 @@ jobs:
           # 上面“预期非零”的退出码不能泄漏给 GitHub Actions 的 pwsh 包装器，否则步骤会被误判失败
           $global:LASTEXITCODE = 0
           Write-Output 'PowerShell CLI 自检通过'
+
+      - name: mcp-setup.ps1 自检（-List/-DryRun，不写盘）
+        shell: pwsh
+        run: |
+          pwsh -File ./scripts/mcp-setup.ps1 -List | Tee-Object /tmp/mcp_ps_list.txt
+          if ($LASTEXITCODE -ne 0) { throw "mcp-setup.ps1 -List 退出码 $LASTEXITCODE" }
+          if (-not (Select-String -Path /tmp/mcp_ps_list.txt -Quiet -SimpleMatch 'claude-desktop')) { throw 'list 未列出 claude-desktop' }
+          pwsh -File ./scripts/mcp-setup.ps1 -DryRun -Client claude-desktop | Tee-Object /tmp/mcp_ps_dry.txt
+          if ($LASTEXITCODE -ne 0) { throw "mcp-setup.ps1 -DryRun 退出码 $LASTEXITCODE" }
+          if (-not (Select-String -Path /tmp/mcp_ps_dry.txt -Quiet -SimpleMatch '--mcp')) { throw 'dry-run 未含 --mcp' }
+          Write-Output 'mcp-setup.ps1 自检通过'
           exit 0
 
   # 跨平台完整端到端：Linux / macOS(arm64) / Windows(x64)
@@ -188,6 +223,39 @@ jobs:
         if: matrix.label == 'windows'
         shell: pwsh
         run: ${{ matrix.verify }}
+
+      - name: MCP 连接自检 + 临时 HOME 真实注册（Linux / macOS）
+        if: matrix.label != 'windows'
+        shell: bash
+        run: |
+          set -e
+          # 握手 a + Ghidra provider b（e2e 已装 Ghidra/JDK）
+          bash scripts/mcp-setup.sh --check
+          # 用临时 HOME 对 claude-desktop 真实写 JSON，断言解析后含 rea 绝对命令，不污染 runner 配置
+          THOME="$(mktemp -d)"
+          HOME="$THOME" bash scripts/mcp-setup.sh --client claude-desktop --yes
+          # macOS 与 Linux 的 claude-desktop 配置路径不同
+          case "$(uname -s)" in
+            Darwin) REL="Library/Application Support/Claude/claude_desktop_config.json" ;;
+            *)      REL=".config/Claude/claude_desktop_config.json" ;;
+          esac
+          python3 -c "import json,os,sys; p=os.path.join(sys.argv[1],sys.argv[2]); d=json.load(open(p)); assert d['mcpServers']['rea']['args'][-1]=='--mcp'; print('e2e MCP 注册 JSON 校验通过：', d['mcpServers']['rea']['command'])" "$THOME" "$REL"
+
+      - name: MCP 连接自检 + 临时 HOME 真实注册（Windows）
+        if: matrix.label == 'windows'
+        shell: pwsh
+        run: |
+          pwsh -File ./scripts/mcp-setup.ps1 -Check
+          $th = Join-Path $env:TEMP ("mcp-home-" + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Force -Path $th | Out-Null
+          # claude-desktop/cursor 真实路径取 %APPDATA%（子进程会继承）；重定向到临时目录避免污染 runner
+          $env:APPDATA = $th
+          $env:USERPROFILE = $th
+          pwsh -File ./scripts/mcp-setup.ps1 -Client claude-desktop -Yes
+          $cfg = Join-Path $th 'Claude\claude_desktop_config.json'
+          $d = Get-Content -Raw $cfg | ConvertFrom-Json
+          if ($d.mcpServers.rea.args[-1] -ne '--mcp') { throw '注册 JSON 缺少 --mcp' }
+          Write-Output "e2e MCP 注册 JSON 校验通过：$($d.mcpServers.rea.command)"
 
   # 容器镜像构建 + 容器内端到端验证（每周/手动）
   docker:

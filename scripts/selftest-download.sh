@@ -81,7 +81,7 @@ if [ "$rc" -eq 0 ]; then
   if [ "$got" = "$EXPECTED" ]; then
     echo "[PASS] ① 产物 SHA-256 正确"
   else
-    echo "[FAIL] ① 产物哈希不符（$got != $EXPECTED）"; fail=1
+    echo "[FAIL] ① 产物哈希不符（$got != ${EXPECTED}）"; fail=1
   fi
   if [ -f out1.part ]; then echo "[FAIL] ① 成功后不应残留 .part"; fail=1; fi
 fi
@@ -91,7 +91,7 @@ rm -f out2 out2.part
 download out2 "$BASE/nope1.bin" "$BASE/nope2.bin" >/dev/null 2>&1
 rc=$?
 if [ "$rc" -ne 0 ]; then
-  echo "[PASS] ② 全坏源非零退出（rc=$rc）"
+  echo "[PASS] ② 全坏源非零退出（rc=${rc}）"
 else
   echo "[FAIL] ② 全坏源却成功"; fail=1
 fi

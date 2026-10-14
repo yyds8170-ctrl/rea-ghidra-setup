@@ -209,5 +209,10 @@ echo "  2) 自检：bash verify.sh      诊断：bash scripts/doctor.sh"
 if [ "$(rea_mode)" = "cn" ]; then
   echo "  （当前镜像模式=cn；海外/CI 可用 REA_MIRROR=global 走官方）"
 fi
-echo "  3) 分析示例："
+echo "  3) 把 REA 接到 MCP 客户端（Claude Desktop / Cursor 等，先预览再确认）："
+echo "     bash scripts/mcp-setup.sh --list"
+echo "     bash scripts/mcp-setup.sh --dry-run --client claude-desktop"
+echo "     bash scripts/mcp-setup.sh --client claude-desktop --yes"
+echo "     bash scripts/mcp-setup.sh --check        # 连接自检"
+echo "  4) 分析示例："
 echo "     npx -y rea-agents@latest analyze <二进制路径> --provider ghidra --format json"

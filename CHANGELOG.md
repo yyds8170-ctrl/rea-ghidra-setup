@@ -4,6 +4,29 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [2.6.0] - 2026-10-15
+
+### Added
+- 新增 `scripts/mcp-setup.sh` 与 `scripts/mcp-setup.ps1`（PS 5.1/7 兼容）：把 rea-agents MCP server 一键注册进主流客户端并做连接自检。
+  - `--list`：检测 Claude Desktop / Cursor / VS Code / Claude Code 配置是否存在与目标路径，不改。
+  - `--dry-run`：渲染将写入的标准 stdio JSON（`command` 为 npx 绝对路径，args 含 `--mcp`，env 带 JAVA_HOME/GHIDRA_INSTALL_DIR/REA_MIRROR），不写盘。
+  - `--client <名> --yes`：写盘前备份 `.bak`，只合并/更新 `mcpServers.rea`，不删其它条目，幂等；默认不加 `--yes` 不写。
+  - `--check`：① 原生 MCP stdio（实测为换行分隔 JSONL）发 JSON-RPC `initialize` 握手，读到合法 `result` 即过；② 有 Ghidra/JDK 时跑 `rea doctor --provider ghidra --json` 断言 `providerInspections[].ghidra.available`，无 Ghidra 优雅跳过②。
+- 安装器结尾只**打印** MCP 注册提示命令（不在安装时静默改客户端配置）。
+- CI：lint-build 加 mcp-setup `--list/--dry-run/--check`；lint-ps 加 `mcp-setup.ps1 -List/-DryRun`；e2e 三平台跑 `--check` 并用临时 HOME 真实注册一个客户端、断言注册 JSON 含 `--mcp`（不污染 runner 默认配置）。
+- 新增 [docs/mcp.md](docs/mcp.md)。
+
+### Changed
+- 基于实测的 rea-agents@6.4.0 能力：`rea setup --client/--yes/--dry-run`、`rea mcp add --agent`、`rea mcp doctor --json`；本脚本自己写最小 stdio JSON（比 `rea setup` 更少副作用、便于自动化），官方向导仍可手动用。
+- 修复 `mcp-setup.sh` 在 `set -u` 下未设置 `JAVA_HOME/GHIDRA_INSTALL_DIR`（如 CI lint 无 Ghidra 环境）时 dry-run 直接崩溃：env 构建改用 `${VAR:-}`，无环境时输出 `"env": {}`，`--check` 仅跑握手并优雅跳过 Ghidra 体检。
+- 修复 macOS 兼容：macOS（BSD）默认无 GNU `timeout` 命令（握手步骤直接报 `command not found` 127）。新增跨平台 `timeout_run`（`timeout`→`gtimeout`→`perl alarm/exec`→直跑），握手与 doctor 体检均走它，Linux/macOS 均可用。
+- 修复 macOS 自带 bash 3.2 的变量名解析：`set -u` 下 `"$ver）"`（`$变量` 紧跟全角中文标点）会把多字节字符的首字节误并入变量名，导致 `unbound variable`。已把 `mcp-setup.sh`/`args.sh`/`download.sh`/`selftest-download.sh` 中所有 `$变量<非 ASCII>` 改为 `${变量}`；CI lint-build 新增 bash3.2 非 ASCII 紧邻检查（Linux 即可拦截，无需等 macOS e2e）。
+
+### 本机实测（2026-10-15，Ubuntu 22.04 x86_64，pwsh 7.6.7）
+- `shellcheck -x` 零告警；`bash -n` 全过；ci.yml 经 python yaml 解析；`scripts/check-versions.sh` 通过；PS 7 文件 parse + PSScriptAnalyzer 无 Error/Warning。
+- `mcp-setup.sh --list/--dry-run` 正常；`--check` 握手 `server=rea 6.4.0`、Ghidra provider `12.1.4` 可用；临时 HOME 注册后 JSON 含 rea 绝对命令、`other-server` 保留、二次幂等、`.bak` 存在。
+- PS：`mcp-setup.ps1 -List/-DryRun/-Check` 均通过（修了两个坑：common.ps1 的 `$OutputEncoding=UTF8 带BOM` 会让 stdin 多 BOM、EAP=Stop 下 npx stderr 触发终止错误——握手块内临时重置）。
+
 ## [2.5.0] - 2026-10-15
 
 ### Added
