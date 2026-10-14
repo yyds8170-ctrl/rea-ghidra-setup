@@ -8,6 +8,20 @@
 - **Ghidra**：`github.com/NationalSecurityAgency/ghidra`，NSA 开源反编译引擎，Apache-2.0
 - 本仓库仅包含**安装/卸载/验证脚本、技能文件与使用文档**（不内置上述第三方二进制）
 
+## 我该用哪个？（快速选择）
+
+不确定时先运行 `bash scripts/detect-env.sh`（识别系统 / 架构 / 运行环境）。然后按系统选择：
+
+| 系统 / 环境 | 安装 | 验证 | 说明 |
+| --- | --- | --- | --- |
+| Linux（物理机 / 虚拟机 / WSL2 / 云电脑） | `bash install.sh` | `bash verify.sh` | x86_64 完整；arm64 自动构建 native |
+| Windows 10/11 x64（物理机 / 虚拟机 / VDI） | `.\install.ps1` | `.\verify.ps1` | 用户态免管理员；自带 PE fixture |
+| macOS（Intel / Apple Silicon） | `bash install-macos.sh` | `bash verify-macos.sh` | Apple Silicon 自动构建 native、去隔离 |
+| ChromeOS | 先开 Crostini，再 `bash install.sh` | `bash verify.sh` | 仅 x86_64 完整；arm64 需建 native |
+| Docker（任意宿主） | `docker build -t rea-ghidra .` | 容器内 `verify.sh` | 支持 amd64/arm64；或 `docker compose` |
+
+完整的「4 系统 × 5 运行环境」逐项状态见 [平台×环境支持矩阵](docs/platform-support-matrix.md)。
+
 ## 实测结果（2026-10，Ubuntu 22.04 x86_64 云电脑）
 
 - JDK 21 + Ghidra 12.1.4 安装并通过 `rea doctor --provider ghidra` 全部检查（含 native decompiler）
@@ -283,6 +297,10 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.0（2026-10-14）**
+  - [平台×环境支持矩阵](docs/platform-support-matrix.md) 定稿：从「规划」措辞更新为**实测状态**，含 4 系统×5 环境总表、逐格说明、CPU 架构与 native decompiler 对照表、CI 实测覆盖表、脚本文件速查表
+  - **arm64 实测升级**：`docker-arm64` 作业在原生 `ubuntu-24.04-arm` runner 上构建 `linux_arm_64` native 并在 arm64 容器内 `verify.sh` **9/9**（ELF arch=arm64, procs=34），Docker arm64 由「受限」升级为「支持」
+  - README 新增「我该用哪个？（快速选择）」决策表，配合 `scripts/detect-env.sh` 一眼定位脚本；文档导航同步更新
 - **v1.9（2026-10-14）**
   - **Docker 多架构**：`Dockerfile` 改用 buildx 注入的 `TARGETARCH` 自动选择 JDK（x64/aarch64）与 Node（x64/arm64）；**linux/arm64 镜像内自动 `make ghidra_opt` 构建 `os/linux_arm_64` native decompiler**，构建期按架构校验对应 `decompile` 就位；支持 `docker buildx build --platform linux/amd64,linux/arm64`
   - 新增 [`docker-compose.yml`](docker-compose.yml)：模板化构建与挂载（`./:/workspace`），透传 `GHIDRA_HEADLESS_MAXMEM` / 启动超时，`docker compose run --rm rea <命令>` 即用

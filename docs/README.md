@@ -12,7 +12,7 @@
 | **ChromeOS**（仅 Crostini Linux 开发环境） | 复用 `install.sh` | 复用 `verify.sh` | 复用 `uninstall.sh` | [platform-chromeos.md](platform-chromeos.md) |
 | **Docker**（任意宿主，含 WSL2 / VDI / Crostini） | `Dockerfile` / `docker-compose.yml` | 容器内 `verify.sh` | 删除镜像 | [platform-docker.md](platform-docker.md) |
 
-> 上表中 macOS / Windows / ChromeOS / Docker 专档会在对应版本逐步补齐；进度见
+> 各平台专档（Linux / macOS / Windows / ChromeOS / Docker）均已就位；逐项验证状态见
 > [platform-support-matrix.md](platform-support-matrix.md)。
 
 > **不确定选哪行？** 先运行 `bash scripts/detect-env.sh`（或 `--json` / `--shell`），
