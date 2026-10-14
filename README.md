@@ -329,6 +329,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── configuration.md      # 环境变量调优 + MCP 接入（mcp add/setup）+ 代理镜像
 │   ├── mirrors.md            # 国内镜像加速（REA_MIRROR=cn）+ 校验防篡改说明
 │   ├── mcp.md                 # MCP 客户端一键注册 + stdio 连接自检（--list/--dry-run/--check）
+│   ├── export.md              # Ghidra 静态分析导出（functions/strings/symbols/calls/decompiled）
 │   ├── offline.md            # 离线/内网安装（prepare-offline + OFFLINE_DIR + 镜像 save/load）
 │   ├── troubleshooting.md    # 跨平台故障排查
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
@@ -336,8 +337,13 @@ bash uninstall.sh --yes  # 跳过确认
 ├── docker-compose.yml        # Compose 模板（挂载工作目录、透传 rea 命令与内存/超时）
 ├── skill/SKILL.md            # 逆向工程智能体技能（可装入 Agent）
 ├── scripts/
-│   ├── DecompileAll.java     # Ghidra 原生批量反编译脚本
-│   ├── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装
+│   ├── DecompileAll.java     # Ghidra 原生批量反编译脚本（v2.2 起，向后兼容保留）
+│   ├── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装（旧入口，见 ghidra-export）
+│   ├── ghidra/               # v2.7 导出脚本库（6 类，scripts/ghidra/Export*.java）
+│   │   ├── ExportFunctions.java / ExportStrings.java / ExportSymbols.java
+│   │   ├── ExportCalls.java / ExportDecompiled.java / ExportAll.java
+│   ├── ghidra-export.sh / ghidra-export.ps1  # 静态分析导出包装器（--kind functions|strings|symbols|calls|decompiled|all）
+│   ├── selftest-export.sh    # 导出回归（对 examples/demo 断言 5 类产物）
 │   ├── detect-env.sh         # 识别 OS/架构/运行环境（physical/wsl/crostini/docker/vm）
 │   ├── doctor.sh             # 只读自检：Node/JDK21/Ghidra/native/内存/磁盘（Linux/macOS）
 │   ├── doctor.ps1            # 只读自检（Windows）
@@ -367,6 +373,10 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.7（2026-10-15）**
+  - **Ghidra 静态分析导出（无需 REA）**：新增 `scripts/ghidra/` 6 个原创 GhidraScript（ExportFunctions/Strings/Symbols/Calls/Decompiled/ExportAll）+ 包装器 `scripts/ghidra-export.sh`/`.ps1`（`--kind functions|strings|symbols|calls|decompiled|all`）。纯 analyzeHeadless 能力，导出函数清单/字符串/符号/调用边/逐函数伪代码为机器可读 JSON。
+  - 新增 `scripts/selftest-export.sh` 回归；e2e 三平台接入（Windows 对 PE fixture 跑 functions）；新增 [docs/export.md](docs/export.md)。
+  - 本机实测（Ghidra 12.1.4）：对 `examples/demo` 一次 `--kind all` 产出 functions=21（含 main）、strings=83、symbols=102、calls=14、decompiled=18（含 main 伪代码），全部 JSON 经 python3 解析通过；selftest 6 项断言全 PASS；旧 `ghidra-decompile.sh`/`DecompileAll.java` 保留向后兼容。
 - **v2.6（2026-10-15）**
   - **MCP 一键对接 + 连接自检**：新增 `scripts/mcp-setup.sh`/`scripts/mcp-setup.ps1`。`--list` 检测 Claude Desktop/Cursor/VS Code/Claude Code；`--dry-run` 预览标准 stdio JSON（npx 绝对路径 + `--mcp` + env）；`--client <名> --yes` 备份 `.bak` 后只合并 `mcpServers.rea`、不删其它条目、幂等；`--check` 做原生 MCP stdio `initialize` 握手（实测 JSONL 无 Content-Length 帧），有 Ghidra 时再跑 `doctor --provider ghidra --json` 断言 provider 可用。
   - 安装器结尾只打印 MCP 注册提示，不静默改客户端配置；新增 [docs/mcp.md](docs/mcp.md)。

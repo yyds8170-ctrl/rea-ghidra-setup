@@ -179,3 +179,15 @@ bash scripts/mcp-setup.sh --check                # initialize 握手 + Ghidra pr
 
 Windows：`pwsh -File .\scripts\mcp-setup.ps1 -Client claude-desktop -Yes`。
 详见 [mcp.md](mcp.md)。
+
+## 六、静态分析导出（无需 REA）
+
+用 Ghidra analyzeHeadless 把二进制导出为机器可读 JSON/C：
+
+```bash
+scripts/ghidra-export.sh <二进制> --out <目录> --kind all   # functions|strings|symbols|calls|decompiled|all
+bash scripts/selftest-export.sh                              # 对 examples/demo 的导出回归
+```
+
+Windows：`pwsh -File .\scripts\ghidra-export.ps1 -Bin <二进制> -Out <目录> -Kind all`。
+可用 `REA_EXPORT_TIMEOUT`（秒，默认 1800）控制 analyzeHeadless 超时。详见 [export.md](export.md)。

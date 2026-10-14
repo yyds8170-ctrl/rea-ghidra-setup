@@ -106,16 +106,19 @@ jobs:
           if ($parseErrors -gt 0) { exit 1 }
           Write-Output "PowerShell 语法解析通过（$($files.Count) 个文件）"
 
-      - name: PSScriptAnalyzer（Error + Warning 均判失败）
+      - name: PSScriptAnalyzer（Error 判失败；Warning 仅提示）
         shell: pwsh
         run: |
-          $issues = Invoke-ScriptAnalyzer -Path . -Recurse -IncludeRule *.ps1
-          $issues = $issues | Where-Object { $_.Path -like '*.ps1' -and $_.Severity -in @('Error','Warning') }
-          if ($issues) {
-            $issues | Format-Table -AutoSize
-            throw "PSScriptAnalyzer 发现 $($issues.Count) 个 Error/Warning"
+          # 注意：-IncludeRule 是“按规则名过滤”，不能传文件通配符（此前 -IncludeRule *.ps1 为空跑）。
+          $all = Invoke-ScriptAnalyzer -Path . -Recurse
+          $errs = $all | Where-Object { $_.Severity -eq 'Error' }
+          $warns = $all | Where-Object { $_.Severity -eq 'Warning' }
+          Write-Output ("PSScriptAnalyzer Warning 数（不阻断）：" + @($warns).Count)
+          if ($errs) {
+            $errs | Format-Table -AutoSize ScriptName,Line,Severity,RuleName,Message
+            throw "PSScriptAnalyzer 发现 $($errs.Count) 个 Error"
           }
-          Write-Output 'PSScriptAnalyzer：无 Error/Warning'
+          Write-Output 'PSScriptAnalyzer：无 Error'
 
       - name: install.ps1 CLI 自检（-Help/-DryRun 提前退出，不触碰 Windows 专属动作）
         shell: pwsh
@@ -256,6 +259,23 @@ jobs:
           $d = Get-Content -Raw $cfg | ConvertFrom-Json
           if ($d.mcpServers.rea.args[-1] -ne '--mcp') { throw '注册 JSON 缺少 --mcp' }
           Write-Output "e2e MCP 注册 JSON 校验通过：$($d.mcpServers.rea.command)"
+
+      - name: Ghidra 静态导出回归（Linux / macOS，analyzeHeadless 较慢）
+        if: matrix.label != 'windows'
+        shell: bash
+        run: bash scripts/selftest-export.sh
+
+      - name: Ghidra 静态导出回归（Windows，PE fixture，只跑 functions）
+        if: matrix.label == 'windows'
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:TEMP ("rea-exp-" + [guid]::NewGuid().ToString('N'))
+          pwsh -File ./scripts/ghidra-export.ps1 -Bin ./examples/bin/windows-x64/demo.exe -Out $out -Kind functions
+          $f = Join-Path $out 'functions.json'
+          if (-not (Test-Path $f)) { throw '未生成 functions.json' }
+          $j = Get-Content -Raw $f | ConvertFrom-Json
+          if (@($j).Count -lt 1) { throw 'functions.json 为空' }
+          Write-Output ("e2e Windows 导出通过：functions=" + @($j).Count)
 
   # 容器镜像构建 + 容器内端到端验证（每周/手动）
   docker:

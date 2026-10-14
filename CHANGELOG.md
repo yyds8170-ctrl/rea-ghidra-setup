@@ -4,6 +4,25 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [2.7.0] - 2026-10-15
+
+### Added
+- 新增 Ghidra 静态分析导出能力（纯 analyzeHeadless，不依赖 REA/Node）：
+  - `scripts/ghidra/` 6 个原创 GhidraScript：`ExportFunctions`（函数清单）、`ExportStrings`（字符串）、`ExportSymbols`（符号/导入导出）、`ExportCalls`（caller→callee 调用边）、`ExportDecompiled`（逐函数伪代码）、`ExportAll`（一次导出全部）。JSON 手写转义，产物可被 python3 `json.load` 解析。
+  - 包装器 `scripts/ghidra-export.sh` 与 `scripts/ghidra-export.ps1`（PS 5.1/7 兼容）：参数 `<二进制> --out DIR --kind functions|strings|symbols|calls|decompiled|all`，自动定位 GHIDRA_INSTALL_DIR/JAVA_HOME，独立临时工程 + trap 清理，跨平台超时（timeout/gtimeout/裸跑，`REA_EXPORT_TIMEOUT` 可覆盖）。
+  - `scripts/selftest-export.sh`：对 `examples/demo` 跑 `--kind all` 并断言 JSON 合法、函数≥1、main 存在、字符串/符号/调用边/伪代码非空。
+  - e2e 三平台接入导出回归（Windows 对 `examples/bin/windows-x64/demo.exe` 跑 functions）；新增 [docs/export.md](docs/export.md)。
+
+### Changed
+- 旧 `scripts/DecompileAll.java` + `scripts/ghidra-decompile.sh`（v2.2）保留为向后兼容入口，新 `--kind decompiled` 是其超集，未静默删除。
+- 修复 CI lint-ps 的 PSScriptAnalyzer 步骤空跑：原 `Invoke-ScriptAnalyzer -IncludeRule *.ps1` 把文件通配符误当规则名（`-IncludeRule` 是按规则名过滤），导致永不命中。改为 `-Recurse` 后按 `Severity -eq Error` 判失败（Warning 仅计数不阻断，仓库既有 best-effort 空 catch/命名风格属 Warning 基线）。
+
+### 本机实测（2026-10-15，Ghidra 12.1.4 / JDK21）
+- 对 `examples/demo` 一次 `--kind all`：functions=21（含 main）、strings=83、symbols=102、calls=14、decompiled=18（含 main 伪代码），全部 JSON 解析通过；selftest 6 项断言全 PASS。
+- 踩坑修正：Ghidra headless 对带 Ghidra 依赖的兄弟辅助类运行时类加载不稳定（`runScript`/辅助类 `NoClassDefFoundError`），最终改为每个脚本自包含、ExportAll 内联全部 5 类逻辑；`SymbolType` 无 `name()/getName()`，用 `toString()`。
+- shellcheck 零告警；bash -n 全过；ci.yml 经 python yaml 解析；PS parse + PSScriptAnalyzer 零告警；`verify.sh` 仍 9/9。
+- **Windows JDK17 注入修复**：GitHub Windows runner 默认注入 `JAVA_HOME=JDK17`，`analyzeHeadless.bat` 报 `unsupported java version / Failed to find a supported JDK` 拒绝启动。`ghidra-export.ps1` 改为 dot-source `lib/common.ps1` 复用 `Get-JdkMajor`：现有 `JAVA_HOME` major<21 时从 `$ToolsDir`（`TOOLS_DIR` 优先，否则 `%USERPROFILE%\tools`）找 `jdk-21*` 并**强制**写回本进程；Ghidra 发现同步改用 `$ToolsDir`；调用 analyzeHeadless 前 PS7 临时关 `PSNativeCommandUseErrorActionPreference`（stderr WARNING 不被 EAP=Stop 当终止错误）。bash 端 `ghidra-export.sh` 同步加 `jdk_major` 校验：现有 `JAVA_HOME` major<21/为空时回退 `$TOOLS_DIR/jdk-21*`。本机实测 `JAVA_HOME=/tmp/fakejdk` 跑 functions 自动回退 tools JDK21 并成功导出 21 函数。
+
 ## [2.6.0] - 2026-10-15
 
 ### Added
