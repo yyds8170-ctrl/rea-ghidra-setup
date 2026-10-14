@@ -339,3 +339,54 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash scripts/selfcheck-checksums.sh
+
+  # 多架构 fixture 回归：交叉编译 ELF32/AArch64 ELF/PE32，Ghidra 跨架构导入并识别预期架构
+  fixture-multiarch:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node 22（REA 要求 >=22.19）
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 缓存 JDK + Ghidra
+        uses: actions/cache@v4
+        with:
+          path: ~/tools
+          key: Linux-ghidra-12.1.4-jdk21-v2
+
+      - name: 一键部署（装 JDK21+Ghidra）
+        run: bash install.sh
+
+      - name: 安装交叉工具链
+        run: |
+          sudo apt-get update -qq
+          # 用三个跨目标交叉编译器（i686/aarch64/mingw），避免 gcc-multilib 与原生 gcc 版本冲突
+          sudo apt-get install -y -qq gcc-i686-linux-gnu gcc-aarch64-linux-gnu gcc-mingw-w64-i686 file
+
+      - name: 编译多架构 fixture
+        run: bash scripts/build-fixtures.sh
+
+      - name: Ghidra 导入 ELF32 并断言 x86:LE:32
+        run: |
+          OUT="$(mktemp -d)"
+          scripts/ghidra-export.sh examples/fixtures/elf32 --out "$OUT" --kind functions 2>&1 | tee /tmp/elf32.log
+          grep -q "x86:LE:32" /tmp/elf32.log || { echo "未识别为 x86:LE:32"; exit 1; }
+          test -s "$OUT/functions.json"
+
+      - name: Ghidra 导入 AArch64 并断言 AARCH64:LE:64
+        run: |
+          OUT="$(mktemp -d)"
+          scripts/ghidra-export.sh examples/fixtures/aarch64 --out "$OUT" --kind functions 2>&1 | tee /tmp/a64.log
+          grep -q "AARCH64:LE:64" /tmp/a64.log || { echo "未识别为 AARCH64:LE:64"; exit 1; }
+          test -s "$OUT/functions.json"
+
+      - name: Ghidra 导入 PE32 并断言导入成功
+        run: |
+          OUT="$(mktemp -d)"
+          scripts/ghidra-export.sh examples/fixtures/pe32.exe --out "$OUT" --kind functions 2>&1 | tee /tmp/pe.log
+          test -s "$OUT/functions.json" || { echo "PE32 导出为空"; exit 1; }

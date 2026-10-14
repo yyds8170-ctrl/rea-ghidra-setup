@@ -36,7 +36,7 @@ $env:REA_MIRROR='cn'; .\install.ps1
 | 华为云 | `https://repo.huaweicloud.com/nodejs/v<ver>/` | ✓ 可用 |
 | nodejs.org | `https://nodejs.org/dist/v<ver>/` | 官方 |
 
-> TUNA `nodejs-release` 当时未镜像 v22.19.0（目录 404），故未写入；以后版本若补齐可再加。
+> TUNA `nodejs-release` 未镜像当前锁版本 v24.22.0（目录 404），故未写入；以后版本若补齐可再加。npmmirror 与华为云对 v24.22.0 实测可达。
 
 ### JDK（Temurin 21）
 | 源 | 路径 | 状态 |

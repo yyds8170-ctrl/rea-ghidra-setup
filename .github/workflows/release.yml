@@ -35,9 +35,55 @@ jobs:
           git archive --format=tar.gz --prefix="${NAME}/" -o "${NAME}.tar.gz" HEAD
           echo "ASSET=${NAME}.tar.gz" >> "$GITHUB_ENV"
 
+      - name: 生成 Release 资产校验和（checksums.txt）
+        run: |
+          NAME="rea-ghidra-setup-${GITHUB_REF_NAME}"
+          sha256sum "${NAME}.tar.gz" > "${NAME}.checksums.txt"
+          echo "CHECKSUMS=${NAME}.checksums.txt" >> "$GITHUB_ENV"
+          cat "${NAME}.checksums.txt"
+
+      - name: 生成 SBOM（SPDX JSON，Syft；失败不阻断发布）
+        id: sbom
+        continue-on-error: true
+        uses: anchore/sbom-action@v0.17.4
+        with:
+          format: spdx-json
+          path: .
+          # 关键：两个上传开关默认都是 true，会忽略 output-file 并把 SBOM 写到临时目录，
+          # 导致后续 softprops 找不到文件。这里显式关闭，让产物落到工作区的 output-file。
+          upload-artifact: false
+          upload-release-assets: false
+          output-file: "${{ github.workspace }}/rea-ghidra-setup-${{ github.ref_name }}.spdx.json"
+      - name: SBOM 兜底（确保产物存在且合法；syft 失败或文件缺失时写最小 SPDX 2.3）
+        run: |
+          NAME="rea-ghidra-setup-${GITHUB_REF_NAME}"
+          if [ ! -s "${NAME}.spdx.json" ]; then
+            echo ">> 未取得 syft SBOM，写入最小 SPDX 2.3 兜底"
+            cat > "${NAME}.spdx.json" <<JSON
+          {
+            "spdxVersion": "SPDX-2.3",
+            "dataLicense": "CC0-1.0",
+            "SPDXID": "SPDXRef-DOCUMENT",
+            "name": "${NAME}",
+            "documentNamespace": "${{ github.server_url }}/${{ github.repository }}/sbom/${GITHUB_REF_NAME}",
+            "creationInfo": {
+              "created": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+              "creators": ["Tool: rea-ghidra-setup-release"]
+            },
+            "documentDescribes": [],
+            "packages": []
+          }
+          JSON
+          fi
+          python3 -c "import json,sys;json.load(open('${NAME}.spdx.json'));print('>> SBOM 合法 JSON')"
+          echo "SBOM=${NAME}.spdx.json" >> "$GITHUB_ENV"
+
       - name: 创建 Release 并上传
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
+          overwrite_files: true
           files: |
             ${{ env.ASSET }}
+            ${{ env.CHECKSUMS }}
+            ${{ env.SBOM }}

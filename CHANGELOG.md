@@ -4,6 +4,30 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [2.9.0] - 2026-10-15
+
+### Changed（上游跟进，先验证后改锁）
+- 便携 Node 锁 `22.19.0 → 24.22.0`（LTS Krypton），REA 锁 `6.4.0 → 6.5.0`；Ghidra 12.1.4 / JDK21 不变。REA 引擎范围 `^22.19||^24.11||>=26` 仍适用，未改。
+- 改锁前本机全链路验证：node v24.22.0 linux-x64 真实下载并通过官方 SHASUMS256（`28ea0a43…4228c`）；`rea-agents@6.5.0 --version=6.5.0`、`doctor --provider ghidra --format json` 报 `available=true providerVersion=12.1.4`；MCP stdio 握手 `server=rea 6.5.0`；`REA_VERSION=6.5.0 REA_NODE_VERSION=24.22.0 bash verify.sh` 9/9。
+
+### Security / 供应链
+- Release 新增 `checksums.txt`（对源码 tar.gz 计算 sha256）与 SBOM（`anchore/sbom-action@v0.17.4` 固定 tag，spdx-json，空组件不阻断；失败时兜底手写最小 SPDX 2.3）。
+- 镜像复核：node v24.22.0 上 npmmirror（302→CDN）、华为云（200, Content-Length 与官方一致）可达；TUNA nodejs-release 对该版本 404，继续排除。
+
+### Added
+- 多架构 fixture 回归：`examples/fixtures_src/fixture.c` + `scripts/build-fixtures.sh`（`i686-linux-gnu` 交叉 ELF32、aarch64-linux-gnu AArch64 ELF、mingw i686 PE32；产物 gitignore）；CI 新增 `fixture-multiarch` 作业，Ghidra 跨架构导入并断言 `x86:LE:32` / `AARCH64:LE:64`。
+- `examples/walkthrough.sh`：端到端中文引导（doctor→verify 9/9→ghidra-export→batch+快照缓存→mcp --list/--dry-run），幂等只读、不写用户 MCP 配置。
+
+### Fixed（发布前复核）
+- `release.yml`：移除 checksums 步骤里一行无效的 `cd <tar.gz 文件>`（报错被 `|| true` 吞掉，靠工作目录侥幸正确）；修正 SBOM 兜底 JSON 里重复的 `SPDXID` 键，改为字段完整、命名空间指向真实仓库的最小 SPDX 2.3 文档（已用等价脚本在本机生成并通过 JSON/字段校验）。
+- `release.yml`（v2.9 首次真实发布后核验发现）：anchore/sbom-action 的 `upload-artifact`/`upload-release-assets` **默认都是 true**，会忽略 `output-file` 把 SBOM 写到临时目录，softprops 因而找不到 spdx.json（仅传了 tar.gz/checksums）。显式置 `false` 并用绝对 `output-file` 落到工作区，兜底步骤改为“文件缺失/为空才写最小 SPDX 且校验 JSON”，softprops 加 `overwrite_files: true`；确保 Release 必含 tar.gz + checksums.txt + spdx.json 三件资产。
+- `examples/walkthrough.sh`：批量步骤里 `$B2` 在赋值前被引用（`set -u` 报 unbound），并改用两个 sha256 不同的目标（demo / demo_stripped）避免相同 sha 去重；shellcheck 不报（同脚本后文有赋值），靠实跑发现。
+- `fixture-multiarch` 在 Ubuntu 24.04（ubuntu-latest）上装 `gcc-multilib` 报 “held broken packages”（与原生 gcc 版本冲突）。ELF32 改用跨目标 `gcc-i686-linux-gnu`（与 aarch64/mingw 交叉编译器共存、不触碰原生工具链），CI 与 `build-fixtures.sh` 同步去掉 gcc-multilib；`build-fixtures.sh` 保留 `gcc -m32` 作为缺交叉编译器时的回退。
+
+### 本机实测（2026-10-15）
+- build-fixtures 三类产物：ELF 32-bit x86、ELF 64-bit ARM aarch64、PE32（Intel 80386）；Ghidra 导入日志 `x86:LE:32:default:gcc`（23 funcs）、`AARCH64:LE:64:v8A:default`（24 funcs）。
+- `check-versions`：rea-agents 最新=6.5.0 与锁定一致；`mcp-setup --check` 握手 `server=rea 6.5.0`。
+
 ## [2.8.0] - 2026-10-15
 
 ### Added

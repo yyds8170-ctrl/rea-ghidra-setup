@@ -18,3 +18,6 @@ decompiled/
 *.exp
 
 offline/
+
+# v2.9 多架构 fixture 编译产物（源码在 examples/fixtures_src/）
+examples/fixtures/

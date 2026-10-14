@@ -347,6 +347,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── selftest-export.sh    # 导出回归（对 examples/demo 断言 5 类产物）
 │   ├── batch-analyze.sh / batch-analyze.ps1   # 批量并行 + 快照缓存（--jobs/--retries/--snapshot/--continue）
 │   ├── selftest-batch.sh     # 批量并行 + 缓存命中 + 失败隔离回归
+│   ├── build-fixtures.sh     # v2.9 交叉编译多架构 fixture（ELF32/AArch64/PE32）
 │   ├── detect-env.sh         # 识别 OS/架构/运行环境（physical/wsl/crostini/docker/vm）
 │   ├── doctor.sh             # 只读自检：Node/JDK21/Ghidra/native/内存/磁盘（Linux/macOS）
 │   ├── doctor.ps1            # 只读自检（Windows）
@@ -362,6 +363,8 @@ bash uninstall.sh --yes  # 跳过确认
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
 │   ├── Makefile              # 编译 demo（含符号）与 demo_stripped（剥离）
+│   ├── walkthrough.sh        # v2.9 端到端中文引导（doctor→verify→导出→批量缓存→MCP 预览）
+│   ├── fixtures_src/fixture.c # v2.9 多架构 fixture 源码（编译产物进 fixtures/，gitignore）
 │   └── bin/windows-x64/      # 仓库自带的预编译 Windows PE fixture（demo.exe / demo-stripped.exe）
 ├── VERSION                   # 当前版本号
 ├── CHANGELOG.md              # 版本变更记录（Keep a Changelog）
@@ -376,6 +379,12 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.9（2026-10-15）**
+  - **上游跟进 + 供应链安全**：先验证后改锁——便携 Node `22.19.0→24.22.0`、REA `6.4.0→6.5.0`（Ghidra 12.1.4/JDK21 不变）。改锁前本机真下 node v24.22.0 并通过官方 SHASUMS256；`doctor ghidra available=true`、MCP 握手 `server=rea 6.5.0`、verify 9/9。
+  - Release 供应链：新增 `checksums.txt`（tar.gz sha256）+ SBOM（`anchore/sbom-action@v0.17.4` spdx-json，空组件不阻断、失败兜底手写 SPDX 2.3）。
+  - **多架构 fixture 回归**：`scripts/build-fixtures.sh`（`i686-linux-gnu` 交叉 ELF32、aarch64、mingw PE32；产物 gitignore）；CI 新增 `fixture-multiarch` 作业，Ghidra 跨架构导入断言 `x86:LE:32` / `AARCH64:LE:64`。
+  - **端到端 walkthrough**：`examples/walkthrough.sh`（doctor→verify→导出→批量缓存→MCP 预览，幂等只读、不写用户客户端配置）。
+  - 镜像复核：v24.22.0 npmmirror（302→CDN）/华为云（200）可达，TUNA 404 继续排除。
 - **v2.8（2026-10-15）**
   - **批量并行分析 + 快照缓存**：新增 `scripts/batch-analyze.sh`/`.ps1`（PS5.1 兼容，Start-Job 节流）。在 v2.7 单目标导出之上编排多目标：`--jobs N`（默认 CPU 封顶 4）并行、`--retries` 失败重试、`--snapshot DIR` 按 sha256+kind+schema 缓存、`--continue` 断点续跑、失败隔离（单目标挂不影响其它，全部跑完才汇总）、`summary.json`。
   - 新增 `scripts/selftest-batch.sh`；e2e Linux 接入；新增 [docs/batch.md](docs/batch.md)。

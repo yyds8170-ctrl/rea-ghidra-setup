@@ -41,7 +41,7 @@ pwsh -File .\install.ps1
 安装器（5 步）：
 
 1. 下载 Temurin JDK 21（windows/x64 zip）→ 解压到 `%USERPROFILE%\tools\jdk-21*`；
-2. 检测系统 Node，不满足要求时解压便携 Node 22（`node-v22.19.0-win-x64`）；
+2. 检测系统 Node，不满足要求时解压便携 Node 22（`node-v24.22.0-win-x64`）；
 3. 下载并解压 Ghidra（约 570MB）→ `%USERPROFILE%\tools\ghidra_<版本>_PUBLIC`；
 4. 校验官方自带的 `win_x86_64\decompile.exe`；
 5. 写入**用户级**环境变量（HKCU，免管理员，幂等）：

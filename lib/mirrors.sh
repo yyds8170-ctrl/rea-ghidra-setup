@@ -14,7 +14,7 @@
 #   - 不把“与镜像同源的 checksum”当作可信。
 #
 # 实测（2026-10-15）：
-#   Node  v22.19.0：npmmirror ✓、华为云 ✓（Content-Length 与官方一致）；
+#   Node  v24.22.0：npmmirror ✓（302→CDN）、华为云 ✓（Content-Length 与官方一致）；
 #                   TUNA nodejs-release 未镜像该版本（404），故不写入。
 #   JDK   Temurin 21：TUNA Adoptium 路径 ✓（Range 206，Content-Length==Adoptium package.size）；
 #                   华为云 adoptium 路径当前不可用（错误页），故 JDK 镜像用 TUNA。
