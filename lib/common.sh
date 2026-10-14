@@ -14,6 +14,24 @@
 LIB_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
 
+# ---- 确保 UTF-8 locale ------------------------------------------------------
+# CI（尤其 macOS 的 bash -e step）可能未设 LANG，回退为 C/POSIX 环境，
+# 此时 "$VAR" 后紧跟的中文多字节字符会被当作变量名的一部分（unbound）。
+ensure_utf8_locale() {
+  if locale charmap 2>/dev/null | grep -qi 'UTF-8'; then
+    return 0
+  fi
+  local _loc
+  for _loc in C.UTF-8 C.utf8 en_US.UTF-8 en_US.utf8 zh_CN.UTF-8; do
+    if LANG="$_loc" LC_ALL="$_loc" locale charmap 2>/dev/null | grep -qi 'UTF-8'; then
+      export LANG="$_loc"
+      export LC_ALL="$_loc"
+      return 0
+    fi
+  done
+}
+ensure_utf8_locale
+
 # ---- 日志（带颜色；非 TTY 时自动无 ANSI）-----------------------------------
 if [ -t 1 ]; then
   C_GREEN='\033[32m'; C_BLUE='\033[36m'; C_YELLOW='\033[33m'

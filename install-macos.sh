@@ -33,7 +33,7 @@ NATIVE_OS_DIR="mac_x86_64"; [ "$ARCH" = "aarch64" ] && NATIVE_OS_DIR="mac_arm_64
 
 echo "=========================================================="
 echo " REA + Ghidra 部署（macOS）"
-echo " 架构   : $ARCH（$([ "$ARCH" = aarch64 ] && echo 'Apple Silicon' || echo 'Intel')）"
+echo " 架构   : ${ARCH}（$([ "$ARCH" = aarch64 ] && echo 'Apple Silicon' || echo 'Intel')）"
 echo " 目录   : $TOOLS_DIR"
 echo " Ghidra : $GHIDRA_VERSION ｜ JDK: $JDK_FEATURE ｜ Node: $REA_NODE_VERSION ｜ REA: $REA_VERSION"
 echo "=========================================================="
