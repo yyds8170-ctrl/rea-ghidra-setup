@@ -19,6 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 load_versions
 EX_DIR="$SCRIPT_DIR/examples"
+CHECK="$SCRIPT_DIR/scripts/verify-check.js"
 WORKDIR="$(mktemp -d)"
 trap 'rm -rf "$WORKDIR"' EXIT
 
@@ -44,6 +45,23 @@ NATIVE_OS_DIR="mac_x86_64"; [ "$ARCH" = "aarch64" ] && NATIVE_OS_DIR="mac_arm_64
 
 # REA：优先全局 rea，否则 npx 锁定版本
 if command -v rea >/dev/null 2>&1; then REA=(rea); else REA=(npx -y "rea-agents@${REA_VERSION}"); fi
+
+# Mach-O 中 C 函数符号通常带前导下划线（_secret_check），用 search 解析 Ghidra 内的真实函数名
+resolve_func() {
+  local pattern="$1" out="$WORKDIR/search-$1.json"
+  "${REA[@]}" search "$EX_DIR/demo" "$pattern" --provider ghidra --kind procedures \
+      --mode regex --format json --snapshot "$WORKDIR/demo.snap" >"$out" 2>/dev/null
+  node "$CHECK" funcname "$out" "$pattern" 2>/dev/null
+}
+
+# REA 失败时错误信封（{"error":...,"message":...}）写到 stdout，stderr 常为空
+show_rea_error() {
+  local json="$1" err="$2"
+  if [ -s "$json" ] && grep -q '"error"' "$json" 2>/dev/null; then
+    node -e 'try{const j=JSON.parse(require("fs").readFileSync(process.argv[1]));console.log("    REA: "+(j.message||j.error||JSON.stringify(j).slice(0,400)));}catch(e){}' "$json"
+  fi
+  [ -s "$err" ] && tail -8 "$err" | sed 's/^/    /'
+}
 
 echo "== 环境（macOS/${ARCH}）=="
 echo "  JAVA_HOME          = ${JAVA_HOME:-（未设置）}"
@@ -84,44 +102,16 @@ echo "== 3. analyze demo =="
 info "首次分析会启动 Ghidra headless，可能需 1-3 分钟…"
 if "${REA[@]}" analyze "$EX_DIR/demo" --provider ghidra --format json \
      --snapshot "$WORKDIR/demo.snap" >"$WORKDIR/analyze.json" 2>"$WORKDIR/analyze.err"; then
-  AOK="$(node -e '
-    const j=JSON.parse(require("fs").readFileSync(process.argv[1]));
-    const s=j.subject||{}, n=j.normalized_result||{};
-    const fmt=String(s.format||"").toLowerCase();
-    const ok=fmt.includes("mach") && (n.procedure_count||0)>=3 && (n.string_count||0)>0;
-    console.log((ok?"1":"0")+"|format="+s.format+" arch="+s.architecture+
-                " procedures="+n.procedure_count+" strings="+n.string_count);
-  ' "$WORKDIR/analyze.json")"
-  if [ "${AOK%%|*}" = "1" ]; then ok "识别 Mach-O / 架构 / 函数数(>=3) / 字符串（${AOK#1|}）"
-  else bad "analyze 结构不符（${AOK#0|}）"; fi
+  if ck="$(node "$CHECK" analyze "$WORKDIR/analyze.json" mach 2>&1)"; then
+    ok "识别 Mach-O / 架构 / 函数数(>=3) / 字符串（${ck#PASS|}）"
+  else
+    bad "analyze 结构不符（${ck#FAIL|}）"
+  fi
 else
-  bad "analyze 失败（见 $WORKDIR/analyze.err）"; tail -5 "$WORKDIR/analyze.err"
+  bad "analyze 失败（见 $WORKDIR/analyze.err）"; show_rea_error "$WORKDIR/analyze.json" "$WORKDIR/analyze.err"
 fi
 
 # ---- 4/5. decompile 两个函数 ------------------------------------------------
-# Mach-O 中 C 函数符号通常带前导下划线（_secret_check），用 search 解析 Ghidra 内的真实函数名
-resolve_func() {
-  local pattern="$1" out="$WORKDIR/search-$1.json"
-  "${REA[@]}" search "$EX_DIR/demo" "$pattern" --provider ghidra --kind procedures \
-      --mode regex --format json --snapshot "$WORKDIR/demo.snap" >"$out" 2>/dev/null
-  node -e '
-    const j=JSON.parse(require("fs").readFileSync(process.argv[1]));
-    const arr=Array.isArray(j.normalized_result)?j.normalized_result:[];
-    const want=process.argv[2];
-    const hit=arr.map(x=>x&&x.value).find(v=>v&&String(v).includes(want));
-    process.stdout.write(hit||"");
-  ' "$out" "$pattern"
-}
-
-# REA 失败时错误信封（{"error":...,"message":...}）写到 stdout，stderr 常为空
-show_rea_error() {
-  local json="$1" err="$2"
-  if [ -s "$json" ] && grep -q '"error"' "$json" 2>/dev/null; then
-    node -e 'try{const j=JSON.parse(require("fs").readFileSync(process.argv[1]));console.log("    REA: "+(j.message||j.error||JSON.stringify(j).slice(0,400)));}catch(e){}' "$json"
-  fi
-  [ -s "$err" ] && tail -8 "$err" | sed 's/^/    /'
-}
-
 decomp_check() {
   local want="$1" const="$2" json="$3" err="$4"
   local name
@@ -131,14 +121,9 @@ decomp_check() {
   if "${REA[@]}" decompile "$EX_DIR/demo" "$name" --provider ghidra --format json \
        --snapshot "$WORKDIR/demo.snap" >"$json" 2>"$err"; then
     local r
-    r="$(node -e '
-      const j=JSON.parse(require("fs").readFileSync(process.argv[1]));
-      const code=String(j.normalized_result||"");
-      const ok=j.confidence==="observed" && code.includes(process.argv[2]) && code.includes(process.argv[3]);
-      console.log((ok?"1":"0")+"|confidence="+j.confidence);
-    ' "$json" "$want" "$const")"
-    if [ "${r%%|*}" = "1" ]; then ok "$want 还原（observed，含 ${const}，${r#1|}）"
-    else bad "$want 结果不符（${r#0|}）"; fi
+    r="$(node "$CHECK" decompile "$json" "$want" "$const" 2>&1)"
+    if [ "${r%%|*}" = "PASS" ]; then ok "$want 还原（observed，含 ${const}，${r#PASS|}）"
+    else bad "$want 结果不符（${r#FAIL|}）"; fi
   else
     bad "$want 反编译失败（见 ${err}）"; show_rea_error "$json" "$err"
   fi
@@ -152,11 +137,11 @@ decomp_check calc_discount 0x32 "$WORKDIR/discount.json" "$WORKDIR/discount.err"
 echo "== 6. analyze demo_stripped（无符号）=="
 if "${REA[@]}" analyze "$EX_DIR/demo_stripped" --provider ghidra --format json \
      --snapshot "$WORKDIR/stripped.snap" >"$WORKDIR/stripped.json" 2>"$WORKDIR/stripped.err"; then
-  SC="$(node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1]));console.log((j.normalized_result||{}).procedure_count||0)' "$WORKDIR/stripped.json")"
-  if [ "${SC:-0}" -ge 3 ]; then ok "无符号二进制仍可导入分析（procedures=${SC}）"
-  else bad "stripped 函数数异常（procedures=${SC}）"; fi
+  if ck="$(node "$CHECK" count "$WORKDIR/stripped.json" 3 2>&1)"; then
+    ok "无符号二进制仍可导入分析（${ck#PASS|}）"
+  else bad "stripped 函数数异常（${ck#FAIL|}）"; fi
 else
-  bad "stripped analyze 失败（见 $WORKDIR/stripped.err）"; tail -5 "$WORKDIR/stripped.err"
+  bad "stripped analyze 失败（见 $WORKDIR/stripped.err）"; show_rea_error "$WORKDIR/stripped.json" "$WORKDIR/stripped.err"
 fi
 
 # ---- 汇总 -------------------------------------------------------------------

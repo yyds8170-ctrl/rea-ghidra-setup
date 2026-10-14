@@ -257,6 +257,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装
 │   ├── detect-env.sh         # 识别 OS/架构/运行环境（physical/wsl/crostini/docker/vm）
 │   ├── build-ghidra-native.sh # 从源码构建 arm64/macOS native decompiler
+│   ├── verify-check.js       # 跨平台统一的 analyze/decompile 断言（Node，三个 verify 共用）
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
@@ -273,6 +274,12 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v1.8（2026-10-14）**
+  - **跨平台 CI 合并为 matrix**：原来的 `e2e` / `e2e-macos` / `e2e-windows` 三个作业合并为一个 `e2e (linux/macos/windows)` 矩阵作业，通过 `include` 为每个平台指定 runner、shell、安装/验证命令、独立缓存路径与 key，`fail-fast: false`；每周/手动触发，缓存命中后约 4-6 分钟
+  - **统一三端 verify 断言**：抽出 [`scripts/verify-check.js`](scripts/verify-check.js)（Node，零依赖），`verify.sh` / `verify-macos.sh` / `verify.ps1` 全部调用它做 `analyze` / `decompile` / `count` 断言与函数名解析（`funcname`），断言逻辑与常量（`0x539`/`0x32`）只在一处维护；Linux 不再依赖 python3
+  - 三端反编译前统一用 `rea search --kind procedures` 解析 Ghidra 内真实函数名（Mach-O 为 `_secret_check` 等），避免平台符号差异
+  - 失败时统一打印 REA 的 JSON 错误信封（`error`/`message`/`rejections`）
+  - CI 实测：Linux（ELF）、macOS arm64（Mach-O + 自建 `mac_arm_64`）、Windows x64（PE，用户态）三端 `verify` 均 9/9，docker 作业通过
 - **v1.7（2026-10-14）**
   - 新增 **ChromeOS 支持（文档化）**：[docs/platform-chromeos.md](docs/platform-chromeos.md)，明确 ChromeOS 本体不支持、唯一途径为 **Crostini（Linux 开发环境 / Debian 容器）**，容器内复用 Linux 流程；x86_64 完整支持、ARM64 需构建 `linux_arm_64`、Crostini 内可装 Docker、不支持通用嵌套虚拟化；给出磁盘/内存建议、`/mnt/chromeos` 文件共享、登出即停等注意事项
   - 新增 [`scripts/detect-env.sh`](scripts/detect-env.sh)：一键识别 OS / 发行版 / CPU 架构 / 运行环境（`physical`/`wsl`/`crostini`/`docker`/`vm`），输出对应 Ghidra native 目录、native 是否需自建与推荐安装器；支持 `--json` / `--shell` 机器可读输出

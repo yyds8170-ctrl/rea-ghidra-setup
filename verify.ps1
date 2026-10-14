@@ -146,6 +146,30 @@ function Show-CommandOutput {
   }
 }
 
+# 跨平台统一断言（scripts/verify-check.js，Node）；返回 @{ Ok; Detail }
+$Check = Join-Path $Script:RepoRoot 'scripts\verify-check.js'
+function Invoke-Assert {
+  param([string[]]$CheckArgs)
+  $line = (& node $Check @CheckArgs 2>&1 | Out-String).Trim()
+  $ok = $LASTEXITCODE -eq 0
+  [pscustomobject]@{ Ok = $ok; Detail = ($line -replace '^(PASS|FAIL)\|', '') }
+}
+
+# 用 search 解析 Ghidra 内的真实函数名（Mach-O 带 _ 前缀；PE/ELF 一般无前缀）
+function Resolve-Function {
+  param([string]$want)
+  $searchOut = Join-Path $WorkDir "search-$want.json"
+  if ($reaCmd) {
+    & rea search $LocalFixture $want --provider ghidra --kind procedures --mode regex --format json `
+      --snapshot (Join-Path $WorkDir 'demo.snap') 2>$null | Out-File -FilePath $searchOut -Encoding utf8
+  } else {
+    & $npx.Path -y $pkg search $LocalFixture $want --provider ghidra --kind procedures --mode regex --format json `
+      --snapshot (Join-Path $WorkDir 'demo.snap') 2>$null | Out-File -FilePath $searchOut -Encoding utf8
+  }
+  $name = (& node $Check funcname $searchOut $want 2>$null | Out-String).Trim()
+  if ([string]::IsNullOrWhiteSpace($name)) { return $want } else { return $name }
+}
+
 # ---- 1. 前置检查 ------------------------------------------------------------
 Write-Output '== 1. 前置检查 =='
 if (Get-Command node -ErrorAction SilentlyContinue) { Write-Pass 'node 存在' } else { Write-Fail '缺少 node' }
@@ -180,21 +204,9 @@ $ok = Invoke-ReaToFile -ReaArgs @('analyze', $LocalFixture, '--provider', 'ghidr
         '--snapshot', (Join-Path $WorkDir 'demo.snap')) -OutFile $aJson -ErrFile $aErr
 if ($ok) {
   Write-Pass 'analyze 命令成功'
-  try {
-    $d = Get-Content -LiteralPath $aJson -Raw | ConvertFrom-Json
-    $fmt = $d.subject.format
-    $arch = $d.subject.architecture
-    $procs = [int]$d.normalized_result.procedure_count
-    $strs = [int]$d.normalized_result.string_count
-    if ($fmt -eq 'pe' -and $procs -ge 3 -and $strs -gt 0) {
-      Write-Pass "识别 PE / $arch / 函数数(>=3) / 字符串（format=$fmt procs=$procs strings=$strs）"
-    } else {
-      Write-Fail "analyze 结构不符（format=$fmt procs=$procs strings=$strs）"
-    }
-  } catch {
-    Write-Fail "analyze JSON 解析失败：$($_.Exception.Message)"
-    Get-Content -LiteralPath $aJson -Raw -ErrorAction SilentlyContinue
-  }
+  $r = Invoke-Assert @('analyze', $aJson, 'pe')
+  if ($r.Ok) { Write-Pass "识别 PE / x86_64 / 函数数(>=3) / 字符串（$($r.Detail)）" }
+  else { Write-Fail "analyze 结构不符（$($r.Detail)）" }
 } else {
   Write-Fail 'analyze 失败'
   Show-CommandOutput -OutFile $aJson -ErrFile $aErr
@@ -203,18 +215,13 @@ if ($ok) {
 # ---- 4. decompile secret_check ----------------------------------------------
 Write-Output '== 4. decompile secret_check =='
 $dJson = Join-Path $WorkDir 'secret.json'; $dErr = Join-Path $WorkDir 'secret.err'
-$ok = Invoke-ReaToFile -ReaArgs @('decompile', $LocalFixture, 'secret_check', '--provider', 'ghidra',
+$secretName = Resolve-Function 'secret_check'
+$ok = Invoke-ReaToFile -ReaArgs @('decompile', $LocalFixture, $secretName, '--provider', 'ghidra',
         '--format', 'json', '--snapshot', (Join-Path $WorkDir 'demo.snap')) -OutFile $dJson -ErrFile $dErr
 if ($ok) {
-  try {
-    $d = Get-Content -LiteralPath $dJson -Raw | ConvertFrom-Json
-    $code = [string]$d.normalized_result
-    if ($d.confidence -eq 'observed' -and $code.Contains('secret_check') -and $code.Contains('0x539')) {
-      Write-Pass "secret_check 还原（observed，含 0x539=1337，confidence=$($d.confidence)）"
-    } else {
-      Write-Fail "decompile 结果不符（confidence=$($d.confidence)，name=$($code.Contains('secret_check'))，0x539=$($code.Contains('0x539'))）"
-    }
-  } catch { Write-Fail "secret_check JSON 解析失败：$($_.Exception.Message)" }
+  $r = Invoke-Assert @('decompile', $dJson, 'secret_check', '0x539')
+  if ($r.Ok) { Write-Pass "secret_check 还原（observed，含 0x539=1337，$($r.Detail)）" }
+  else { Write-Fail "secret_check 结果不符（$($r.Detail)）" }
 } else {
   Write-Fail 'secret_check 反编译失败'
   Show-CommandOutput -OutFile $dJson -ErrFile $dErr
@@ -223,18 +230,13 @@ if ($ok) {
 # ---- 5. decompile calc_discount ---------------------------------------------
 Write-Output '== 5. decompile calc_discount =='
 $cJson = Join-Path $WorkDir 'calc.json'; $cErr = Join-Path $WorkDir 'calc.err'
-$ok = Invoke-ReaToFile -ReaArgs @('decompile', $LocalFixture, 'calc_discount', '--provider', 'ghidra',
+$calcName = Resolve-Function 'calc_discount'
+$ok = Invoke-ReaToFile -ReaArgs @('decompile', $LocalFixture, $calcName, '--provider', 'ghidra',
         '--format', 'json', '--snapshot', (Join-Path $WorkDir 'demo.snap')) -OutFile $cJson -ErrFile $cErr
 if ($ok) {
-  try {
-    $d = Get-Content -LiteralPath $cJson -Raw | ConvertFrom-Json
-    $code = [string]$d.normalized_result
-    if ($d.confidence -eq 'observed' -and $code.Contains('calc_discount') -and $code.Contains('0x32')) {
-      Write-Pass "calc_discount 还原（observed，含 0x32=50，confidence=$($d.confidence)）"
-    } else {
-      Write-Fail "calc_discount 结果不符（confidence=$($d.confidence)，0x32=$($code.Contains('0x32'))）"
-    }
-  } catch { Write-Fail "calc_discount JSON 解析失败：$($_.Exception.Message)" }
+  $r = Invoke-Assert @('decompile', $cJson, 'calc_discount', '0x32')
+  if ($r.Ok) { Write-Pass "calc_discount 还原（observed，含 0x32=50，$($r.Detail)）" }
+  else { Write-Fail "calc_discount 结果不符（$($r.Detail)）" }
 } else {
   Write-Fail 'calc_discount 反编译失败'
   Show-CommandOutput -OutFile $cJson -ErrFile $cErr
@@ -246,12 +248,9 @@ $sJson = Join-Path $WorkDir 'stripped.json'; $sErr = Join-Path $WorkDir 'strippe
 $ok = Invoke-ReaToFile -ReaArgs @('analyze', $LocalStripped, '--provider', 'ghidra', '--format', 'json',
         '--snapshot', (Join-Path $WorkDir 'stripped.snap')) -OutFile $sJson -ErrFile $sErr
 if ($ok) {
-  try {
-    $d = Get-Content -LiteralPath $sJson -Raw | ConvertFrom-Json
-    $procs = [int]$d.normalized_result.procedure_count
-    if ($procs -ge 3) { Write-Pass "无符号二进制仍可导入分析（procedures=$procs）" }
-    else { Write-Fail "stripped 函数数异常（procs=$procs）" }
-  } catch { Write-Fail "stripped JSON 解析失败：$($_.Exception.Message)" }
+  $r = Invoke-Assert @('count', $sJson, '3')
+  if ($r.Ok) { Write-Pass "无符号二进制仍可导入分析（$($r.Detail)）" }
+  else { Write-Fail "stripped 函数数异常（$($r.Detail)）" }
 } else {
   Write-Fail 'stripped analyze 失败'
   Show-CommandOutput -OutFile $sJson -ErrFile $sErr
