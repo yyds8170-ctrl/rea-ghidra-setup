@@ -9,12 +9,32 @@
 #>
 [CmdletBinding()]
 param(
-  [switch]$Yes
+  [switch]$Help,
+  [switch]$Yes,
+  [string]$ToolsDir = ''
 )
 . (Join-Path $PSScriptRoot 'lib/common.ps1')
 
+if ($Help) {
+  Write-Output @'
+用法：pwsh -File .\uninstall.ps1 [选项]
+
+  -Help            打印本用法并退出
+  -Yes             非交互，跳过确认提示
+  -ToolsDir <dir>  要清理的安装根目录（默认 %USERPROFILE%\tools）
+'@
+  exit 0
+}
+
 $Cfg = Import-VersionConfig
-$ToolsDir = if ($env:TOOLS_DIR) { $env:TOOLS_DIR } else { Join-Path $env:USERPROFILE 'tools' }
+if ($ToolsDir) {
+  $ToolsDirResolved = $ToolsDir
+} elseif ($env:TOOLS_DIR) {
+  $ToolsDirResolved = $env:TOOLS_DIR
+} else {
+  $ToolsDirResolved = Join-Path $env:USERPROFILE 'tools'
+}
+$ToolsDir = $ToolsDirResolved
 
 Write-Output '=========================================================='
 Write-Output ' REA + Ghidra 卸载（Windows）'

@@ -57,6 +57,34 @@ source ~/.bashrc    # zsh 用户：source ~/.zshrc
 > ```
 > 详见 [docs/mirrors.md](docs/mirrors.md)。默认 `auto` 会自动探测，海外/CI 不受影响。
 
+### 非交互 / 参数化安装（自动化、CI）
+
+不带任何参数时行为与历史完全一致；需要自动化时用命令行参数完全控制，无需任何交互：
+
+```bash
+bash install.sh --dry-run                 # 预览将要做什么，不改动系统
+bash install.sh --yes                     # 非交互安装（本机已装则幂等跳过）
+REA_MIRROR=cn bash install.sh -y --prefix "$HOME/tools"
+bash install.sh --yes --skip-node --no-native --provider ghidra
+```
+
+Windows PowerShell：`pwsh -File .\install.ps1 -DryRun`、`-Yes -SkipNode` 等。
+
+| 参数（bash / PS） | 作用 |
+| --- | --- |
+| `--help` / `-Help` | 打印用法并退出 0 |
+| `--dry-run` / `-DryRun` | 只打印安装计划，不下载/解压/写环境变量 |
+| `--yes` / `-Yes` | 显式非交互（当前安装本就无交互） |
+| `--prefix <dir>` / `-ToolsDir <dir>` | 安装根目录（默认 `~/tools`） |
+| `--mirror auto\|cn\|global` / `-Mirror` | 镜像模式 |
+| `--skip-node` / `-SkipNode` | 不装便携 Node（用系统 Node） |
+| `--no-native` / `-NoNative` | 跳过 native decompiler 自动构建 |
+| `--provider <名>` / `-Provider` | 设 `REA_ANALYSIS_PROVIDER`（如 `ghidra`） |
+| `--offline-dir <dir>` / `-OfflineDir` | 离线包目录 |
+| `--ghidra-version/--node-version/--rea-version` | 临时覆盖版本（PS：`-GhidraVersion` 等） |
+
+未知参数打印用法到 stderr 并退出码 **2**。
+
 - 无需 root，JDK 与 Ghidra 装在 `~/tools`，脚本幂等可重复运行；自动识别运行环境与 CPU 架构
 - 安装前自动检查磁盘空间（`~/tools` 约 2.6GB、临时目录约 0.8GB）
 - 环境要求：Linux **x86_64**（完整支持）或 **arm64**（自动构建 native decompiler）、`curl`、`unzip`、`tar`；REA 需 Node 22.19+ / 24.11+ / 26+（缺失时安装器自动装便携 Node 22）
@@ -274,6 +302,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── common.sh / common.ps1        # 共用：版本加载/URL/架构/环境识别
 │   ├── download.sh                    # 健壮下载内核：重试/超时/续传/原子落地/多源 failover（bash）
 │   ├── mirrors.sh                     # 国内镜像策略：REA_MIRROR / Node·JDK 候选 / npmmirror registry
+│   ├── args.sh                         # 非交互参数解析：--help/--dry-run/--yes/--prefix/--mirror/版本覆盖
 │   ├── checksums.sh / checksums.ps1    # 下载物 SHA-256 校验（上游 + 离线清单）
 │   └── （common.ps1 内含 Save-RemoteFile 等 PS 等价下载/镜像内核）
 ├── docs/                     # 按「操作系统 × 运行环境」组织的文档（见 docs/README.md）
@@ -322,6 +351,12 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.5（2026-10-15）**
+  - **非交互参数化安装**：bash 新增共享解析器 `lib/args.sh`（install.sh/install-macos.sh 复用），PowerShell 在 install.ps1/uninstall.ps1 用 `param()` 等价实现。统一参数：`--help/--dry-run/--yes/--prefix/--mirror/--skip-node/--no-native/--provider/--offline-dir/--ghidra-version/--node-version/--rea-version`（PS 为 `-Help/-DryRun/-Yes/-ToolsDir/-Mirror/-SkipNode/-NoNative/-Provider/-OfflineDir/-GhidraVersion/-NodeVersion/-ReaVersion`）。
+  - **`--dry-run`**：零副作用预览安装计划（平台/架构/有效镜像模式/TOOLS_DIR/各组件版本/provider/是否离线/是否跳过 Node·native/磁盘需求/步骤预览），退出 0。参数解析在 load_versions 与平台专属动作之前，CI 的 ubuntu 上跑 install-macos.sh 也能 `--help/--dry-run` 提前退出。
+  - **`--no-native`**：新增 SKIP_NATIVE，跳过 native decompiler 自动构建；安装结尾按平台给「下一步」（source rc / verify / doctor / cn 提示）。默认（无参）行为完全不变。
+  - CI：lint-build 加 CLI 参数自检（字段断言 + 未知参数退出 2 + 覆盖值可见）；lint-ps 加 pwsh `-DryRun/-Help/未知参数` 自检。
+  - 本机实测：`--help/--dry-run` 退出 0 且字段齐全；`--no-such-flag` 退出 2；`bash install.sh --yes` 幂等（已装全跳过）；verify.sh 仍 **9/9**。
 - **v2.4（2026-10-15）**
   - **国内镜像加速**：新增 `REA_MIRROR=auto|cn|global`（bash `lib/mirrors.sh` + PS `common.ps1` 等价）。`cn` 镜像优先、官方兜底；`global` 仅官方；`auto`（默认）对官方 nodejs.org 做约 5s 短探测，可达→官方优先，超时→镜像，保证 GitHub Actions 海外不劣化。
   - **Node 镜像**（cn 模式）：npmmirror（`registry.npmmirror.com/-/binary/node/...`，同目录带 SHASUMS256.txt）+ 华为云（`repo.huaweicloud.com/nodejs/...`）；实测 npmmirror 与华为云 Content-Length 与官方一致（TUNA nodejs-release 当时未镜像 v22.19.0（404），未写入）。

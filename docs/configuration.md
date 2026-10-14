@@ -147,3 +147,22 @@ bash scripts/doctor.sh         # 本项目的跨平台环境预检（Linux/macOS
 - **Docker 镜像**：在内网/受限环境给 Docker daemon 配置 registry mirror；构建时构建容器内的
   `apt`/`curl` 代理用 `--build-arg HTTPS_PROXY=...`（多架构 buildx 时用 `docker buildx build --build-arg`）。
 - 完全离线 / 内网（air-gapped）安装见 [offline.md](offline.md)；常见报错见 [troubleshooting.md](troubleshooting.md)。
+
+## 四、非交互 / 参数化安装（自动化、CI）
+
+v2.5 起三平台安装器接受命令行参数，默认（无参）行为不变。bash 解析器在 `lib/args.sh`，
+PowerShell 在 install.ps1/uninstall.ps1 的 `param()`。
+
+```bash
+bash install.sh --dry-run                 # 零副作用预览安装计划
+bash install.sh --yes                      # 非交互（已装则幂等跳过）
+REA_MIRROR=cn bash install.sh -y --prefix "$HOME/tools" --skip-node --no-native
+```
+
+Windows：`pwsh -File .\install.ps1 -DryRun -Mirror cn -Yes`。
+
+常用参数：`--help` / `--dry-run` / `--yes` / `--prefix <dir>`（PS `-ToolsDir`）/
+`--mirror auto|cn|global` / `--skip-node` / `--no-native`（新增 SKIP_NATIVE）/
+`--provider <名>` / `--offline-dir <dir>` / `--ghidra-version|--node-version|--rea-version`。
+版本覆盖会在 `load_versions` 之前 export，复用“已有环境变量优先”；未知参数退出码 2。
+`--dry-run` 在解析后、任何下载/解压/写 rc 之前退出，故在 CI 的 ubuntu 上跑 install-macos.sh 也安全。

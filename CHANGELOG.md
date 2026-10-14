@@ -4,6 +4,28 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [2.5.0] - 2026-10-15
+
+### Added
+- 三平台安装器统一非交互命令行参数（bash 新增共享解析器 `lib/args.sh`，由 `common.sh` 引入，install.sh/install-macos.sh 复用；PowerShell 在 install.ps1/uninstall.ps1 用 `param()` 等价实现）：
+  `--help/-h`、`--dry-run`、`--yes/-y/--non-interactive`、`--prefix/--tools-dir`、`--mirror auto|cn|global`、`--skip-node`、`--no-native`、`--provider`、`--offline-dir`、`--ghidra-version/--node-version/--rea-version`。
+- `--dry-run`：解析并打印「将要执行的安装计划」（平台/环境/架构、有效镜像模式、TOOLS_DIR、各组件版本、provider、是否离线、是否跳过 Node/native、预计磁盘、步骤预览），**不做任何下载/解压/写 rc/构建**，退出 0。
+- 参数解析在 `load_versions` 与任何平台专属/下载动作之前：`--help/--dry-run` 在 CI 的 ubuntu 上跑 install-macos.sh、或在任意机器跑 install.ps1 都能提前退出，不触碰 Darwin/Windows 专属命令。
+- 新增 `SKIP_NATIVE` 开关（`--no-native`），跳过 native decompiler 自动源码构建；install 结尾按平台给出「下一步」（source rc / verify / doctor / cn 镜像提示）。
+- CI：lint-build 加 CLI 参数自检（help/dry-run 字段、未知参数退出 2、覆盖值出现在 dry-run）；lint-ps 加 pwsh `-DryRun/-Help/未知参数` 自检。
+
+### Changed
+- 默认（不带参数）行为与历史完全一致；环境变量覆盖（TOOLS_DIR/SKIP_NODE/GHIDRA_VERSION 等）仍优先、继续可用。
+- 修复：`install.ps1 -DryRun`/`-Help` 在 CI 的 ubuntu pwsh 下因 `$env:PROCESSOR_ARCHITECTURE`/`$env:USERPROFILE` 为空而崩溃——`Get-WindowsArch` 回退 `RuntimeInformation.OSArchitecture`，默认 ToolsDir 回退 `$HOME`/`GetFolderPath('UserProfile')`，保证 DryRun 跨平台安全且真实 Windows 路径行为不变。
+- `install.ps1`/`uninstall.ps1` 的 `param()` 加 `[CmdletBinding()]`：未知命令行参数（如 `-NoSuchFlag`）会被参数绑定**直接拒绝（退出 1）且不执行安装体**，而非被普通脚本静默吞进 `$args` 继续执行。
+- 修复 macOS e2e 回归：安装器结尾的镜像提示行原为 `[ "$(rea_mode)" = "cn" ] && echo …`，在 `global` 模式下条件为假、`&&` 短路返回 1，而它恰是 `install-macos.sh` 的最后一条语句，导致整个安装脚本退出码为 1（安装其实已成功）。改为 `if …; then echo …; fi`（条件为假时 `if` 返回 0），`install.sh` 同步加固。
+
+### 本机实测（2026-10-15，Ubuntu 22.04 x86_64）
+- `shellcheck -x` 零告警；`bash -n` 全部通过；ci.yml 经 python yaml 解析；`scripts/check-versions.sh` 通过。
+- `bash install.sh --help`/`--dry-run` 退出 0；`--dry-run --prefix /tmp/x --mirror cn --rea-version 9.9.9 --skip-node --no-native --provider ghidra` 正确打印覆盖值；`bash install.sh --no-such-flag` 退出 2；`bash install-macos.sh --dry-run` 在 ubuntu 上正常退出。
+- `bash install.sh --yes` 幂等（本机已装组件全部「已存在/跳过」）；随后 verify.sh 仍 9/9。
+- PS 路径在本机便携 pwsh 7.6 下实跑：`install.ps1 -Help/-DryRun` 退出 0、`uninstall.ps1 -Help` 退出 0、`-NoSuchFlag` 被参数绑定拒绝（退出 1）且不执行安装体；7 个 `.ps1` 语法解析通过、PSScriptAnalyzer 无 Error/Warning；并由 CI lint-ps 步骤再次把关。
+
 ## [2.4.0] - 2026-10-15
 
 ### Added

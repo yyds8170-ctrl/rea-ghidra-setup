@@ -27,6 +27,29 @@ jobs:
       - name: 版本一致性检查
         run: bash scripts/check-versions.sh
 
+      - name: CLI 参数自检（--help/--dry-run/未知参数/覆盖生效）
+        run: |
+          set -e
+          # --help 退出 0 且含用法
+          bash install.sh --help | grep -q -- '--dry-run'
+          bash install-macos.sh --help | grep -q -- '--dry-run'
+          # --dry-run 退出 0 且打印关键配置字段（Linux 安装器）
+          bash install.sh --dry-run | tee /tmp/dry.txt
+          grep -q '平台/环境' /tmp/dry.txt
+          grep -q '镜像模式' /tmp/dry.txt
+          grep -q 'Ghidra 12.1.4' /tmp/dry.txt
+          # install-macos.sh 在 ubuntu 上 dry-run 也必须提前退出、不触碰 Darwin 专属命令
+          bash install-macos.sh --dry-run | grep -q '平台/环境'
+          # 未知参数退出码 2
+          set +e; bash install.sh --no-such-flag >/dev/null 2>&1; rc=$?; set -e
+          [ "$rc" -eq 2 ] || { echo "未知参数应退出 2，实际 $rc"; exit 1; }
+          # 覆盖生效：--prefix/--mirror/--rea-version 的值要出现在 dry-run 输出里
+          bash install.sh --dry-run --prefix /tmp/x --mirror cn --rea-version 9.9.9 | tee /tmp/dry2.txt
+          grep -q '/tmp/x' /tmp/dry2.txt
+          grep -q '有效 = cn' /tmp/dry2.txt
+          grep -q 'REA 9.9.9' /tmp/dry2.txt
+          echo "CLI 参数自检通过"
+
       - name: 编译 demo
         run: make -C examples
 
@@ -69,6 +92,29 @@ jobs:
             throw "PSScriptAnalyzer 发现 $($issues.Count) 个 Error/Warning"
           }
           Write-Output 'PSScriptAnalyzer：无 Error/Warning'
+
+      - name: install.ps1 CLI 自检（-Help/-DryRun 提前退出，不触碰 Windows 专属动作）
+        shell: pwsh
+        run: |
+          # -Help / -DryRun 退出 0 且打印预期字段
+          pwsh -File ./install.ps1 -Help | Out-File /tmp/pshelp.txt
+          if ($LASTEXITCODE -ne 0) { throw "install.ps1 -Help 退出码 $LASTEXITCODE" }
+          if (-not (Select-String -Path /tmp/pshelp.txt -Quiet -SimpleMatch '-DryRun')) { throw '帮助未列出 -DryRun' }
+          pwsh -File ./install.ps1 -DryRun | Tee-Object /tmp/psdry.txt
+          if ($LASTEXITCODE -ne 0) { throw "install.ps1 -DryRun 退出码 $LASTEXITCODE" }
+          foreach ($need in @('平台/环境','镜像模式','组件版本','安装目录')) {
+            if (-not (Select-String -Path /tmp/psdry.txt -Quiet -SimpleMatch $need)) { throw "dry-run 缺少字段：$need" }
+          }
+          # uninstall.ps1 -Help 退出 0
+          pwsh -File ./uninstall.ps1 -Help | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "uninstall.ps1 -Help 退出码 $LASTEXITCODE" }
+          # 未知参数应非 0（且不得执行安装体）；加 [CmdletBinding()] 后会被参数绑定拦截
+          pwsh -File ./install.ps1 -NoSuchFlag 2>$null
+          if ($LASTEXITCODE -eq 0) { throw 'install.ps1 未知参数应非 0 退出' }
+          # 上面“预期非零”的退出码不能泄漏给 GitHub Actions 的 pwsh 包装器，否则步骤会被误判失败
+          $global:LASTEXITCODE = 0
+          Write-Output 'PowerShell CLI 自检通过'
+          exit 0
 
   # 跨平台完整端到端：Linux / macOS(arm64) / Windows(x64)
   # 仅每周计划或手动触发（含 JDK + Ghidra 下载 / macOS native 构建）；缓存命中后约 4-6 分钟

@@ -16,13 +16,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 # shellcheck source=lib/checksums.sh
 source "$SCRIPT_DIR/lib/checksums.sh"
+
+# ---- 命令行参数解析（在 load_versions 与平台专属动作之前）-------------------
+INSTALLER_NAME="install-macos.sh"
+parse_install_args "$@"
+if [ "$ARG_HELP" = "1" ]; then install_usage "$INSTALLER_NAME"; exit 0; fi
+
 load_versions
+print_dry_run_if_requested "macOS"   # dry-run/--help 在任意机器都提前退出，不触碰 Darwin 专属命令
 
 [ "$(uname -s)" = "Darwin" ] || { echo "本脚本仅用于 macOS（Linux 请用 install.sh）" >&2; exit 1; }
 
-# ---- 可调参数 ---------------------------------------------------------------
+# ---- 可调参数（命令行/环境变量已在 args.sh 设好，这里补默认值）---------------
 TOOLS_DIR="${TOOLS_DIR:-$HOME/tools}"
 SKIP_NODE="${SKIP_NODE:-0}"
+SKIP_NATIVE="${SKIP_NATIVE:-0}"
 ARCH="$(normalize_arch)"
 case "$ARCH" in
   x64)     JDK_ARCH=x64 ;;
@@ -109,6 +117,8 @@ fi
 NATIVE_BIN="$GHIDRA_DIR/Ghidra/Features/Decompiler/os/$NATIVE_OS_DIR/decompile"
 if [ -x "$NATIVE_BIN" ]; then
   echo "[4/5] native decompiler 已就绪：$NATIVE_OS_DIR"
+elif [ "$SKIP_NATIVE" = "1" ]; then
+  echo "[4/5] SKIP_NATIVE=1，跳过 native decompiler 自动构建（如需：bash scripts/build-ghidra-native.sh）"
 else
   echo "[4/5] 未发现 $NATIVE_OS_DIR native decompiler，从源码构建（需 Xcode 命令行工具）..."
   if ! xcode-select -p >/dev/null 2>&1; then
@@ -187,5 +197,9 @@ fi
 
 echo
 echo "============ 安装完成（macOS/${ARCH}）============"
-echo "请执行：source ~/.zshrc（bash 用户：source ~/.bash_profile）"
-echo "自检：bash verify-macos.sh"
+echo "下一步："
+echo "  1) source ~/.zshrc（bash 用户：source ~/.bash_profile）"
+echo "  2) 自检：bash verify-macos.sh   诊断：bash scripts/doctor.sh"
+if [ "$(rea_mode)" = "cn" ]; then
+  echo "  （当前镜像模式=cn；海外/CI 可用 REA_MIRROR=global 走官方）"
+fi

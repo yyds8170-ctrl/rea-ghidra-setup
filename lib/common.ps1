@@ -64,11 +64,20 @@ function Get-NodeDirName { param($Cfg) "node-v$($Cfg.REA_NODE_VERSION)-win-x64" 
 
 # ---- CPU 架构归一化（x64 / arm64）------------------------------------------
 function Get-WindowsArch {
-  switch ($env:PROCESSOR_ARCHITECTURE) {
-    'AMD64' { return 'x64' }
-    'ARM64' { return 'arm64' }
-    default { return "$($env:PROCESSOR_ARCHITECTURE)" }
-  }
+  $pa = $env:PROCESSOR_ARCHITECTURE
+  if ($pa -eq 'AMD64') { return 'x64' }
+  if ($pa -eq 'ARM64') { return 'arm64' }
+  if (-not [string]::IsNullOrWhiteSpace($pa)) { return $pa }
+  # 非 Windows（如 CI 在 ubuntu 上跑 pwsh -DryRun）：回退到运行时架构，避免空值
+  try {
+    $osArch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
+    switch ("$osArch") {
+      'X64'   { return 'x64' }
+      'Arm64' { return 'arm64' }
+      'X86'   { return 'x86' }
+      default { return "$osArch" }
+    }
+  } catch { return 'x64' }
 }
 
 # ---- Node 版本门禁：满足 ^22.19 || ^24.11 || >=26 ---------------------------

@@ -17,13 +17,92 @@
   powershell -ExecutionPolicy Bypass -File .\install.ps1
   # 或在 PowerShell 7 中：
   pwsh -File .\install.ps1
+  pwsh -File .\install.ps1 -DryRun -Mirror cn
 #>
+[CmdletBinding()]
+param(
+  [switch]$Help,
+  [switch]$DryRun,
+  [switch]$Yes,
+  [string]$ToolsDir = '',
+  [string]$Mirror = '',
+  [switch]$SkipNode,
+  [switch]$NoNative,
+  [string]$Provider = '',
+  [string]$OfflineDir = '',
+  [string]$GhidraVersion = '',
+  [string]$NodeVersion = '',
+  [string]$ReaVersion = ''
+)
 . (Join-Path $PSScriptRoot 'lib/common.ps1')
 . (Join-Path $PSScriptRoot 'lib/checksums.ps1')
 
+# 版本/镜像覆盖：在 Import-VersionConfig 之前写入进程环境（复用“已有环境变量优先”）
+if ($GhidraVersion) { $env:GHIDRA_VERSION = $GhidraVersion }
+if ($NodeVersion)   { $env:REA_NODE_VERSION = $NodeVersion }
+if ($ReaVersion)    { $env:REA_VERSION = $ReaVersion }
+if ($Mirror)        { $env:REA_MIRROR = $Mirror }
+if ($Provider)      { $env:REA_ANALYSIS_PROVIDER = $Provider }
+if ($OfflineDir)    { $env:OFFLINE_DIR = $OfflineDir }
+
+function Show-InstallHelp {
+  Write-Output @'
+用法：pwsh -File .\install.ps1 [选项]
+
+非交互参数化安装（默认不带参数时行为与历史一致）。
+
+  -Help            打印本用法并退出
+  -DryRun          只打印将要执行的安装计划，不下载/解压/写环境变量
+  -Yes             显式声明非交互（不阻塞）
+  -ToolsDir <dir>  安装根目录（默认 %USERPROFILE%\tools）
+  -Mirror <auto|cn|global>   镜像模式（默认 auto）
+  -SkipNode        不安装便携 Node
+  -NoNative        跳过 native decompiler 校验/构建提示
+  -Provider <名>   设置 REA_ANALYSIS_PROVIDER（如 ghidra）
+  -OfflineDir <dir> 离线包目录
+  -GhidraVersion <ver>  覆盖 Ghidra 版本
+  -NodeVersion <ver>    覆盖便携 Node 版本
+  -ReaVersion <ver>     覆盖 rea-agents 版本
+
+示例：
+  pwsh -File .\install.ps1
+  pwsh -File .\install.ps1 -DryRun -Mirror cn
+  pwsh -File .\install.ps1 -Yes -SkipNode
+'@
+}
+if ($Help) { Show-InstallHelp; exit 0 }
+
 $Cfg = Import-VersionConfig
 $Arch = Get-WindowsArch
-$ToolsDir = if ($env:TOOLS_DIR) { $env:TOOLS_DIR } else { Join-Path $env:USERPROFILE 'tools' }
+if ($ToolsDir) {
+  $ToolsDirResolved = $ToolsDir
+} elseif ($env:TOOLS_DIR) {
+  $ToolsDirResolved = $env:TOOLS_DIR
+} else {
+  # 跨平台安全默认目录：兼容 CI 在 ubuntu 上跑 pwsh -DryRun（USERPROFILE 为空）
+  $homeBase = $env:USERPROFILE
+  if ([string]::IsNullOrWhiteSpace($homeBase)) { $homeBase = $HOME }
+  if ([string]::IsNullOrWhiteSpace($homeBase)) { $homeBase = [Environment]::GetFolderPath('UserProfile') }
+  $ToolsDirResolved = Join-Path $homeBase 'tools'
+}
+$MirrorMode = Get-ReaMirrorMode
+
+if ($DryRun) {
+  Write-Output '========== Dry-run：将要执行的安装计划（不会做任何改动）=========='
+  Write-Output "  平台/环境   : Windows / $Arch"
+  Write-Output "  镜像模式    : $(if ($env:REA_MIRROR) { $env:REA_MIRROR } else { 'auto' }) → 有效 = $MirrorMode"
+  Write-Output "  安装目录    : $ToolsDirResolved"
+  Write-Output "  组件版本    : Ghidra $($Cfg.GHIDRA_VERSION) ｜ JDK $($Cfg.JDK_FEATURE) ｜ Node $($Cfg.REA_NODE_VERSION) ｜ REA $($Cfg.REA_VERSION)"
+  Write-Output "  provider    : $(if ($Provider) { $Provider } else { '(自动选择)' })"
+  Write-Output "  离线包      : $(if ($OfflineDir) { "是（$OfflineDir）" } else { '否' })"
+  Write-Output "  跳过 Node   : $(if ($SkipNode) { '是' } else { '否' })"
+  Write-Output "  跳过 native : $(if ($NoNative) { '是' } else { '否' })"
+  Write-Output '  步骤预览    : [1]JDK [2]Node [3]Ghidra [4]native [5]写用户环境变量 → verify.ps1'
+  Write-Output '=================================================================='
+  exit 0
+}
+
+$ToolsDir = $ToolsDirResolved
 
 Write-Output '=========================================================='
 Write-Output ' REA + Ghidra 部署（Windows）'
@@ -74,6 +153,8 @@ $NodeDir = $null
 $sysNode = Get-Command node -ErrorAction SilentlyContinue
 if ($sysNode -and (Test-NodeVersion -VersionString ((& node --version 2>$null) -as [string]))) {
   Write-Ok "系统 Node 已满足：$(& node --version)"
+} elseif ($SkipNode) {
+  Write-Note '-SkipNode：跳过便携 Node 安装（请自行确保 Node 22.19+/24.11+/26+）'
 } else {
   $NodeDir = Join-Path $ToolsDir (Get-NodeDirName $Cfg)
   if (-not (Test-Path -LiteralPath (Join-Path $NodeDir 'node.exe'))) {
@@ -115,12 +196,16 @@ if (Test-Path -LiteralPath (Join-Path $GhidraDir 'support\analyzeHeadless.bat'))
 # 4. 校验官方自带的 win_x86_64 native decompiler
 # ---------------------------------------------------------------------------
 Write-Info "[4/5] 校验 native decompiler（win_x86_64）..."
+if ($NoNative) {
+  Write-Note '-NoNative：跳过 native decompiler 校验（Windows x64 官方包通常自带 decompile.exe）'
+} else {
 $Decompiler = Join-Path $GhidraDir 'Ghidra\Features\Decompiler\os\win_x86_64\decompile.exe'
 if (Test-Path -LiteralPath $Decompiler) {
   Write-Ok '找到官方预编译 decompile.exe（win_x86_64）'
 } else {
   Write-Note '未找到 win_x86_64\decompile.exe。Windows x64 官方发布包应自带该文件；'
   Write-Note '请确认下载的 Ghidra 包完整，或重新运行安装脚本。'
+}
 }
 Remove-Item -LiteralPath $dlDir -Recurse -Force -ErrorAction SilentlyContinue
 

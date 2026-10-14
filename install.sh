@@ -17,11 +17,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common.sh"
 # shellcheck source=lib/checksums.sh
 source "$SCRIPT_DIR/lib/checksums.sh"
-load_versions   # 从 config/versions.env 载入默认版本；已 export 的同名变量优先
 
-# ---- 可调参数 ---------------------------------------------------------------
+# ---- 命令行参数解析（在 load_versions 与任何平台/下载动作之前）---------------
+INSTALLER_NAME="install.sh"
+parse_install_args "$@"
+if [ "$ARG_HELP" = "1" ]; then install_usage "$INSTALLER_NAME"; exit 0; fi
+
+load_versions   # 从 config/versions.env 载入默认版本；已 export 的同名变量优先
+print_dry_run_if_requested "Linux"
+
+# ---- 可调参数（命令行/环境变量已在 args.sh 设好，这里补默认值）---------------
 TOOLS_DIR="${TOOLS_DIR:-$HOME/tools}"
 SKIP_NODE="${SKIP_NODE:-0}"     # 设为 1 则不安装便携 Node（使用系统/已有 Node）
+SKIP_NATIVE="${SKIP_NATIVE:-0}" # 设为 1 则跳过 native decompiler 自动构建
 ARCH="$(normalize_arch)"
 case "$ARCH" in
   x64)     JDK_ARCH=x64 ;;
@@ -108,6 +116,8 @@ NATIVE_OS_DIR="linux_x86_64"; [ "$ARCH" = "aarch64" ] && NATIVE_OS_DIR="linux_ar
 NATIVE_BIN="$GHIDRA_DIR/Ghidra/Features/Decompiler/os/$NATIVE_OS_DIR/decompile"
 if [ -x "$NATIVE_BIN" ]; then
   echo "[4/5] native decompiler 已就绪：$NATIVE_OS_DIR"
+elif [ "$SKIP_NATIVE" = "1" ]; then
+  echo "[4/5] SKIP_NATIVE=1，跳过 native decompiler 自动构建（如需：bash scripts/build-ghidra-native.sh）"
 else
   echo "[4/5] 未发现 $NATIVE_OS_DIR native decompiler，尝试从源码构建 ..."
   if GHIDRA_INSTALL_DIR="$GHIDRA_DIR" bash "$SCRIPT_DIR/scripts/build-ghidra-native.sh"; then
@@ -193,7 +203,11 @@ fi
 
 echo
 echo "============ 安装完成（$ENV_NAME / ${ARCH}）============"
-echo "请执行：source ~/.bashrc（zsh 用户：source ~/.zshrc）"
-echo "自检：bash verify.sh"
-echo "分析示例："
-echo "  npx -y rea-agents@latest analyze <二进制路径> --provider ghidra --format json"
+echo "下一步："
+echo "  1) source ~/.bashrc（zsh 用户：source ~/.zshrc）"
+echo "  2) 自检：bash verify.sh      诊断：bash scripts/doctor.sh"
+if [ "$(rea_mode)" = "cn" ]; then
+  echo "  （当前镜像模式=cn；海外/CI 可用 REA_MIRROR=global 走官方）"
+fi
+echo "  3) 分析示例："
+echo "     npx -y rea-agents@latest analyze <二进制路径> --provider ghidra --format json"

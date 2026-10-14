@@ -20,6 +20,9 @@ REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
 # 国内镜像策略（rea_mode / node_candidate_urls / jdk_candidate_urls / npm_registry_assign）
 # shellcheck source=lib/mirrors.sh
 . "$LIB_DIR/mirrors.sh"
+# 非交互参数化安装（install_usage / parse_install_args / print_dry_run_if_requested）
+# shellcheck source=lib/args.sh
+. "$LIB_DIR/args.sh"
 
 # ---- 确保 UTF-8 locale ------------------------------------------------------
 # CI（尤其 macOS 的 bash -e step）可能未设 LANG，回退为 C/POSIX 环境，
