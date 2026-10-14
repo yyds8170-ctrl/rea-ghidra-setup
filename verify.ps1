@@ -74,6 +74,10 @@ Write-Output '== 环境 =='
 Write-Output "  JAVA_HOME          = $JavaHome"
 Write-Output "  GHIDRA_INSTALL_DIR = $GhidraDir"
 Write-Output "  REA 调用           = $(if ($reaCmd) { 'rea' } else { "npx -y $pkg" })"
+Write-Output "  npx 路径           = $(if ($npx) { $npx.Path } else { '（未找到 npx.cmd！）' })"
+$nodeProbe = Get-Command node -ErrorAction SilentlyContinue
+Write-Output "  node               = $(if ($nodeProbe) { (& node --version 2>&1) -join '' } else { '（未找到）' })"
+Write-Output "  TEMP 目标          = $env:TEMP"
 
 # 硬性前置（不满足直接终止，避免后面一堆次生错误）
 if ((Get-JdkMajor -JavaHome $JavaHome) -lt 21) { Stop-Fatal '未找到 JDK 21，请先运行 install.ps1（或设置 JAVA_HOME）' }
@@ -98,7 +102,7 @@ $LocalStripped = Join-Path $WorkDir 'demo-stripped.exe'
 Copy-Item -LiteralPath $Fixture -Destination $LocalFixture -Force
 Copy-Item -LiteralPath $Stripped -Destination $LocalStripped -Force
 
-# 失败时打印 stderr 与 stdout（REA 偶尔把错误写到 stdout），便于定位
+# 失败时打印 stderr 与 stdout（REA 的错误信封 {"error":...,"message":...} 通常写到 stdout）
 function Show-CommandOutput {
   param([string]$OutFile, [string]$ErrFile)
   if (Test-Path -LiteralPath $ErrFile) {
@@ -110,10 +114,31 @@ function Show-CommandOutput {
   }
   if (Test-Path -LiteralPath $OutFile) {
     $outText = Get-Content -LiteralPath $OutFile -Raw -ErrorAction SilentlyContinue
-    if (-not [string]::IsNullOrWhiteSpace($outText) -and $outText -notmatch '^\s*\{') {
-      Write-Output '  --- stdout（非 JSON）---'
-      ($outText.TrimEnd() -split "`n" | Select-Object -First 30) | ForEach-Object { Write-Output "  $_" }
+    if ([string]::IsNullOrWhiteSpace($outText)) {
+      Write-Output '  --- stdout 为空（命令可能根本没有启动）---'
+    } else {
+      try {
+        $j = $outText | ConvertFrom-Json
+        if ($j.error) {
+          Write-Output "  --- REA 错误：$($j.error) ---"
+          Write-Output "  $($j.message)"
+          if ($j.details.rejections) {
+            foreach ($r in $j.details.rejections) {
+              Write-Output "  拒绝[$($r.provider_id)] $($r.code): $($r.reason)"
+              if ($r.diagnostics) { $r.diagnostics | ConvertTo-Json -Depth 4 | ForEach-Object { Write-Output "    $_" } }
+            }
+          }
+        } else {
+          Write-Output '  --- stdout（JSON，但无 error 字段）---'
+          Write-Output ($outText.TrimEnd() -split "`n" | Select-Object -First 20 | ForEach-Object { "  $_" })
+        }
+      } catch {
+        Write-Output '  --- stdout（非 JSON）---'
+        ($outText.TrimEnd() -split "`n" | Select-Object -First 30) | ForEach-Object { Write-Output "  $_" }
+      }
     }
+  } else {
+    Write-Output '  --- stdout 文件不存在（命令没有运行）---'
   }
 }
 
