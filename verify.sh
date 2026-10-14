@@ -47,8 +47,15 @@ if [ -z "${GHIDRA_INSTALL_DIR:-}" ]; then
 fi
 [ -n "${JAVA_HOME:-}" ] && export PATH="$JAVA_HOME/bin:$PATH"
 
-# REA：优先全局 rea，否则 npx 锁定版本
-if command -v rea >/dev/null 2>&1; then REA=(rea); else REA=(npx -y "rea-agents@${REA_VERSION}"); fi
+# REA：优先全局 rea，否则 npx 锁定版本（cn 模式经 npmmirror 拉取，仅本次进程）
+if command -v rea >/dev/null 2>&1; then
+  REA=(rea)
+else
+  REA=(npx -y "rea-agents@${REA_VERSION}")
+  if [ "$(rea_mode)" = "cn" ]; then
+    REA=(env npm_config_registry="https://registry.npmmirror.com" "${REA[@]}")
+  fi
+fi
 
 # 用 search 解析 Ghidra 内的真实函数名（Mach-O 带 _ 前缀，统一做法保证跨平台一致）
 resolve_func() {

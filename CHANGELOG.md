@@ -4,6 +4,34 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [2.4.0] - 2026-10-15
+
+### Added
+- 新增镜像模式开关 `REA_MIRROR=auto|cn|global`（bash `lib/mirrors.sh` + PowerShell `lib/common.ps1` 等价）：
+  `global` 仅官方；`cn` 镜像优先、官方兜底；`auto`（默认）对官方 nodejs.org 做约 5s 短连接探测，
+  可达→官方优先，超时→镜像，保证 GitHub Actions 海外不劣化。
+- Node 镜像（cn 模式）：npmmirror（`registry.npmmirror.com/-/binary/node/v<ver>/`，同目录带 SHASUMS256.txt）
+  + 华为云（`repo.huaweicloud.com/nodejs/v<ver>/`），接入 v2.3 多源 `download`/`Save-RemoteFile` 候选列表。
+- JDK（Temurin）镜像：先从 Adoptium assets JSON 取 `package.link/name/checksum/size`，
+  TUNA（`mirrors.tuna.tsinghua.edu.cn/Adoptium/21/jdk/<arch>/<os>/<文件名>`）在前、GitHub release 官方兜底；
+  PS 等价 `Get-JdkAssetInfo`/`Get-JdkMirrorUrls`。
+- npm 镜像：cn 模式下 npx/全局安装经 `npm_config_registry=https://registry.npmmirror.com` 拉取 rea-agents，
+  仅本次进程生效，不改用户全局 `.npmrc`；install/verify 共用统一逻辑。
+- 新增 `scripts/check-mirrors.sh`（各源 Range 探测 OK/FAIL，镜像可选源不可达不阻断）；
+  `doctor.sh` 增加镜像模式提示（cn 为 WARN，不阻断）；新增 `docs/mirrors.md`。
+
+### Changed
+- `fetch_artifact`（bash）与 `Get-VerifiedArtifact`（PS）对 node/jdk 按镜像模式排候选 URL；
+  **校验和逻辑不变，仍在多源下载之后强校验**（Node 官方 SHASUMS256 / Adoptium JSON / GitHub digest）。
+- 镜像只是候选，官方源始终保留为最终回退；不硬编码代理。
+
+### 本机实测（2026-10-15，Ubuntu 22.04 x86_64）
+- `shellcheck -x` 零告警；`bash -n` 全部通过；`scripts/check-versions.sh` 通过。
+- cn 模式经 npmmirror 真实下载 Node 22.19.0 并对官方 SHASUMS256 校验一致（tarball 可解包）；
+  JDK TUNA Range 206 且 Content-Length（207473347）== Adoptium `package.size`。
+- `scripts/check-mirrors.sh` 全源 OK；`REA_MIRROR=cn verify.sh` 与 `REA_MIRROR=global verify.sh` 均 9/9。
+- 残留：TUNA nodejs-release 未镜像 v22.19.0（404，未写入）；华为云 adoptium JDK 路径当前不可用（JDK 镜像用 TUNA）。
+
 ## [2.3.0] - 2026-10-15
 
 ### Added

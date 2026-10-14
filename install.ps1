@@ -146,6 +146,8 @@ if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable('GHIDRA_H
 Write-Output ''
 Write-Info 'REA 就绪检查（直接用 npx，无需安装）：'
 $npx = if ($NodeDir) { Join-Path $NodeDir 'npx.cmd' } else { 'npx.cmd' }
+$mirrorReg = Get-NpmMirrorRegistry
+if ($mirrorReg) { $env:npm_config_registry = $mirrorReg }
 try {
   & $npx -y "rea-agents@$($Cfg.REA_VERSION)" doctor --provider ghidra
   if ($LASTEXITCODE -ne 0) { Write-Note 'doctor 有未通过项，可按上面提示排查（不影响安装）。' }

@@ -127,11 +127,24 @@ fetch_artifact() {
     echo "[离线] 使用 $OFFLINE_DIR/$name"
   else
     local dl_urls="$url"
-    # Ghidra 大文件（约 400MB）走「官方直连 + GitHub 代理池」多源回退；
-    # Node/JDK 本版仍只走官方源（国内镜像在后续版本）。
-    if [ "$kind" = "ghidra" ]; then
-      dl_urls="$(github_proxy_urls "$url")"
-    fi
+    case "$kind" in
+      ghidra)
+        # Ghidra 大文件（约 400MB）走「官方直连 + GitHub 代理池」多源回退
+        dl_urls="$(github_proxy_urls "$url")"
+        ;;
+      node)
+        # Node：按镜像模式排候选（cn 镜像在前官方兜底，global 官方在前）
+        dl_urls="$(node_candidate_urls "$name")"
+        ;;
+      jdk)
+        # JDK：从 Adoptium assets JSON 取规范文件名，拼 TUNA 镜像 + GitHub 官方
+        local _os _arch
+        _os="$(uname -s | tr '[:upper:]' '[:lower:]')"; _os="${_os%%_*}"
+        [ "$_os" = "darwin" ] && _os=mac
+        _arch="$(normalize_arch)"
+        dl_urls="$(jdk_candidate_urls "$_os" "$_arch" "$url")"
+        ;;
+    esac
     # $dl_urls 为空格分隔的候选 URL，这里故意不加引号展开
     # shellcheck disable=SC2086
     if ! download "$out" $dl_urls; then

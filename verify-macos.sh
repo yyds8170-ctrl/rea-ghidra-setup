@@ -43,8 +43,15 @@ fi
 [ -n "${JAVA_HOME:-}" ] && export PATH="$JAVA_HOME/bin:$PATH"
 NATIVE_OS_DIR="mac_x86_64"; [ "$ARCH" = "aarch64" ] && NATIVE_OS_DIR="mac_arm_64"
 
-# REA：优先全局 rea，否则 npx 锁定版本
-if command -v rea >/dev/null 2>&1; then REA=(rea); else REA=(npx -y "rea-agents@${REA_VERSION}"); fi
+# REA：优先全局 rea，否则 npx 锁定版本（cn 模式经 npmmirror 拉取，仅本次进程）
+if command -v rea >/dev/null 2>&1; then
+  REA=(rea)
+else
+  REA=(npx -y "rea-agents@${REA_VERSION}")
+  if [ "$(rea_mode)" = "cn" ]; then
+    REA=(env npm_config_registry="https://registry.npmmirror.com" "${REA[@]}")
+  fi
+fi
 
 # Mach-O 中 C 函数符号通常带前导下划线（_secret_check），用 search 解析 Ghidra 内的真实函数名
 resolve_func() {

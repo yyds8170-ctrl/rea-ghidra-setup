@@ -51,6 +51,12 @@ bash install.sh
 source ~/.bashrc    # zsh 用户：source ~/.zshrc
 ```
 
+> **国内网络用户**：下载慢/超时就用镜像加速（Node/JDK 走 npmmirror、华为云、TUNA，npm 走 npmmirror，仍过官方校验和）：
+> ```bash
+> REA_MIRROR=cn bash install.sh     # Windows: $env:REA_MIRROR='cn'; .\install.ps1
+> ```
+> 详见 [docs/mirrors.md](docs/mirrors.md)。默认 `auto` 会自动探测，海外/CI 不受影响。
+
 - 无需 root，JDK 与 Ghidra 装在 `~/tools`，脚本幂等可重复运行；自动识别运行环境与 CPU 架构
 - 安装前自动检查磁盘空间（`~/tools` 约 2.6GB、临时目录约 0.8GB）
 - 环境要求：Linux **x86_64**（完整支持）或 **arm64**（自动构建 native decompiler）、`curl`、`unzip`、`tar`；REA 需 Node 22.19+ / 24.11+ / 26+（缺失时安装器自动装便携 Node 22）
@@ -201,6 +207,7 @@ npx -y rea-agents@latest doctor --provider ghidra
 | `REA_GHIDRA_LANGUAGE_ID` / `REA_GHIDRA_COMPILER_SPEC_ID` | 强制处理器语言/编译器规格（如 Borland PE） | 自动识别 |
 | `REA_GHIDRA_DISABLED_ANALYZERS` | 关闭指定自动分析器（逗号分隔） | 默认全开 |
 | `REA_DL_RETRIES` / `REA_DL_CONNECT_TIMEOUT` / `REA_DL_MAX_TIME` | 下载内核单源重试次数 / 连接超时秒 / 单源总超时秒 | `5` / `15` / `1800` |
+| `REA_MIRROR` | 镜像模式：`auto`（探测）/ `cn`（国内镜像优先）/ `global`（仅官方） | `auto` |
 | `REA_GITHUB_PROXIES` | Ghidra 等 GitHub release 的代理前缀列表（逗号/分号/空格分隔）；`none` 只走官方 | 内置 `https://gh-proxy.com/` |
 
 ## 卸载
@@ -266,8 +273,9 @@ bash uninstall.sh --yes  # 跳过确认
 ├── lib/
 │   ├── common.sh / common.ps1        # 共用：版本加载/URL/架构/环境识别
 │   ├── download.sh                    # 健壮下载内核：重试/超时/续传/原子落地/多源 failover（bash）
+│   ├── mirrors.sh                     # 国内镜像策略：REA_MIRROR / Node·JDK 候选 / npmmirror registry
 │   ├── checksums.sh / checksums.ps1    # 下载物 SHA-256 校验（上游 + 离线清单）
-│   └── （common.ps1 内含 Save-RemoteFile 等 PS 等价下载内核）
+│   └── （common.ps1 内含 Save-RemoteFile 等 PS 等价下载/镜像内核）
 ├── docs/                     # 按「操作系统 × 运行环境」组织的文档（见 docs/README.md）
 │   ├── README.md             # 文档导航（按平台快速选择）
 │   ├── platform-linux.md     # Linux：物理机/虚拟机/WSL/Docker/VDI
@@ -276,6 +284,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── platform-chromeos.md  # ChromeOS：Crostini（x86_64 完整 / ARM64 受限）
 │   ├── platform-docker.md    # Docker：linux/amd64 + linux/arm64（多架构 buildx）
 │   ├── configuration.md      # 环境变量调优 + MCP 接入（mcp add/setup）+ 代理镜像
+│   ├── mirrors.md            # 国内镜像加速（REA_MIRROR=cn）+ 校验防篡改说明
 │   ├── offline.md            # 离线/内网安装（prepare-offline + OFFLINE_DIR + 镜像 save/load）
 │   ├── troubleshooting.md    # 跨平台故障排查
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
@@ -294,6 +303,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── verify-check.js       # 跨平台统一的 analyze/decompile 断言（Node，三个 verify 共用）
 │   ├── selfcheck-checksums.sh # 校验和链路自检（三源 + 真实下载 Node）
 │   ├── selftest-download.sh   # 下载内核单测（failover/无半截文件/续传 416，离线可跑）
+│   ├── check-mirrors.sh        # 镜像/源连通性与 Range 探测（REA_MIRROR=cn 实测各源）
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
@@ -312,6 +322,14 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.4（2026-10-15）**
+  - **国内镜像加速**：新增 `REA_MIRROR=auto|cn|global`（bash `lib/mirrors.sh` + PS `common.ps1` 等价）。`cn` 镜像优先、官方兜底；`global` 仅官方；`auto`（默认）对官方 nodejs.org 做约 5s 短探测，可达→官方优先，超时→镜像，保证 GitHub Actions 海外不劣化。
+  - **Node 镜像**（cn 模式）：npmmirror（`registry.npmmirror.com/-/binary/node/...`，同目录带 SHASUMS256.txt）+ 华为云（`repo.huaweicloud.com/nodejs/...`）；实测 npmmirror 与华为云 Content-Length 与官方一致（TUNA nodejs-release 当时未镜像 v22.19.0（404），未写入）。
+  - **JDK（Temurin）镜像**：先从 Adoptium assets JSON 取 `package.link/name/checksum/size`，TUNA `mirrors.tuna.tsinghua.edu.cn/Adoptium/21/jdk/<arch>/<os>/<文件名>` 在前、GitHub release 官方兜底；实测 TUNA Content-Length 与 Adoptium `package.size` 完全一致。
+  - **npm 镜像**：cn 模式下 npx/全局安装经 `npm_config_registry=https://registry.npmmirror.com` 拉取 rea-agents，**仅本次进程生效，不改用户全局 .npmrc**；install/verify 共用统一逻辑。
+  - **安全不变**：镜像只是候选，官方源始终最终兜底；任何镜像下载的 Node/JDK/Ghidra 仍必须过官方/Adoptium/GitHub digest 强校验，不匹配即删即止；权威 checksum 不可达时维持“警告放行”。
+  - 新增 `scripts/check-mirrors.sh`（各源 Range 探测 OK/FAIL）；`doctor.sh` 增加镜像模式提示（cn 为 WARN，不阻断）；新增 [docs/mirrors.md](docs/mirrors.md)。
+  - 本机实测：cn 模式经 npmmirror 真实下载 Node 22.19.0 并对官方 SHASUMS256 校验一致；JDK TUNA Content-Length==package.size；`REA_MIRROR=cn verify.sh` 与 `REA_MIRROR=global verify.sh` 均 **9/9**。
 - **v2.3（2026-10-15）**
   - **健壮下载内核**：新增 `lib/download.sh`（`download`/`github_proxy_urls`）与 PowerShell `lib/common.ps1`（`Save-RemoteFile`/`Get-GithubProxyUrls`）等价实现——指数退避重试（默认 5 次，`REA_DL_RETRIES` 可配）、连接/总超时（`REA_DL_CONNECT_TIMEOUT`=15s、`REA_DL_MAX_TIME`=1800s）、断点续传（bash `curl -C -`→`wget -c`；PS 显式 `curl.exe -C -`→`Start-BitsTransfer`→`Invoke-WebRequest`）、先下到 `.part` 再原子落地、多源 failover；bash 兼容 macOS 自带 bash 3.2，curl 新参数先探测后再加；自动把大写代理变量补成小写透传。所有交付物下载（`fetch_artifact`/`install_node_portable`/`prepare-offline` 及 PS 对应）由裸 `curl` 切到该内核，**校验和逻辑不变且在多源之后强校验**。
   - **Ghidra 大文件 GitHub 代理池多源回退**：候选顺序 = 官方直连 → 内置 `https://gh-proxy.com/` 前缀（`<代理><原始 github url>`）；可用 `REA_GITHUB_PROXIES` 追加/覆盖（设为 `none` 只走官方）。代理只用于公开 release，产物仍须过 GitHub API digest。Node/JDK 本版仍走官方源（国内镜像在后续版本）。

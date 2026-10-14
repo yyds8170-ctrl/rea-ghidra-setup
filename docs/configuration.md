@@ -136,7 +136,11 @@ bash scripts/doctor.sh         # 本项目的跨平台环境预检（Linux/macOS
 
 - **下载内核调优**：`REA_DL_RETRIES`（单源重试次数，默认 5）、`REA_DL_CONNECT_TIMEOUT`
   （连接超时秒，默认 15）、`REA_DL_MAX_TIME`（单源总超时秒，默认 1800，大文件可再调大）。
-- **npm 镜像**（仅影响 `rea-agents` 安装，不影响 Ghidra/JDK）：
+- **国内镜像加速（v2.4+）**：用 `REA_MIRROR=cn bash install.sh` 一键让 Node/JDK/npm 走国内镜像
+  （npmmirror / 华为云 / TUNA），官方源兜底，产物仍过官方校验和；详见 [mirrors.md](mirrors.md)。
+  `auto`（默认）会短探测官方可达性，海外/CI 自动走官方，无需手动切换。
+- **npm 镜像**：cn 模式下安装器自动经 `npm_config_registry=https://registry.npmmirror.com`
+  拉取 rea-agents，**仅本次进程生效，不写全局 .npmrc**。若仍想手动全局配置：
   ```bash
   npm config set registry https://registry.npmmirror.com
   ```

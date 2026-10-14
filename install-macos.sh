@@ -180,6 +180,7 @@ if [ -x "$NATIVE_BIN" ]; then echo "native decompiler（${NATIVE_OS_DIR}）：OK
 if command -v npx >/dev/null 2>&1 || [ -n "$NODE_HOME" ]; then
   echo
   echo "REA 就绪检查："
+  if [ "$(rea_mode)" = "cn" ]; then export npm_config_registry="https://registry.npmmirror.com"; fi
   ( [ -n "$NODE_HOME" ] && export PATH="$NODE_HOME/bin:$PATH"; npx -y "rea-agents@${REA_VERSION}" doctor --provider ghidra 2>/dev/null) || true
   echo "如需全局安装：npm install --global rea-agents"
 fi

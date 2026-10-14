@@ -100,6 +100,10 @@ function Get-VerifiedArtifact {
   } else {
     if ($Kind -eq 'ghidra') {
       $candidates = Get-GithubProxyUrls -BaseUrl $Url
+    } elseif ($Kind -eq 'node') {
+      $candidates = Get-NodeMirrorUrls $Cfg
+    } elseif ($Kind -eq 'jdk') {
+      $candidates = Get-JdkMirrorUrls $Cfg
     } else {
       $candidates = @($Url)
     }

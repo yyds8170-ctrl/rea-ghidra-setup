@@ -124,6 +124,70 @@ function Get-GithubProxyUrls {
   return $urls
 }
 
+# ---- 国内镜像策略（与 lib/mirrors.sh 对应；PS 5.1 兼容）----------------------
+$script:ReaMirrorMode = $null
+function Get-ReaMirrorMode {
+  if ($script:ReaMirrorMode) { return $script:ReaMirrorMode }
+  $m = $env:REA_MIRROR
+  if ([string]::IsNullOrWhiteSpace($m)) { $m = 'auto' }
+  if ($m -eq 'global' -or $m -eq 'cn') {
+    $script:ReaMirrorMode = $m
+  } else {
+    # auto：对官方 nodejs.org 做一次短连接探测，可达→global，超时→cn
+    $script:ReaMirrorMode = 'global'
+    try {
+      & curl.exe -sS -o NUL --connect-timeout 5 --max-time 8 -r 0-0 "https://nodejs.org/dist/index.json" 2>$null | Out-Null
+      if ($LASTEXITCODE -ne 0) { $script:ReaMirrorMode = 'cn' }
+    } catch { $script:ReaMirrorMode = 'cn' }
+  }
+  return $script:ReaMirrorMode
+}
+
+# cn 模式下 npm/npx 用的 registry（仅当前进程，不写全局 .npmrc）；否则返回 $null
+function Get-NpmMirrorRegistry {
+  if ((Get-ReaMirrorMode) -eq 'cn') { return 'https://registry.npmmirror.com' }
+  return $null
+}
+
+# Node Windows zip 候选 URL（$Cfg）。cn 镜像在前官方兜底；global 反之。
+function Get-NodeMirrorUrls {
+  param($Cfg)
+  $fn = "node-v$($Cfg.REA_NODE_VERSION)-win-x64.zip"
+  $official = "https://nodejs.org/dist/v$($Cfg.REA_NODE_VERSION)/$fn"
+  $npmmirror = "https://registry.npmmirror.com/-/binary/node/v$($Cfg.REA_NODE_VERSION)/$fn"
+  $huawei = "https://repo.huaweicloud.com/nodejs/v$($Cfg.REA_NODE_VERSION)/$fn"
+  if ((Get-ReaMirrorMode) -eq 'cn') { return @($npmmirror, $huawei, $official) }
+  return @($official, $npmmirror, $huawei)
+}
+
+# Adoptium assets JSON 取 Windows x64 JDK 包信息：返回 @{link;checksum;size;name}
+function Get-JdkAssetInfo {
+  param($Cfg)
+  $url = "https://api.adoptium.net/v3/assets/latest/$($Cfg.JDK_FEATURE)/hotspot?architecture=x64&os=windows&image_type=jdk&vendor=eclipse"
+  try {
+    $data = Invoke-RestMethod -Uri $url -TimeoutSec 30
+    foreach ($b in $data) {
+      $pk = $b.binary.package
+      if ($pk -and $pk.checksum) {
+        return @{ link = [string]$pk.link; checksum = [string]$pk.checksum; size = [int64]$pk.size; name = [string]$pk.name }
+      }
+    }
+  } catch { }
+  return $null
+}
+
+# JDK Windows 候选 URL（$Cfg）。cn 模式 TUNA 在前、GitHub 官方在后。
+# 拿不到 Adoptium JSON 时退回单一官方 api redirect。
+function Get-JdkMirrorUrls {
+  param($Cfg)
+  $fallback = "https://api.adoptium.net/v3/binary/latest/$($Cfg.JDK_FEATURE)/ga/windows/x64/jdk/hotspot/normal/eclipse"
+  $info = Get-JdkAssetInfo $Cfg
+  if (-not $info -or -not $info.name -or -not $info.link) { return @($fallback) }
+  $tuna = "https://mirrors.tuna.tsinghua.edu.cn/Adoptium/$($Cfg.JDK_FEATURE)/jdk/x64/windows/$($info.name)"
+  if ((Get-ReaMirrorMode) -eq 'cn') { return @($tuna, $info.link) }
+  return @($info.link, $tuna)
+}
+
 # 用 Range: bytes=0-0 的 GET 取远端总字节数（不依赖 HEAD）；失败返回 0
 function Get-RemoteSizeBytes {
   param([Parameter(Mandatory)][string]$Url)

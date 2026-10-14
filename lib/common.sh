@@ -17,6 +17,9 @@ REPO_ROOT="$(cd "$LIB_DIR/.." && pwd)"
 # 健壮下载内核（download / github_proxy_urls）；所有交付物下载统一走它
 # shellcheck source=lib/download.sh
 . "$LIB_DIR/download.sh"
+# 国内镜像策略（rea_mode / node_candidate_urls / jdk_candidate_urls / npm_registry_assign）
+# shellcheck source=lib/mirrors.sh
+. "$LIB_DIR/mirrors.sh"
 
 # ---- 确保 UTF-8 locale ------------------------------------------------------
 # CI（尤其 macOS 的 bash -e step）可能未设 LANG，回退为 C/POSIX 环境，

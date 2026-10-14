@@ -62,6 +62,9 @@ if (-not $npx) {
   if ($found) { $npx = Get-Command $found.FullName -ErrorAction SilentlyContinue }
 }
 $pkg = "rea-agents@$($Cfg.REA_VERSION)"
+# cn 模式经 npmmirror 拉取 rea-agents（仅当前进程，不改全局 .npmrc）
+$mirrorReg = Get-NpmMirrorRegistry
+if ($mirrorReg) { $env:npm_config_registry = $mirrorReg }
 
 # 运行 REA 并把 stdout 存为 JSON 文件、stderr 存为日志；返回是否成功
 function Invoke-ReaToFile {

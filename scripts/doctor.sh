@@ -124,6 +124,14 @@ else
   w "未发现全局 rea 命令；可直接用 npx -y rea-agents@${REA_VERSION}（安装脚本会全局安装）"
 fi
 
+# ---- 5b. 镜像模式（信息性；可选源不可达不阻断）------------------------------
+_mmode="$(rea_mode 2>/dev/null || echo unknown)"
+if [ "$_mmode" = "cn" ]; then
+  w "镜像模式=cn（REA_MIRROR=${REA_MIRROR:-auto}）：下载优先国内镜像，npm 走 npmmirror；详细探测见 scripts/check-mirrors.sh"
+else
+  p "镜像模式=${_mmode}（REA_MIRROR=${REA_MIRROR:-auto}）：官方源优先"
+fi
+
 # ---- 6. 构建工具链（仅在需要自建 native 时才重要）--------------------------
 need_build=0
 if [ "$NATIVE_OSDIR" = "linux_arm_64" ] || [ "$NATIVE_OSDIR" = "mac_arm_64" ] || [ "$NATIVE_OSDIR" = "mac_x86_64" ]; then
