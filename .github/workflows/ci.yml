@@ -83,21 +83,18 @@ jobs:
         include:
           - label: linux
             os: ubuntu-latest
-            shell: bash
             install: bash install.sh
             verify: bash verify.sh
             cache-path: ~/tools
             cache-key: Linux-ghidra-12.1.4-jdk21-v2
           - label: macos
             os: macos-latest          # = Apple Silicon arm64，需构建 mac_arm_64 native
-            shell: bash
             install: bash install-macos.sh
             verify: bash verify-macos.sh
             cache-path: ~/tools
             cache-key: macOS-ghidra-12.1.4-jdk21-v2
           - label: windows
             os: windows-latest        # = x64，用户态 zip + PowerShell；用仓库自带 PE fixture
-            shell: pwsh
             install: .\install.ps1
             verify: .\verify.ps1
             cache-path: C:\Users\runneradmin\tools
@@ -116,12 +113,24 @@ jobs:
           path: ${{ matrix.cache-path }}
           key: ${{ matrix.cache-key }}
 
-      - name: 一键部署
-        shell: ${{ matrix.shell }}
+      - name: 一键部署（Linux / macOS）
+        if: matrix.label != 'windows'
+        shell: bash
         run: ${{ matrix.install }}
 
-      - name: 端到端验证
-        shell: ${{ matrix.shell }}
+      - name: 一键部署（Windows）
+        if: matrix.label == 'windows'
+        shell: pwsh
+        run: ${{ matrix.install }}
+
+      - name: 端到端验证（Linux / macOS）
+        if: matrix.label != 'windows'
+        shell: bash
+        run: ${{ matrix.verify }}
+
+      - name: 端到端验证（Windows）
+        if: matrix.label == 'windows'
+        shell: pwsh
         run: ${{ matrix.verify }}
 
   # 容器镜像构建 + 容器内端到端验证（每周/手动）
