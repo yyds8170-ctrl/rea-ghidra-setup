@@ -1,0 +1,10 @@
+.git
+.github
+decompiled
+examples/demo
+examples/demo_stripped
+*.snap
+tools
+*.tar.gz
+*.zip
+.preview

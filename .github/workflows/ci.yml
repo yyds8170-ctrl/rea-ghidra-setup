@@ -20,7 +20,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y shellcheck make gcc
 
       - name: ShellCheck
-        run: shellcheck -x install.sh verify.sh
+        run: shellcheck -x install.sh verify.sh uninstall.sh scripts/ghidra-decompile.sh
 
       - name: 编译 demo
         run: make -C examples
@@ -48,3 +48,25 @@ jobs:
 
       - name: 端到端验证
         run: bash verify.sh
+
+  # 容器镜像构建 + 容器内端到端验证（每周/手动）
+  docker:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 构建镜像并加载到本地
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: rea-ghidra:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 容器内运行 verify.sh
+        run: docker run --rm --entrypoint bash rea-ghidra:ci /opt/rea-ghidra-setup/verify.sh

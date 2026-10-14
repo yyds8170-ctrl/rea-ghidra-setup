@@ -116,8 +116,28 @@ else
   bad "decompile 失败（见 $WORKDIR/decomp.err）"; tail -5 "$WORKDIR/decomp.err"
 fi
 
-# ---- 5. analyze（剥离符号）-------------------------------------------------
-echo "== 5. analyze demo_stripped（无符号）=="
+# ---- 5. decompile calc_discount（含符号）----------------------------------
+echo "== 5. decompile calc_discount =="
+if "${REA[@]}" decompile "$EX_DIR/demo" calc_discount --provider ghidra --format json \
+     --snapshot "$WORKDIR/demo.snap" >"$WORKDIR/discount.json" 2>"$WORKDIR/discount.err"; then
+  C_OK="$(python3 -c "
+import json
+d=json.load(open('$WORKDIR/discount.json'))
+code=d.get('normalized_result','')
+good = d.get('confidence')=='observed' and 'calc_discount' in code and '0x32' in code
+print(('1' if good else '0') + '|confidence=' + str(d.get('confidence')))
+")"
+  if [ "${C_OK%%|*}" = "1" ]; then
+    ok "calc_discount 还原（observed，含 0x32=50，${C_OK#1|}）"
+  else
+    bad "calc_discount 结果不符（${C_OK#0|}）"
+  fi
+else
+  bad "calc_discount 失败（见 $WORKDIR/discount.err）"; tail -5 "$WORKDIR/discount.err"
+fi
+
+# ---- 6. analyze（剥离符号）-------------------------------------------------
+echo "== 6. analyze demo_stripped（无符号）=="
 if "${REA[@]}" analyze "$EX_DIR/demo_stripped" --provider ghidra --format json \
      --snapshot "$WORKDIR/stripped.snap" >"$WORKDIR/stripped.json" 2>"$WORKDIR/stripped.err"; then
   SC="$(python3 -c "import json;print(json.load(open('$WORKDIR/stripped.json'))['normalized_result']['procedure_count'])")"

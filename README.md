@@ -54,9 +54,42 @@ bash verify.sh
 2. demo 与 demo_stripped 编译无警告
 3. `analyze` 识别 ELF / 架构 / 函数数 / 字符串
 4. `decompile secret_check` 置信度 `observed`，且常量 `0x539`（1337）可见
-5. 剥离符号的 `demo_stripped` 仍可被导入分析
+5. `decompile calc_discount` 置信度 `observed`，且常量 `0x32`（50）可见
+6. 剥离符号的 `demo_stripped` 仍可被导入分析
 
 全部通过退出码 0，可直接作为 CI 步骤。可覆盖：`REA_VERSION=6.4.0 ./verify.sh`。
+
+## Docker 容器（无需本机安装）
+
+```bash
+# 构建镜像（含 JDK21 + Node22 + Ghidra 12.1.4 + 全局 rea）
+docker build -t rea-ghidra .
+
+# 分析当前目录下的二进制
+docker run --rm -v "$PWD:/workspace" rea-ghidra analyze ./demo --provider ghidra --format json
+
+# 反编译
+docker run --rm -v "$PWD:/workspace" rea-ghidra decompile ./demo secret_check --provider ghidra
+
+# 容器内跑自检
+docker run --rm --entrypoint bash rea-ghidra /opt/rea-ghidra-setup/verify.sh
+```
+
+镜像默认入口为 `rea`，工作目录 `/workspace`，默认面向 **linux/amd64**；arm64 需自行构建 native decompiler（见故障排查）。
+
+## 不依赖 REA：原生 Ghidra 批量反编译
+
+如果只想把整个二进制反编译出来（不需要 Node / npm / REA），用 Ghidra 原生脚本：
+
+```bash
+# 每个函数一个 .c（默认）
+./scripts/ghidra-decompile.sh ./demo ./out
+
+# 合并为一个 decompiled.c
+./scripts/ghidra-decompile.sh ./demo ./out combined
+```
+
+底层为 `analyzeHeadless -postScript DecompileAll.java`（见 `scripts/`），在本机已实测可批量导出全部函数。
 
 ## 使用方法
 
@@ -143,17 +176,31 @@ bash uninstall.sh --yes  # 跳过确认
 ├── install.sh                # 一键安装 JDK21 + Ghidra + 环境变量
 ├── uninstall.sh              # 卸载脚本（仅删本项目安装内容）
 ├── verify.sh                 # 端到端自检（编译 + 真实分析 + 断言）
+├── Dockerfile                # 容器镜像（JDK21 + Node22 + Ghidra + rea）
 ├── skill/SKILL.md            # 逆向工程智能体技能（可装入 Agent）
+├── scripts/
+│   ├── DecompileAll.java     # Ghidra 原生批量反编译脚本
+│   └── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
 │   └── Makefile              # 编译 demo（含符号）与 demo_stripped（剥离）
-├── .github/workflows/ci.yml  # CI：ShellCheck + 编译；每周/手动端到端回归
+├── .github/
+│   ├── workflows/ci.yml      # CI：lint-build（每次）/ e2e + docker（每周·手动）
+│   └── dependabot.yml        # Actions 与 Docker 基础镜像更新提醒
+├── CONTRIBUTING.md / SECURITY.md
 ├── LICENSE                   # PolyForm Noncommercial 1.0.0
-└── .gitignore
+└── .gitignore / .dockerignore
 ```
 
 ## 版本历史
 
+- **v1.2（2026-10-14）**
+  - 新增 Docker 支持（`Dockerfile` + `.dockerignore`）：镜像含 JDK21 + Node22 + Ghidra + 全局 `rea`；CI 构建镜像并在容器内跑 `verify.sh`
+  - 新增原生 Ghidra 批量反编译：`scripts/DecompileAll.java` + `scripts/ghidra-decompile.sh`（`separate`/`combined`，不依赖 REA/Node）
+  - `verify.sh` 增加 `calc_discount` 反编译校验（observed，含 `0x32`=50）
+  - 新增 `CONTRIBUTING.md`、`SECURITY.md`
+  - 新增 Dependabot（GitHub Actions、Docker 基础镜像）
+  - 核对上游：Ghidra 12.1.4、REA 6.4.0 仍为最新
 - **v1.1（2026-10-14）**
   - 新增 `verify.sh` 端到端自检（编译 + analyze/decompile + 断言，8 项检查）
   - 新增 `uninstall.sh` 卸载脚本
