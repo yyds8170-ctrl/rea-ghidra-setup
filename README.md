@@ -330,6 +330,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── mirrors.md            # 国内镜像加速（REA_MIRROR=cn）+ 校验防篡改说明
 │   ├── mcp.md                 # MCP 客户端一键注册 + stdio 连接自检（--list/--dry-run/--check）
 │   ├── export.md              # Ghidra 静态分析导出（functions/strings/symbols/calls/decompiled）
+│   ├── batch.md               # 批量并行分析 + 快照缓存（--jobs/--snapshot/失败隔离/summary.json）
 │   ├── offline.md            # 离线/内网安装（prepare-offline + OFFLINE_DIR + 镜像 save/load）
 │   ├── troubleshooting.md    # 跨平台故障排查
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
@@ -344,6 +345,8 @@ bash uninstall.sh --yes  # 跳过确认
 │   │   ├── ExportCalls.java / ExportDecompiled.java / ExportAll.java
 │   ├── ghidra-export.sh / ghidra-export.ps1  # 静态分析导出包装器（--kind functions|strings|symbols|calls|decompiled|all）
 │   ├── selftest-export.sh    # 导出回归（对 examples/demo 断言 5 类产物）
+│   ├── batch-analyze.sh / batch-analyze.ps1   # 批量并行 + 快照缓存（--jobs/--retries/--snapshot/--continue）
+│   ├── selftest-batch.sh     # 批量并行 + 缓存命中 + 失败隔离回归
 │   ├── detect-env.sh         # 识别 OS/架构/运行环境（physical/wsl/crostini/docker/vm）
 │   ├── doctor.sh             # 只读自检：Node/JDK21/Ghidra/native/内存/磁盘（Linux/macOS）
 │   ├── doctor.ps1            # 只读自检（Windows）
@@ -373,6 +376,11 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.8（2026-10-15）**
+  - **批量并行分析 + 快照缓存**：新增 `scripts/batch-analyze.sh`/`.ps1`（PS5.1 兼容，Start-Job 节流）。在 v2.7 单目标导出之上编排多目标：`--jobs N`（默认 CPU 封顶 4）并行、`--retries` 失败重试、`--snapshot DIR` 按 sha256+kind+schema 缓存、`--continue` 断点续跑、失败隔离（单目标挂不影响其它，全部跑完才汇总）、`summary.json`。
+  - 新增 `scripts/selftest-batch.sh`；e2e Linux 接入；新增 [docs/batch.md](docs/batch.md)。
+  - 本机实测：3 个小目标 `--jobs 3` 首次约 48s 全部 success；第二次同 snapshot **1s、3/3 全命中缓存**；无效 Ghidra 环境下 worker 正确报 failed 且不传染退出。
+  - 顺带修复 v2.7 遗留：`ghidra-export.sh` 末尾产物打印 `[ -f ] && printf` 在单类（非 all）导出时因空产物使脚本误退出 1——改为 if 语句。
 - **v2.7（2026-10-15）**
   - **Ghidra 静态分析导出（无需 REA）**：新增 `scripts/ghidra/` 6 个原创 GhidraScript（ExportFunctions/Strings/Symbols/Calls/Decompiled/ExportAll）+ 包装器 `scripts/ghidra-export.sh`/`.ps1`（`--kind functions|strings|symbols|calls|decompiled|all`）。纯 analyzeHeadless 能力，导出函数清单/字符串/符号/调用边/逐函数伪代码为机器可读 JSON。
   - 新增 `scripts/selftest-export.sh` 回归；e2e 三平台接入（Windows 对 PE fixture 跑 functions）；新增 [docs/export.md](docs/export.md)。

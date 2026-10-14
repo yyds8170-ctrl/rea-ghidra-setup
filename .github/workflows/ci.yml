@@ -265,6 +265,11 @@ jobs:
         shell: bash
         run: bash scripts/selftest-export.sh
 
+      - name: 批量并行 + 快照缓存回归（仅 Linux，控时不每平台跑）
+        if: matrix.label == 'linux'
+        shell: bash
+        run: bash scripts/selftest-batch.sh
+
       - name: Ghidra 静态导出回归（Windows，PE fixture，只跑 functions）
         if: matrix.label == 'windows'
         shell: pwsh

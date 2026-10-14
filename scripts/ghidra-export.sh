@@ -112,5 +112,5 @@ run_headless "$PROJ_DIR" Proj \
 echo "完成。产物："
 for f in functions strings symbols calls decompiled; do
   p="$OUT_DIR/$f.json"
-  [ -f "$p" ] && printf '  %-14s %s (%s bytes)\n' "$f.json" "$p" "$(wc -c < "$p" | tr -d ' ')"
+  if [ -f "$p" ]; then printf '  %-14s %s (%s bytes)\n' "$f.json" "$p" "$(wc -c < "$p" | tr -d ' ')"; fi
 done

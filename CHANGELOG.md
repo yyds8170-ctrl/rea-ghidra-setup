@@ -4,6 +4,24 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [2.8.0] - 2026-10-15
+
+### Added
+- 批量并行分析编排（在 v2.7 单目标导出之上，不依赖 REA/Node）：
+  - `scripts/batch-analyze.sh` 与 `scripts/batch-analyze.ps1`（PS5.1/7 兼容）：一个或多个二进制/`--dir`（`--recurse`/`--pattern`）；`--jobs N`（默认 `nproc`/`sysctl hw.ncpu`，封顶 4）；`--retries M`；`--snapshot DIR` 快照缓存；`--continue` 断点续跑。
+  - 并行：bash `xargs -0 -P $JOBS`（不依赖 GNU parallel），每个目标子进程调 `ghidra-export.sh`、结果写各自 `.results/<sha12>.json`（不并行写同一文件）；PS 用 `Start-Job` + 节流（一个代码路径通吃 5.1/7）。
+  - 失败隔离：单目标失败不影响其它，按 retries 只重跑该目标；全部跑完才写 `summary.json`（每目标 input/sha256/status/elapsed/retries/out_dir/error/cached）；全成功退出 0、有失败退出 1。
+  - 快照缓存：键 = `sha256_kind_v<EXPORT_SCHEMA_VERSION>`；命中跳过 analyzeHeadless 还原缓存产物并标记 `cached:true`；内容/kind/schema 变化自动失效。
+  - `scripts/selftest-batch.sh`；e2e Linux 接入；新增 [docs/batch.md](docs/batch.md)。
+
+### Fixed
+- 修复 v2.7 遗留：`ghidra-export.sh` 末尾产物打印 `[ -f "$p" ] && printf ...` 在 `--kind` 单类（非 all）导出时，缺失产物使整条 `&&` 返回非 0，`set -e` 下脚本误退出 1（v2.7 selftest 跑 all 未暴露，批量单类时才触发）。改为 `if [ -f ... ]; then ...; fi`。
+
+### 本机实测（2026-10-15，Ghidra 12.1.4 / JDK21）
+- 3 个小目标 `--jobs 3 --kind functions --snapshot`：首次全部 success、约 48s、退出 0；第二次同 snapshot **1s、cached 3/3**。
+- 失败隔离：worker 在无效 Ghidra 环境下正确写 `status=failed` 且 worker 退出 0（不传染主进程）。
+- shellcheck 零告警；bash -n 全过；bash3.2 `$var紧跟中文` grep 零命中；ci.yml 经 python yaml 解析；PS parse + PSScriptAnalyzer 无 Error；`verify.sh` 仍 9/9。
+
 ## [2.7.0] - 2026-10-15
 
 ### Added

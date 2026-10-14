@@ -191,3 +191,14 @@ bash scripts/selftest-export.sh                              # 对 examples/demo
 
 Windows：`pwsh -File .\scripts\ghidra-export.ps1 -Bin <二进制> -Out <目录> -Kind all`。
 可用 `REA_EXPORT_TIMEOUT`（秒，默认 1800）控制 analyzeHeadless 超时。详见 [export.md](export.md)。
+
+## 七、批量并行分析
+
+对一批二进制并行导出、按内容缓存、失败隔离：
+
+```bash
+scripts/batch-analyze.sh a.elf b.elf --out ./batch-out --kind functions --jobs 4 --snapshot ./cache
+bash scripts/selftest-batch.sh
+```
+
+JDK21/Ghidra 自动发现对批量同样生效（每个目标作为子进程调用 ghidra-export）。详见 [batch.md](batch.md)。
