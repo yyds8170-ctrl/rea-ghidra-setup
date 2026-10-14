@@ -99,7 +99,7 @@ case "${1:-}" in
     echo "----------------------------------------------------------"
     echo " 操作系统   : ${PRETTY:-$OS_NAME}"
     echo " CPU 架构   : $ARCH"
-    echo " 运行环境   : $ENV_LABEL（$ENV_TOKEN）"
+    echo " 运行环境   : ${ENV_LABEL}（${ENV_TOKEN}）"
     echo " Ghidra 平台 : $GHIDRA_OS_DIR"
     if [ "$NATIVE" = prebuilt ]; then
       echo " native     : 官方预编译，无需自建"

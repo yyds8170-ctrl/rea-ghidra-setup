@@ -88,7 +88,7 @@ if [ -n "$GH_DIR" ] && [ -d "$GH_DIR" ]; then
     *) HEADLESS_BIN="$HEADLESS" ;;
   esac
   if [ -x "$HEADLESS_BIN" ]; then
-    p "Ghidra 安装目录存在且 analyzeHeadless 可执行（$GH_DIR）"
+    p "Ghidra 安装目录存在且 analyzeHeadless 可执行（${GH_DIR}）"
   else
     f "GHIDRA_INSTALL_DIR 已设但缺少可执行的 support/analyzeHeadless：$GH_DIR"
   fi
@@ -102,9 +102,9 @@ if [ -n "$GH_DIR" ] && [ -d "$GH_DIR" ]; then
   if [ -x "$DECOMP" ]; then
     p "native decompiler 就位：os/$NATIVE_OSDIR/decompile"
   elif [ "$NATIVE_OSDIR" = "linux_x86_64" ] || [ "$NATIVE_OSDIR" = "win_x86_64" ]; then
-    f "缺少官方预编译 native decompiler：$DECOMP（发布包可能解压不完整，建议重新解压）"
+    f "缺少官方预编译 native decompiler：${DECOMP}（发布包可能解压不完整，建议重新解压）"
   else
-    f "缺少 native decompiler：$DECOMP；官方对 $NATIVE_OSDIR 不预编译，请运行 scripts/build-ghidra-native.sh"
+    f "缺少 native decompiler：${DECOMP}；官方对 $NATIVE_OSDIR 不预编译，请运行 scripts/build-ghidra-native.sh"
   fi
 
   # macOS Gatekeeper 隔离属性
@@ -131,7 +131,7 @@ if [ "$NATIVE_OSDIR" = "linux_arm_64" ] || [ "$NATIVE_OSDIR" = "mac_arm_64" ] ||
 fi
 if [ "$need_build" = "1" ]; then
   for tool in make g++; do
-    if command -v "$tool" >/dev/null 2>&1; then p "构建工具 $tool 可用（$(command -v "$tool")）" ; else f "缺少构建工具 $tool（自建 native 需要）"; fi
+    if command -v "$tool" >/dev/null 2>&1; then p "构建工具 $tool 可用（$(command -v "$tool")）" ; else f "缺少构建工具 ${tool}（自建 native 需要）"; fi
   done
   if command -v bison >/dev/null 2>&1; then p "bison 可用"; else w "缺少 bison（多数发布包自带生成的解析器，可先构建；若报错再安装）"; fi
   if [ "$UNAME_S" = "Darwin" ]; then
@@ -145,7 +145,7 @@ fi
 
 # ---- 7. 路径 / 磁盘 / 内存 -------------------------------------------------
 case "$GH_DIR" in
-  *'!'*|*'^'*) f "Ghidra 路径含 ! 或 ^（$GH_DIR），analyzeHeadless 无法启动，请改到纯字母数字路径" ;;
+  *'!'*|*'^'*) f "Ghidra 路径含 ! 或 ^（${GH_DIR}），analyzeHeadless 无法启动，请改到纯字母数字路径" ;;
   *) [ -n "$GH_DIR" ] && p "Ghidra 路径无特殊字符风险" ;;
 esac
 

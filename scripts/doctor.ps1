@@ -49,15 +49,21 @@ if ($node) {
 }
 
 # ---- 3. JDK 21 ------------------------------------------------------------
+# 优先本项目安装在 tools\jdk-21* 的 JDK（避免 CI runner 向进程注入 JAVA_HOME=JDK17
+# 导致误判），其次是用户/进程 JAVA_HOME，最后才是 PATH 上的 java。
 $JavaHome = $null
-$procJava = Get-Command java -ErrorAction SilentlyContinue
-if ($procJava) {
-  $gh = & $procJava.Source -XshowSettings:properties -version 2>&1 | Select-String 'java.home = (.*)' | Select-Object -First 1
-  if ($gh) { $JavaHome = $gh.Matches[0].Groups[1].Value.Trim() }
-}
-if (-not $JavaHome -and $env:JAVA_HOME) { $JavaHome = $env:JAVA_HOME }
 $jdkDir = Get-ChildItem -Path $ToolsDir -Directory -Filter 'jdk-21*' -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
-if (-not $JavaHome -and $jdkDir) { $JavaHome = $jdkDir.FullName }
+if ($jdkDir) {
+  $JavaHome = $jdkDir.FullName
+} elseif ($env:JAVA_HOME -and (Test-Path (Join-Path $env:JAVA_HOME 'bin\java.exe'))) {
+  $JavaHome = $env:JAVA_HOME
+} else {
+  $procJava = Get-Command java -ErrorAction SilentlyContinue
+  if ($procJava) {
+    $gh = & $procJava.Source -XshowSettings:properties -version 2>&1 | Select-String 'java.home = (.*)' | Select-Object -First 1
+    if ($gh) { $JavaHome = $gh.Matches[0].Groups[1].Value.Trim() }
+  }
+}
 
 if ($JavaHome) {
   $major = Get-JdkMajor $JavaHome
