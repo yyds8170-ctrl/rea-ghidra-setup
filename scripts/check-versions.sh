@@ -52,7 +52,7 @@ echo "== 3. 上游最新版本探测（离线/限流自动跳过）=="
 NPM_LATEST="$(npm view rea-agents version 2>/dev/null || true)"
 if [ -n "$NPM_LATEST" ]; then
   if [ "$NPM_LATEST" = "$REA_VERSION" ]; then
-    echo "  [OK] rea-agents 最新=$NPM_LATEST（与锁定一致）"
+    echo "  [OK] rea-agents 最新=${NPM_LATEST}（与锁定一致）"
   else
     printf '  \033[33m[WARN]\033[0m rea-agents 最新=%s，锁定=%s（考虑升级）\n' "$NPM_LATEST" "$REA_VERSION"
   fi
@@ -70,7 +70,7 @@ if [ -n "$GH_API" ]; then
     # tag 形如 Ghidra_12.1.4_build；取出 12.1.4 与锁定比较
     GH_VER="$(printf '%s' "$GH_LATEST" | sed -E 's/Ghidra_([0-9.]+)_build/\1/')"
     if [ "$GH_VER" = "$GHIDRA_VERSION" ]; then
-      echo "  [OK] Ghidra 最新=$GH_VER（与锁定一致）"
+      echo "  [OK] Ghidra 最新=${GH_VER}（与锁定一致）"
     else
       printf '  \033[33m[WARN]\033[0m Ghidra 最新=%s，锁定=%s（需同步更新 GHIDRA_BUILD/DATE）\n' \
         "$GH_VER" "$GHIDRA_VERSION"

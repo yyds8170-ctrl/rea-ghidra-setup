@@ -24,7 +24,7 @@ ARCH="$(normalize_arch)"
 case "$ARCH" in
   x64)     JDK_ARCH=x64 ;;
   aarch64) JDK_ARCH=aarch64 ;;
-  *) echo "不支持的 CPU 架构：$ARCH（仅支持 x86_64 / aarch64）" >&2; exit 1 ;;
+  *) echo "不支持的 CPU 架构：${ARCH}（仅支持 x86_64 / aarch64）" >&2; exit 1 ;;
 esac
 GHIDRA_URL="$(ghidra_release_url)"
 JDK_API="$(adoptium_jdk_url linux "$JDK_ARCH")"
@@ -41,7 +41,7 @@ detect_environment() {
     v="$(systemd-detect-virt 2>/dev/null || echo none)"
     case "$v" in
       none) where="物理本机" ;;
-      *)    where="虚拟机/容器（$v）" ;;
+      *)    where="虚拟机/容器（${v}）" ;;
     esac
   fi
   echo "$where"
@@ -85,7 +85,7 @@ JDK_DIR="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' 2>/dev/null | head -1 |
 if [[ -n "$JDK_DIR" && -x "$JDK_DIR/bin/java" ]]; then
   echo "[1/5] JDK 21 已存在：$JDK_DIR"
 else
-  echo "[1/5] 下载 Temurin JDK 21（$JDK_ARCH）..."
+  echo "[1/5] 下载 Temurin JDK 21（${JDK_ARCH}）..."
   curl -fSL "$JDK_API" -o "$TMP_DIR/jdk21.tar.gz"
   tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
   JDK_DIR="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' | head -1)"
@@ -99,9 +99,9 @@ if node_satisfies_rea; then
 elif [ "$SKIP_NODE" = "1" ]; then
   echo "[2/5] SKIP_NODE=1，跳过便携 Node 安装（请自行确保 Node 22.19+/24.11+/26+）"
 else
-  echo "[2/5] 未检测到满足要求的 Node，下载便携 Node $REA_NODE_VERSION（$ARCH）..."
+  echo "[2/5] 未检测到满足要求的 Node，下载便携 Node ${REA_NODE_VERSION}（${ARCH}）..."
   NODE_HOME="$(install_node_portable "$TOOLS_DIR" linux "$ARCH")"
-  echo "      已安装：$NODE_HOME（$("$NODE_HOME/bin/node" --version)）"
+  echo "      已安装：${NODE_HOME}（$("$NODE_HOME/bin/node" --version)）"
 fi
 
 # ---- 3. 安装 Ghidra ---------------------------------------------------------
@@ -126,7 +126,7 @@ else
     echo "      native decompiler 构建完成"
   else
     rc=$?
-    echo "      [警告] native decompiler 未就绪（退出码 $rc）。Ghidra 已安装，但反编译" >&2
+    echo "      [警告] native decompiler 未就绪（退出码 ${rc}）。Ghidra 已安装，但反编译" >&2
     echo "      引擎暂不可用；请装好 build-essential/bison 后手动运行：" >&2
     echo "        bash scripts/build-ghidra-native.sh" >&2
   fi
@@ -188,7 +188,7 @@ export GHIDRA_INSTALL_DIR="$GHIDRA_DIR"
 "$JDK_DIR/bin/java" -version 2>&1 | head -1
 test -x "$GHIDRA_DIR/support/analyzeHeadless" && echo "Ghidra headless：OK"
 if [ -x "$NATIVE_BIN" ]; then
-  echo "native decompiler（$NATIVE_OS_DIR）：OK"
+  echo "native decompiler（${NATIVE_OS_DIR}）：OK"
 else
   echo "native decompiler：缺失（请运行 scripts/build-ghidra-native.sh）"
 fi
@@ -203,7 +203,7 @@ if command -v npx >/dev/null 2>&1 || [ -n "$NODE_HOME" ]; then
 fi
 
 echo
-echo "============ 安装完成（$ENV_NAME / $ARCH）============"
+echo "============ 安装完成（$ENV_NAME / ${ARCH}）============"
 echo "请执行：source ~/.bashrc（zsh 用户：source ~/.zshrc）"
 echo "自检：bash verify.sh"
 echo "分析示例："

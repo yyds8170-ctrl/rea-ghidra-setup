@@ -58,7 +58,7 @@ JDK_HOME="$(find "$TOOLS_DIR" -maxdepth 3 -type d -path '*/Contents/Home' -name 
 if [[ -n "$JDK_HOME" && -x "$JDK_HOME/bin/java" ]]; then
   echo "[1/5] JDK 21 已存在：$JDK_HOME"
 else
-  echo "[1/5] 下载 Temurin JDK 21（mac/$JDK_ARCH）..."
+  echo "[1/5] 下载 Temurin JDK 21（mac/${JDK_ARCH}）..."
   curl -fSL "$JDK_API" -o "$TMP_DIR/jdk21.tar.gz"
   tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
   JDK_BUNDLE="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' -type d | head -1)"
@@ -75,9 +75,9 @@ if node_satisfies_rea; then
 elif [ "$SKIP_NODE" = "1" ]; then
   echo "[2/5] SKIP_NODE=1，跳过便携 Node 安装（请自行确保 Node 22.19+/24.11+/26+）"
 else
-  echo "[2/5] 下载便携 Node $REA_NODE_VERSION（darwin/$ARCH）..."
+  echo "[2/5] 下载便携 Node ${REA_NODE_VERSION}（darwin/${ARCH}）..."
   NODE_HOME="$(install_node_portable "$TOOLS_DIR" darwin "$ARCH")"
-  echo "      已安装：$NODE_HOME（$("$NODE_HOME/bin/node" --version)）"
+  echo "      已安装：${NODE_HOME}（$("$NODE_HOME/bin/node" --version)）"
 fi
 
 # ---- 3. 安装 Ghidra ---------------------------------------------------------
@@ -117,7 +117,7 @@ else
     echo "      native decompiler 构建完成"
   else
     rc=$?
-    echo "      [警告] native decompiler 未就绪（退出码 $rc）。请安装 Xcode CLT（xcode-select --install）" >&2
+    echo "      [警告] native decompiler 未就绪（退出码 ${rc}）。请安装 Xcode CLT（xcode-select --install）" >&2
     echo "      后手动运行：bash scripts/build-ghidra-native.sh" >&2
   fi
 fi
@@ -171,7 +171,7 @@ export GHIDRA_INSTALL_DIR="$GHIDRA_DIR"
 [ -n "$NODE_HOME" ] && export PATH="$NODE_HOME/bin:$PATH"
 "$JDK_HOME/bin/java" -version 2>&1 | head -1
 test -x "$GHIDRA_DIR/support/analyzeHeadless" && echo "Ghidra headless：OK"
-if [ -x "$NATIVE_BIN" ]; then echo "native decompiler（$NATIVE_OS_DIR）：OK"; else
+if [ -x "$NATIVE_BIN" ]; then echo "native decompiler（${NATIVE_OS_DIR}）：OK"; else
   echo "native decompiler：缺失（请运行 scripts/build-ghidra-native.sh）"; fi
 
 if command -v npx >/dev/null 2>&1 || [ -n "$NODE_HOME" ]; then
@@ -182,6 +182,6 @@ if command -v npx >/dev/null 2>&1 || [ -n "$NODE_HOME" ]; then
 fi
 
 echo
-echo "============ 安装完成（macOS/$ARCH）============"
+echo "============ 安装完成（macOS/${ARCH}）============"
 echo "请执行：source ~/.zshrc（bash 用户：source ~/.bash_profile）"
 echo "自检：bash verify-macos.sh"

@@ -144,9 +144,9 @@ if "${REA[@]}" analyze "$EX_DIR/demo_stripped" --provider ghidra --format json \
      --snapshot "$WORKDIR/stripped.snap" >"$WORKDIR/stripped.json" 2>"$WORKDIR/stripped.err"; then
   SC="$(python3 -c "import json;print(json.load(open('$WORKDIR/stripped.json'))['normalized_result']['procedure_count'])")"
   if [ "${SC:-0}" -ge 3 ]; then
-    ok "无符号二进制仍可导入分析（procedures=$SC）"
+    ok "无符号二进制仍可导入分析（procedures=${SC}）"
   else
-    bad "stripped 函数数异常（procedures=$SC）"
+    bad "stripped 函数数异常（procedures=${SC}）"
   fi
 else
   bad "stripped analyze 失败（见 $WORKDIR/stripped.err）"; tail -5 "$WORKDIR/stripped.err"

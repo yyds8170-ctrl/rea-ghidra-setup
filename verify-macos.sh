@@ -45,7 +45,7 @@ NATIVE_OS_DIR="mac_x86_64"; [ "$ARCH" = "aarch64" ] && NATIVE_OS_DIR="mac_arm_64
 # REA：优先全局 rea，否则 npx 锁定版本
 if command -v rea >/dev/null 2>&1; then REA=(rea); else REA=(npx -y "rea-agents@${REA_VERSION}"); fi
 
-echo "== 环境（macOS/$ARCH）=="
+echo "== 环境（macOS/${ARCH}）=="
 echo "  JAVA_HOME          = ${JAVA_HOME:-（未设置）}"
 echo "  GHIDRA_INSTALL_DIR = ${GHIDRA_INSTALL_DIR:-（未设置）}"
 echo "  REA 调用           = ${REA[*]}"
@@ -66,9 +66,9 @@ else
   bad "未找到 analyzeHeadless（请先运行 install-macos.sh）"
 fi
 if [ -x "${GHIDRA_INSTALL_DIR:-/nonexistent}/Ghidra/Features/Decompiler/os/$NATIVE_OS_DIR/decompile" ]; then
-  ok "native decompiler 存在（$NATIVE_OS_DIR）"
+  ok "native decompiler 存在（${NATIVE_OS_DIR}）"
 else
-  bad "native decompiler 缺失（$NATIVE_OS_DIR）：bash scripts/build-ghidra-native.sh"
+  bad "native decompiler 缺失（${NATIVE_OS_DIR}）：bash scripts/build-ghidra-native.sh"
 fi
 
 # ---- 2. 编译 demo（clang 产出 Mach-O）--------------------------------------
@@ -110,10 +110,10 @@ decomp_check() {
       const ok=j.confidence==="observed" && code.includes(process.argv[2]) && code.includes(process.argv[3]);
       console.log((ok?"1":"0")+"|confidence="+j.confidence);
     ' "$json" "$func" "$const")"
-    if [ "${r%%|*}" = "1" ]; then ok "$func 还原（observed，含 $const，${r#1|}）"
+    if [ "${r%%|*}" = "1" ]; then ok "$func 还原（observed，含 ${const}，${r#1|}）"
     else bad "$func 结果不符（${r#0|}）"; fi
   else
-    bad "$func 反编译失败（见 $err）"; tail -5 "$err"
+    bad "$func 反编译失败（见 ${err}）"; tail -5 "$err"
   fi
 }
 echo "== 4. decompile secret_check =="
@@ -126,8 +126,8 @@ echo "== 6. analyze demo_stripped（无符号）=="
 if "${REA[@]}" analyze "$EX_DIR/demo_stripped" --provider ghidra --format json \
      --snapshot "$WORKDIR/stripped.snap" >"$WORKDIR/stripped.json" 2>"$WORKDIR/stripped.err"; then
   SC="$(node -e 'const j=JSON.parse(require("fs").readFileSync(process.argv[1]));console.log((j.normalized_result||{}).procedure_count||0)' "$WORKDIR/stripped.json")"
-  if [ "${SC:-0}" -ge 3 ]; then ok "无符号二进制仍可导入分析（procedures=$SC）"
-  else bad "stripped 函数数异常（procedures=$SC）"; fi
+  if [ "${SC:-0}" -ge 3 ]; then ok "无符号二进制仍可导入分析（procedures=${SC}）"
+  else bad "stripped 函数数异常（procedures=${SC}）"; fi
 else
   bad "stripped analyze 失败（见 $WORKDIR/stripped.err）"; tail -5 "$WORKDIR/stripped.err"
 fi
@@ -135,6 +135,6 @@ fi
 # ---- 汇总 -------------------------------------------------------------------
 echo ""
 echo "================================================"
-echo " 结果：$PASS 通过 / $FAIL 失败（macOS/$ARCH）"
+echo " 结果：$PASS 通过 / $FAIL 失败（macOS/${ARCH}）"
 echo "================================================"
 [ "$FAIL" -eq 0 ] && exit 0 || exit 1

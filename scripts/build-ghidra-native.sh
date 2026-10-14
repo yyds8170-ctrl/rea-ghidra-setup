@@ -64,7 +64,7 @@ DEST_DIR="$OS_BASE/$OSDIR"
 DEST_BIN="$DEST_DIR/decompile"
 
 if [ "$FORCE" -ne 1 ] && [ -x "$DEST_BIN" ]; then
-  echo "native decompiler 已存在：$DEST_BIN（如需重建用 --force）"
+  echo "native decompiler 已存在：${DEST_BIN}（如需重建用 --force）"
   exit 0
 fi
 if [ "$PREBUILT" = 1 ] && [ "$FORCE" -ne 1 ]; then
