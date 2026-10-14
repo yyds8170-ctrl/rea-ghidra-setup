@@ -83,6 +83,40 @@ normalize_arch() {
   esac
 }
 
+# Node 解压后的目录名（tar.gz 包），如 node-v22.19.0-linux-x64
+node_tarball_dir() {
+  local os="$1" arch="$2" narch="$2"
+  [ "$arch" = "aarch64" ] && narch="arm64"
+  printf 'node-v%s-%s-%s' "$REA_NODE_VERSION" "$os" "$narch"
+}
+
+# REA 要求 Node ^22.19 || ^24.11 || >=26；检查当前 PATH 上的 node 是否满足
+# 返回 0 满足、1 不满足（或没有 node）。
+node_satisfies_rea() {
+  command -v node >/dev/null 2>&1 || return 1
+  local v major minor
+  v="$(node --version 2>/dev/null | sed 's/^v//; s/-.*//')"
+  major="${v%%.*}"
+  minor="${v#*.}"; minor="${minor%%.*}"
+  case "$major" in ''|*[!0-9]*) return 1 ;; esac
+  [ "$major" -ge 26 ] && return 0
+  [ "$major" -eq 24 ] && [ "${minor:-0}" -ge 11 ] && return 0
+  [ "$major" -eq 22 ] && [ "${minor:-0}" -ge 19 ] && return 0
+  return 1
+}
+
+# 下载并解压便携 Node 到 $1=tools_dir；$2=os(darwin|linux)；$3=arch(x64|aarch64)
+# 建立版本无关软链 <tools_dir>/node，echo 该软链路径。
+install_node_portable() {
+  local tools_dir="$1" os="$2" arch="$3" tmp
+  tmp="$(mktemp -d)"
+  curl -fSL "$(node_tarball_url "$os" "$arch")" -o "$tmp/node.tar.gz"
+  tar -xzf "$tmp/node.tar.gz" -C "$tools_dir"
+  rm -rf "$tmp"
+  ln -sfn "$tools_dir/$(node_tarball_dir "$os" "$arch")" "$tools_dir/node"
+  printf '%s\n' "$tools_dir/node"
+}
+
 # 检测是否运行在 WSL（Windows Subsystem for Linux）
 is_wsl() {
   grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null

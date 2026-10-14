@@ -30,16 +30,17 @@ int secret_check(int code)
 }
 ```
 
-## 一键安装
+## 一键安装（Linux：物理机 / 虚拟机 / WSL2 / Crostini / 云电脑）
 
 ```bash
 bash install.sh
-source ~/.bashrc
+source ~/.bashrc    # zsh 用户：source ~/.zshrc
 ```
 
-- 无需 root，JDK 与 Ghidra 装在 `~/tools`，脚本幂等可重复运行
+- 无需 root，JDK 与 Ghidra 装在 `~/tools`，脚本幂等可重复运行；自动识别运行环境与 CPU 架构
 - 安装前自动检查磁盘空间（`~/tools` 约 2.6GB、临时目录约 0.8GB）
-- 环境要求：Linux x86_64、`curl`、`unzip`；REA 需 Node 22.19+ / 24.11+ / 26+
+- 环境要求：Linux **x86_64**（完整支持）或 **arm64**（自动构建 native decompiler）、`curl`、`unzip`、`tar`；REA 需 Node 22.19+ / 24.11+ / 26+（缺失时安装器自动装便携 Node 22）
+- 物理机 / 虚拟机 / WSL2 / Docker / 云电脑各环境的差异与注意事项见 [docs/platform-linux.md](docs/platform-linux.md)
 - **版本集中管理**：Ghidra / JDK / Node / REA 的锁定版本统一在 [`config/versions.env`](config/versions.env)，升级只改这一个文件；`bash scripts/check-versions.sh` 可检查一致性并探测上游最新版
 - 临时覆盖版本仍可用环境变量：`GHIDRA_VERSION=12.1.4 GHIDRA_BUILD=Ghidra_12.1.4_build GHIDRA_DATE=20260921 bash install.sh`
 
@@ -193,6 +194,7 @@ bash uninstall.sh --yes  # 跳过确认
 ├── scripts/
 │   ├── DecompileAll.java     # Ghidra 原生批量反编译脚本
 │   ├── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装
+│   ├── build-ghidra-native.sh # 从源码构建 arm64/macOS native decompiler
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
@@ -208,6 +210,13 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v1.4（2026-10-14）**
+  - Linux 安装加固：启动时自动识别**操作系统 / 运行环境（物理机 / 虚拟机·容器 / WSL2 / Crostini）/ 架构（x64·aarch64）**并打印
+  - 支持 **arm64（aarch64）**：JDK 自动选 Temurin aarch64；新增 [`scripts/build-ghidra-native.sh`](scripts/build-ghidra-native.sh)，在官方未预编译时从源码构建 `os/linux_arm_64`（及后续 macOS）native decompiler，安装器自动调用
+  - 新增**便携 Node 22**：系统 Node 缺失或版本不满足 REA 要求（`^22.19 || ^24.11 || >=26`）时自动下载到 `~/tools/node`，无需 root（`SKIP_NODE=1` 可跳过）；版本门槛经单元测试，正确拒绝 23/25 等不支持版本
+  - 环境变量同时幂等写入 `~/.bashrc` 与 `~/.zshrc`（存在时）；PATH 增加 `Ghidra/support` 与便携 Node bin
+  - 新增 [docs/platform-linux.md](docs/platform-linux.md)：逐一覆盖物理本机 / 虚拟机 / WSL2 / Docker / 云电脑 VDI 的步骤、资源建议、`/mnt/c` 与 `.wslconfig` 等坑，以及 arm64 构建、代理与故障排查
+  - 本机实测：安装器在 x86_64 上 5 步全过、`rea doctor` 全 healthy、便携 Node 下载可用、`verify.sh` 9/9 不劣化
 - **v1.3（2026-10-14）**
   - 新增版本号「单一事实源」[`config/versions.env`](config/versions.env)：Ghidra / JDK / Node / REA 版本集中管理；`install.sh`、`verify.sh`、`Dockerfile` 全部改为读取它，不再各自硬编码（刻意用 `REA_NODE_VERSION` 避免与 fnm/nvm 注入的 `NODE_VERSION` 冲突）
   - 新增 [`lib/common.sh`](lib/common.sh)：跨平台 bash 共用的版本加载、下载 URL 构造、日志与架构/WSL/Crostini 检测函数
