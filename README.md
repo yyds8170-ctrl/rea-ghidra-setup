@@ -288,6 +288,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── prepare-offline.sh    # 有网机器上准备已校验离线包（Linux/macOS）
 │   ├── prepare-offline.ps1   # 同上（Windows x64）
 │   ├── verify-check.js       # 跨平台统一的 analyze/decompile 断言（Node，三个 verify 共用）
+│   ├── selfcheck-checksums.sh # 校验和链路自检（三源 + 真实下载 Node）
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
@@ -295,7 +296,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   └── bin/windows-x64/      # 仓库自带的预编译 Windows PE fixture（demo.exe / demo-stripped.exe）
 ├── VERSION                   # 当前版本号
 ├── .github/
-│   ├── workflows/ci.yml      # CI：lint（每次）/ e2e 三平台 matrix + docker amd64/arm64（每周·手动）
+│   ├── workflows/ci.yml      # CI：lint（每次）/ e2e 三平台 matrix + docker amd64/arm64 + 校验和（每周·手动）
 │   ├── workflows/release.yml # 推 v* 标签时创建 GitHub Release（含源码快照）
 │   └── dependabot.yml        # Actions 与 Docker 基础镜像更新提醒
 ├── CONTRIBUTING.md / SECURITY.md

@@ -188,3 +188,15 @@ jobs:
 
       - name: 容器内运行 verify.sh（arm64）
         run: docker run --rm --entrypoint bash rea-ghidra:arm64 /opt/rea-ghidra-setup/verify.sh
+
+  # 校验和链路：确认三类上游校验和源可取、真实下载 Node 并强校验
+  checksum:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: 校验和链路自检
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: bash scripts/selfcheck-checksums.sh
