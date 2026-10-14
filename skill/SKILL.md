@@ -37,6 +37,21 @@ description: 当需要在没有源码的情况下分析一个已编译/已打包
 3. 返回带 `evidence_id` 的结论，区分**观察 / 推断 / 未知** →
 4. Agent 顺着证据追问，最后用大白话解释，或在**合规前提下**指导重建。
 
+## 一键部署（本仓库，跨平台）
+
+如果环境尚未就绪，使用 `rea-ghidra-setup` 仓库的安装脚本，按系统选择（先 `bash scripts/detect-env.sh` 自动识别）：
+
+| 系统 / 环境 | 安装 | 自检 |
+| --- | --- | --- |
+| Linux / WSL2 / Crostini / Linux 云电脑 | `bash install.sh` | `bash verify.sh` |
+| Windows 10/11 x64（物理机/虚拟机/VDI） | `.\install.ps1` | `.\verify.ps1` |
+| macOS（Intel / Apple Silicon） | `bash install-macos.sh` | `bash verify-macos.sh` |
+| Docker（任意宿主，amd64/arm64） | `docker build -t rea-ghidra .` 或 `docker compose build` | 容器内 `verify.sh` |
+
+安装脚本会自动装 JDK 21 + Node 22（满足 REA 版本门禁）、下载 Ghidra 并在 arm64/macOS 上源码构建
+缺失的 native decompiler。安装后/排障前先跑只读诊断：`bash scripts/doctor.sh`（Windows 用 `.\scripts\doctor.ps1`），
+它检查 Node 版本、JDK 21、`analyzeHeadless`、native decompiler 是否就位；再跑 `rea doctor` 验证 provider 连接。
+
 ## 第一步：就绪检查
 
 Node 要求：22.x（≥22.19）、24.x（≥24.11）或 26+。先体检（只读、不改配置）：

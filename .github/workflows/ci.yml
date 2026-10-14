@@ -123,6 +123,16 @@ jobs:
         shell: pwsh
         run: ${{ matrix.install }}
 
+      - name: 安装后自检 doctor（Linux / macOS）
+        if: matrix.label != 'windows'
+        shell: bash
+        run: bash scripts/doctor.sh
+
+      - name: 安装后自检 doctor（Windows）
+        if: matrix.label == 'windows'
+        shell: pwsh
+        run: .\scripts\doctor.ps1
+
       - name: 端到端验证（Linux / macOS）
         if: matrix.label != 'windows'
         shell: bash

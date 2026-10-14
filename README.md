@@ -271,6 +271,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── platform-macos.md     # macOS：Intel/Apple Silicon
 │   ├── platform-chromeos.md  # ChromeOS：Crostini（x86_64 完整 / ARM64 受限）
 │   ├── platform-docker.md    # Docker：linux/amd64 + linux/arm64（多架构 buildx）
+│   ├── configuration.md      # 环境变量调优 + MCP 接入（mcp add/setup）+ 代理镜像
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
 ├── Dockerfile                # 多架构容器镜像（JDK21 + Node22 + Ghidra + rea，arm64 自动建 native）
 ├── docker-compose.yml        # Compose 模板（挂载工作目录、透传 rea 命令与内存/超时）
@@ -279,6 +280,8 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── DecompileAll.java     # Ghidra 原生批量反编译脚本
 │   ├── ghidra-decompile.sh   # 不依赖 REA 的批量反编译包装
 │   ├── detect-env.sh         # 识别 OS/架构/运行环境（physical/wsl/crostini/docker/vm）
+│   ├── doctor.sh             # 只读自检：Node/JDK21/Ghidra/native/内存/磁盘（Linux/macOS）
+│   ├── doctor.ps1            # 只读自检（Windows）
 │   ├── build-ghidra-native.sh # 从源码构建 arm64/macOS native decompiler
 │   ├── verify-check.js       # 跨平台统一的 analyze/decompile 断言（Node，三个 verify 共用）
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
@@ -297,6 +300,11 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.1（2026-10-14）**
+  - 新增跨平台只读诊断 `scripts/doctor.sh`（Linux/macOS）与 `scripts/doctor.ps1`（Windows）：检查 Node 版本门禁、JDK 21、`analyzeHeadless(.bat)`、对应架构 native decompiler、macOS Gatekeeper 隔离、`!`/`^` 路径禁忌、磁盘与堆内存；PASS/WARN/FAIL 汇总，任一 FAIL 退出 1；健康/干净环境本机均验证
+  - 新增 [docs/configuration.md](docs/configuration.md)：环境变量（`GHIDRA_HEADLESS_MAXMEM` / `GHIDRA_MAXMEM` / `REA_GHIDRA_STARTUP_TIMEOUT_MS` 等，均按 REA 官方文档核实）、MCP 接入（`rea mcp add` / `rea mcp doctor` / `rea setup` / 手动 `claude_desktop_config.json`）、代理与 npm 镜像
+  - [skill/SKILL.md](skill/SKILL.md) 增加跨平台「一键部署 + 自检」小节，按系统指向 install/verify 与 doctor
+  - CI matrix 在安装与端到端之间新增 doctor 步骤（三平台均须 0 FAIL）
 - **v2.0（2026-10-14）**
   - [平台×环境支持矩阵](docs/platform-support-matrix.md) 定稿：从「规划」措辞更新为**实测状态**，含 4 系统×5 环境总表、逐格说明、CPU 架构与 native decompiler 对照表、CI 实测覆盖表、脚本文件速查表
   - **arm64 实测升级**：`docker-arm64` 作业在原生 `ubuntu-24.04-arm` runner 上构建 `linux_arm_64` native 并在 arm64 容器内 `verify.sh` **9/9**（ELF arch=arm64, procs=34），Docker arm64 由「受限」升级为「支持」
