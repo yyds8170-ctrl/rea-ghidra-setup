@@ -4,6 +4,22 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [3.0.0] - 2026-10-15
+
+### Added（一体化体验，major）
+- 统一入口：仓库根 `rea-ghidra`（bash）与 `rea-ghidra.ps1`（PS5.1/7 兼容）。极薄分发层，子命令 `install/doctor/verify/mcp/export/batch/fixtures/walkthrough/version/self-update/current/rollback/help`，全部透传参数到既有脚本并保留退出码，不复制逻辑。
+- `version [--check]`：打印 VERSION，可选联网查 GitHub 最新 release（离线/失败优雅降级）。
+- 多版本 `current`：安装器在 `~/tools` 原子维护 `current-ghidra`/`current-jdk` 软链；发现逻辑优先读 current 再回退版本化目录枚举（ghidra-export.sh 已接入）。`rea-ghidra current` 列出版本与链接；`rea-ghidra rollback` 在并存多版本时切回上一个，单版本时明确告知无可回滚。
+
+### Changed
+- install.sh 安装后 `ln -sfn` 原子刷新 current 软链；rc 环境块仍写版本化目录路径（向后兼容）。
+
+### Security
+- self-update 安全校验：git 副本只 `git pull --ff-only`（拒绝 merge/force；工作区有未提交改动先提示、不 stash/覆盖）；非 git（tarball）副本下载最新 tar.gz **与同名 checksums.txt 强校验 sha256**，不一致/取不到 checksums 即拒绝退出。`--check`/`--dry-run` 只报告不写盘。CI 只允许跑 `self-update --check`。
+
+### 本机实测（2026-10-15，Ghidra 12.1.4/JDK21）
+- `./rea-ghidra version`→3.0.0；`--help` 中文用法；`doctor` 0 失败；`verify` 9/9；`mcp --check` `server=rea 6.5.0`；`current` 正确显示软链；`rollback` 单版本提示无可回滚、双版本（伪造第二目录）双向切换正确；self-update git 分支 `--check` 落后 0 不写盘；tarball 分支坏 sha256 负向测试被拒绝。
+
 ## [2.9.0] - 2026-10-15
 
 ### Changed（上游跟进，先验证后改锁）

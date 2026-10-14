@@ -27,6 +27,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$SCRIPT_DIR/../lib/common.sh"
 load_versions 2>/dev/null || true
 
+# v3.0 集中发现：env 未设/不合法时回退 current 软链 → 枚举（不覆盖合法显式 env）
+_MJ="$(resolve_jdk_home || true)";     [ -n "$_MJ" ] && export JAVA_HOME="$_MJ"
+_MG="$(resolve_ghidra_dir || true)";  [ -n "$_MG" ] && export GHIDRA_INSTALL_DIR="$_MG"
+
 MODE_LIST=0; MODE_DRY=0; MODE_CHECK=0; MODE_YES=0
 CLIENT=""
 while [ $# -gt 0 ]; do

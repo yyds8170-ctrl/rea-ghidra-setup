@@ -46,9 +46,9 @@ case "$KIND" in
   *) echo "--kind 仅接受 functions|strings|symbols|calls|decompiled|all" >&2; exit 2 ;;
 esac
 
-# ---- 定位 Ghidra / JDK（环境变量优先，其次 tools 目录）---------------------
+# ---- 定位 Ghidra / JDK（v3.0 集中发现：显式 env ＞ current 软链 ＞ 枚举）----
 TOOLS_DIR="${TOOLS_DIR:-$HOME/tools}"
-GHIDRA_INSTALL_DIR="${GHIDRA_INSTALL_DIR:-$(find "$TOOLS_DIR" -maxdepth 1 -name 'ghidra_*_PUBLIC' 2>/dev/null | head -1 || true)}"
+GHIDRA_INSTALL_DIR="$(resolve_ghidra_dir || true)"
 if [ -z "${GHIDRA_INSTALL_DIR:-}" ] || [ ! -x "$GHIDRA_INSTALL_DIR/support/analyzeHeadless" ]; then
   die "未找到 Ghidra（设 GHIDRA_INSTALL_DIR 或先跑 install.sh）"
 fi
@@ -67,15 +67,8 @@ jdk_major() {
   esac
 }
 
-# CI runner 可能注入 JAVA_HOME=JDK17，盲目采用会被 analyzeHeadless 拒绝；
-# 只有当现有 JAVA_HOME 的 major>=21 才采用，否则回退 tools 目录下的 jdk-21*。
-JH=""
-if [ -n "${JAVA_HOME:-}" ] && [ "$(jdk_major "${JAVA_HOME}")" -ge 21 ]; then
-  JH="$JAVA_HOME"
-fi
-if [ -z "$JH" ]; then
-  JH="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' 2>/dev/null | head -1 || true)"
-fi
+# CI runner 可能注入 JAVA_HOME=JDK17；集中发现：显式 env(major>=21) ＞ current-jdk ＞ 枚举
+JH="$(resolve_jdk_home || true)"
 if [ -z "$JH" ] || [ "$(jdk_major "$JH")" -lt 21 ]; then
   die "未找到 JDK21（要求 major>=21）。当前 JAVA_HOME=${JAVA_HOME:-（空）}；请先跑 install.sh 或设置 JAVA_HOME 指向 JDK21。"
 fi

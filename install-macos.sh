@@ -136,6 +136,10 @@ else
 fi
 
 # ---- 5. 配置环境变量（zsh 为主，兼容 bash）----------------------------------
+# v3.0：原子维护 current-ghidra / current-jdk 软链（BSD ln 支持 -sfn）
+ln -sfn "$GHIDRA_DIR" "$TOOLS_DIR/current-ghidra"
+ln -sfn "$JDK_HOME"   "$TOOLS_DIR/current-jdk"
+echo "      current 软链已指向：$(basename "$GHIDRA_DIR") / $(basename "$JDK_HOME")"
 BLOCK_START="# >>> REA + Ghidra env >>>"
 BLOCK_END="# <<< REA + Ghidra env <<<"
 EXTRA_PATH=""; [ -n "$NODE_HOME" ] && EXTRA_PATH=":$NODE_HOME/bin"

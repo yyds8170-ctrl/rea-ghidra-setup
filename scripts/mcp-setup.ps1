@@ -35,6 +35,10 @@ param(
 
 $Cfg = Import-VersionConfig
 
+# v3.0 集中发现：env 未设/不合法时回退 current junction → 枚举（不覆盖合法显式 env）
+$rJdk = Resolve-JdkHome;     if ($rJdk) { $env:JAVA_HOME = $rJdk }
+$rGh  = Resolve-GhidraDir;   if ($rGh)  { $env:GHIDRA_INSTALL_DIR = $rGh }
+
 # npx 绝对路径（找不到回退 npx）
 $npxCmd = (Get-Command npx -ErrorAction SilentlyContinue)
 $npxBin = if ($npxCmd) { $npxCmd.Source } else { 'npx' }

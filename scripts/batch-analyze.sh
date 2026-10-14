@@ -127,7 +127,12 @@ if [ -n "$DIR" ]; then
     case "$1" in $2) return 0 ;; *) return 1 ;; esac
   }
   if [ "$RECURSE" = "1" ]; then
-    while IFS= read -r -d '' f; do match "$f" "$PATTERN" && add_target "$f"; done < <(find "$DIR" -type f -print0)
+    # bash3.2 兼容：用 heredoc 命令替换（主 shell 内读取，避免子进程丢数组；无 mapfile/进程替换）
+    while IFS= read -r f; do
+      [ -f "$f" ] && match "$f" "$PATTERN" && add_target "$f"
+    done <<EOF
+$(find "$DIR" -type f)
+EOF
   else
     for f in "$DIR"/*; do [ -f "$f" ] && match "$f" "$PATTERN" && add_target "$f"; done
   fi

@@ -49,15 +49,9 @@ if ($node) {
 }
 
 # ---- 3. JDK 21 ------------------------------------------------------------
-# 优先本项目安装在 tools\jdk-21* 的 JDK（避免 CI runner 向进程注入 JAVA_HOME=JDK17
-# 导致误判），其次是用户/进程 JAVA_HOME，最后才是 PATH 上的 java。
-$JavaHome = $null
-$jdkDir = Get-ChildItem -Path $ToolsDir -Directory -Filter 'jdk-21*' -ErrorAction SilentlyContinue | Sort-Object Name -Descending | Select-Object -First 1
-if ($jdkDir) {
-  $JavaHome = $jdkDir.FullName
-} elseif ($env:JAVA_HOME -and (Test-Path (Join-Path $env:JAVA_HOME 'bin\java.exe'))) {
-  $JavaHome = $env:JAVA_HOME
-} else {
+# v3.0 集中发现：显式 env(合法) ＞ current junction ＞ 枚举 jdk-21*
+$JavaHome = Resolve-JdkHome
+if (-not $JavaHome) {
   $procJava = Get-Command java -ErrorAction SilentlyContinue
   if ($procJava) {
     $gh = & $procJava.Source -XshowSettings:properties -version 2>&1 | Select-String 'java.home = (.*)' | Select-Object -First 1
@@ -79,11 +73,7 @@ if ($JavaHome) {
 }
 
 # ---- 4. Ghidra + analyzeHeadless.bat --------------------------------------
-$GhDir = $env:GHIDRA_INSTALL_DIR
-if (-not $GhDir -or -not (Test-Path -LiteralPath $GhDir)) {
-  $g = Join-Path $ToolsDir (Get-GhidraDirName $cfg)
-  if (Test-Path -LiteralPath $g) { $GhDir = $g }
-}
+$GhDir = Resolve-GhidraDir
 if ($GhDir -and (Test-Path -LiteralPath $GhDir)) {
   $bat = Join-Path $GhDir 'support\analyzeHeadless.bat'
   if (Test-Path -LiteralPath $bat) {

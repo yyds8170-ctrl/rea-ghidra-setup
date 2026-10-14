@@ -209,6 +209,11 @@ if (Test-Path -LiteralPath $Decompiler) {
 }
 Remove-Item -LiteralPath $dlDir -Recurse -Force -ErrorAction SilentlyContinue
 
+# v3.0：current junction（目录联接，免管理员；非 Windows 自动跳过）
+New-ToolJunction -LinkName (Join-Path $ToolsDir 'current-ghidra') -Target $GhidraDir
+New-ToolJunction -LinkName (Join-Path $ToolsDir 'current-jdk')    -Target $JdkHome
+Write-Ok "current junction 已指向：$(Split-Path $GhidraDir -Leaf) / $(Split-Path $JdkHome -Leaf)"
+
 # ---------------------------------------------------------------------------
 # 5. 写入用户级环境变量（免管理员，幂等）并即时同步当前进程
 # ---------------------------------------------------------------------------

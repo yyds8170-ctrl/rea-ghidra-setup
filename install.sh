@@ -131,6 +131,10 @@ else
 fi
 
 # ---- 5. 配置环境变量（幂等写入 .bashrc / .zshrc；升级时同步最新路径）--------
+# v3.0：原子维护 current-ghidra / current-jdk 软链（发现逻辑优先读 current）
+ln -sfn "$GHIDRA_DIR" "$TOOLS_DIR/current-ghidra"
+ln -sfn "$JDK_DIR"    "$TOOLS_DIR/current-jdk"
+echo "      current 软链已指向：$(basename "$GHIDRA_DIR") / $(basename "$JDK_DIR")"
 BLOCK_START="# >>> REA + Ghidra env >>>"
 BLOCK_END="# <<< REA + Ghidra env <<<"
 EXTRA_PATH=""; [ -n "$NODE_HOME" ] && EXTRA_PATH=":$NODE_HOME/bin"

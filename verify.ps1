@@ -27,20 +27,9 @@ function Write-Pass { param([string]$m) Write-Output "  [PASS] $m"; $script:Pass
 function Write-Fail { param([string]$m) Write-Output "  [FAIL] $m"; $script:Fail++ }
 function Write-Step { param([string]$m) Write-Output "  [....] $m" }
 
-# ---- 定位 JDK21 / Ghidra（用户级变量优先，其次 tools 目录）------------------
-$JavaHome = $env:JAVA_HOME
-if (-not $JavaHome -or (Get-JdkMajor -JavaHome $JavaHome) -lt 21) {
-  $found = Get-ChildItem -LiteralPath $ToolsDir -Directory -Filter 'jdk-21*' -ErrorAction SilentlyContinue |
-    Where-Object { (Get-JdkMajor -JavaHome $_.FullName) -ge 21 } | Select-Object -First 1
-  if ($found) { $JavaHome = $found.FullName }
-}
-$GhidraDir = $env:GHIDRA_INSTALL_DIR
-if (-not $GhidraDir -or -not (Test-Path -LiteralPath (Join-Path $GhidraDir 'support\analyzeHeadless.bat'))) {
-  $found = Get-ChildItem -LiteralPath $ToolsDir -Directory -Filter 'ghidra_*_PUBLIC' -ErrorAction SilentlyContinue |
-    Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'support\analyzeHeadless.bat') } |
-    Select-Object -First 1
-  if ($found) { $GhidraDir = $found.FullName }
-}
+# ---- 定位 JDK21 / Ghidra（v3.0 集中发现：显式 env ＞ current junction ＞ 枚举）----
+$JavaHome = Resolve-JdkHome
+$GhidraDir = Resolve-GhidraDir
 if ($JavaHome) {
   # 关键：CI runner 可能注入 JAVA_HOME=JDK17（覆盖注册表用户值），必须在本进程强制改回 21
   $env:JAVA_HOME = $JavaHome

@@ -318,3 +318,48 @@ function Test-GhidraPathSafe {
   if ($Path -match '[!^]') { return $false }
   return $true
 }
+
+# ---- v3.0 current junction + 集中发现（与 bash resolve_jdk_home/resolve_ghidra_dir 对等）----
+# 解析 ToolsDir（跨平台安全：USERPROFILE/HOME/UserProfile 回退）
+function Get-ToolsDir {
+  if (-not [string]::IsNullOrWhiteSpace($env:TOOLS_DIR)) { return $env:TOOLS_DIR }
+  if ($env:USERPROFILE) { return (Join-Path $env:USERPROFILE 'tools') }
+  if ($HOME) { return (Join-Path $HOME 'tools') }
+  return (Join-Path ([Environment]::GetFolderPath('UserProfile')) 'tools')
+}
+
+# 创建/刷新目录联接（junction 不需管理员）；非 Windows 无 mklink 时优雅跳过
+function New-ToolJunction {
+  param([string]$LinkName, [string]$Target)
+  try {
+    if (Test-Path -LiteralPath $LinkName) { cmd /c rmdir "$LinkName" 2>$null | Out-Null }
+    cmd /c mklink /J "$LinkName" "$Target" | Out-Null
+  } catch {
+    Write-Verbose "mklink 不可用（非 Windows），跳过 junction：$LinkName"
+  }
+}
+
+# 解析 JDK：显式 env(major>=21) ＞ current-jdk junction ＞ 枚举 jdk-21*
+# 注意：CI runner 可能注入 JAVA_HOME=JDK17（java.exe 存在但 major<21），必须跳过再回退。
+function Resolve-JdkHome {
+  param()
+  if ($env:JAVA_HOME -and (Test-Path -LiteralPath (Join-Path $env:JAVA_HOME 'bin\java.exe')) -and ((Get-JdkMajor -JavaHome $env:JAVA_HOME) -ge 21)) { return $env:JAVA_HOME }
+  $tools = Get-ToolsDir
+  $cur = Join-Path $tools 'current-jdk'
+  if ((Test-Path -LiteralPath (Join-Path $cur 'bin\java.exe')) -and ((Get-JdkMajor -JavaHome $cur) -ge 21)) { return $cur }
+  $found = Get-ChildItem -LiteralPath $tools -Directory -Filter 'jdk-21*' -ErrorAction SilentlyContinue | Where-Object { (Get-JdkMajor -JavaHome $_.FullName) -ge 21 } | Select-Object -First 1
+  if ($found) { return $found.FullName }
+  return $null
+}
+
+# 解析 Ghidra：显式 env(含 analyzeHeadless.bat) ＞ current-ghidra junction ＞ 枚举 ghidra_*_PUBLIC
+function Resolve-GhidraDir {
+  param()
+  if ($env:GHIDRA_INSTALL_DIR -and (Test-Path -LiteralPath (Join-Path $env:GHIDRA_INSTALL_DIR 'support\analyzeHeadless.bat'))) { return $env:GHIDRA_INSTALL_DIR }
+  $tools = Get-ToolsDir
+  $cur = Join-Path $tools 'current-ghidra'
+  if (Test-Path -LiteralPath (Join-Path $cur 'support\analyzeHeadless.bat')) { return $cur }
+  $found = Get-ChildItem -LiteralPath $tools -Directory -Filter 'ghidra_*_PUBLIC' -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($found) { return $found.FullName }
+  return $null
+}

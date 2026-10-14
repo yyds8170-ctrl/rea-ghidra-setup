@@ -197,3 +197,53 @@ env_label() {
   esac
 }
 
+# ---- v3.0 集中化发现：current 软链优先，回退枚举（bash3.2 兼容）-------------
+# 打印某 JDK 目录的 major 版本（取不出打印 0）
+jdk_major_of() {
+  local jh="$1"
+  [ -x "$jh/bin/java" ] || { printf '0'; return; }
+  local line v
+  line="$("$jh/bin/java" -version 2>&1 | head -1)"
+  v="$(printf '%s' "$line" | sed -n 's/.*version "\([0-9.]*\).*/\1/p')"
+  case "$v" in
+    1.*) printf '%s' "${v#1.}" | cut -d. -f1 ;;
+    *)   printf '%s' "$v" | cut -d. -f1 ;;
+  esac
+}
+
+# 解析 JAVA_HOME：显式 env(major>=21) ＞ $TOOLS_DIR/current-jdk ＞ find jdk-21*
+# 结果写到 stdout；调用方再决定 export。
+resolve_jdk_home() {
+  local tools="${TOOLS_DIR:-$HOME/tools}"
+  if [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ] && [ "$(jdk_major_of "$JAVA_HOME")" -ge 21 ]; then
+    printf '%s' "$JAVA_HOME"; return 0
+  fi
+  if [ -x "$tools/current-jdk/bin/java" ]; then
+    printf '%s' "$tools/current-jdk"; return 0
+  fi
+  local d
+  for d in "$tools"/jdk-21*; do
+    [ -x "$d/bin/java" ] || continue
+    printf '%s' "$d"; return 0
+  done
+  return 1
+}
+
+# 解析 GHIDRA_INSTALL_DIR：显式 env(含 analyzeHeadless) ＞ $TOOLS_DIR/current-ghidra ＞ find ghidra_*_PUBLIC
+resolve_ghidra_dir() {
+  local tools="${TOOLS_DIR:-$HOME/tools}"
+  if [ -n "${GHIDRA_INSTALL_DIR:-}" ] && [ -x "$GHIDRA_INSTALL_DIR/support/analyzeHeadless" ]; then
+    printf '%s' "$GHIDRA_INSTALL_DIR"; return 0
+  fi
+  if [ -x "$tools/current-ghidra/support/analyzeHeadless" ]; then
+    printf '%s' "$tools/current-ghidra"; return 0
+  fi
+  local d
+  for d in "$tools"/ghidra_*_PUBLIC; do
+    [ -x "$d/support/analyzeHeadless" ] || continue
+    printf '%s' "$d"; return 0
+  done
+  return 1
+}
+
+

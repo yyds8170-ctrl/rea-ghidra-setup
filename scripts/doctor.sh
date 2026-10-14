@@ -21,6 +21,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common.sh"
 load_versions
 
+# v3.0 集中发现：env 未设/不合法时回退 current 软链 → 枚举（不覆盖合法显式 env）
+_DJ="$(resolve_jdk_home || true)";     [ -n "$_DJ" ] && export JAVA_HOME="$_DJ"
+_DG="$(resolve_ghidra_dir || true)";  [ -n "$_DG" ] && export GHIDRA_INSTALL_DIR="$_DG"
+
 PASS_COUNT=0; WARN_COUNT=0; FAIL_COUNT=0
 p() { printf '%b[PASS]%b %s\n' "$C_GREEN" "$C_RESET" "$*"; PASS_COUNT=$((PASS_COUNT+1)); }
 w() { printf '%b[WARN]%b %s\n' "$C_YELLOW" "$C_RESET" "$*"; WARN_COUNT=$((WARN_COUNT+1)); }

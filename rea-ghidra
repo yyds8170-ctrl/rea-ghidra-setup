@@ -1,0 +1,228 @@
+#!/usr/bin/env bash
+# =============================================================================
+# rea-ghidra — 统一入口（Linux / macOS）
+#
+# 极薄分发层：定位仓库根 → 选择对应脚本 → 透传参数并保留退出码。
+# 所有真实逻辑仍在 install.sh / verify.sh / scripts/* 里，这里不复制实现。
+#
+# 用法：./rea-ghidra <子命令> [参数...]
+#   install doctor verify mcp export batch fixtures walkthrough
+#   version [--check]  self-update [--check|--dry-run]
+#   current rollback   help
+# =============================================================================
+set -uo pipefail
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TOOLS_DIR="${TOOLS_DIR:-$HOME/tools}"
+
+os_name() { uname -s; }
+
+usage() {
+  cat <<'EOF'
+rea-ghidra 一体化入口（v3.0）
+
+用法：./rea-ghidra <子命令> [参数...]
+
+子命令：
+  install        安装 JDK21 + Ghidra + 便携 Node（自动区分 Linux/macOS）
+  doctor         只读环境自检（Node/JDK21/Ghidra/native/内存/磁盘）
+  verify         端到端验证（编译+Ghidra 分析/反编译 9 项）
+  mcp ...        MCP 客户端对接（透传参数），如：
+                 ./rea-ghidra mcp --check
+                 ./rea-ghidra mcp --dry-run --client claude-desktop
+  export ...     Ghidra 静态导出，如：
+                 ./rea-ghidra export ./examples/demo --out /tmp/out --kind all
+  batch ...      批量并行 + 快照缓存，如：
+                 ./rea-ghidra batch ./bin --out ./batch-out --kind functions --jobs 2
+  fixtures       交叉编译多架构 fixture（i686/aarch64/mingw 交叉工具链，Linux）
+  walkthrough    端到端中文实战演练（幂等只读）
+  version        打印本仓库版本；--check 联网查 GitHub 最新 release（只读）
+  self-update    自更新（git 副本走 ff-only；tarball 副本校验 checksums 后解压）
+                 --check 只报告不写盘；--dry-run 预览
+  current        列出 ~/tools 下 Ghidra/JDK 版本与 current 软链指向
+  rollback       把 current 切回上一个版本（仅当并存多版本时生效）
+  help           本帮助
+
+示例：
+  ./rea-ghidra install && ./rea-ghidra verify
+  ./rea-ghidra self-update --check
+EOF
+}
+
+# 透传一个现有脚本，保留退出码
+run() { local script="$1"; shift; bash "$REPO_DIR/$script" "$@"; exit $?; }
+
+# ---- version ----------------------------------------------------------------
+cmd_version() {
+  local v
+  v="$(cat "$REPO_DIR/VERSION" 2>/dev/null || echo unknown)"
+  echo "当前版本：$v"
+  if [ "${1:-}" = "--check" ]; then
+    local latest
+    if latest="$(curl -fsSL --max-time 10 https://api.github.com/repos/yyds8170-ctrl/rea-ghidra-setup/releases/latest 2>/dev/null | grep -m1 tag_name | sed 's/.*: *"\(.*\)".*/\1/')" && [ -n "$latest" ]; then
+      echo "最新 release：$latest"
+      [ "$latest" = "v$v" ] && echo "已是最新。" || echo "有新版本可用：${v} → ${latest}（用 ./rea-ghidra self-update）"
+    else
+      echo "（离线或限流，无法查询最新版，跳过）"
+    fi
+  fi
+}
+
+# ---- current / rollback ------------------------------------------------------
+list_tools() {
+  echo "TOOLS_DIR：$TOOLS_DIR"
+  echo "Ghidra 版本化安装："
+  find "$TOOLS_DIR" -maxdepth 1 -name 'ghidra_*_PUBLIC' 2>/dev/null | sort | sed 's/^/  /' || true
+  echo "JDK 版本化安装："
+  find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' 2>/dev/null | sort | sed 's/^/  /' || true
+  echo "current 软链："
+  [ -e "$TOOLS_DIR/current-ghidra" ] && echo "  current-ghidra -> $(readlink "$TOOLS_DIR/current-ghidra" 2>/dev/null || echo '?')" || echo "  current-ghidra（未设置）"
+  [ -e "$TOOLS_DIR/current-jdk" ]   && echo "  current-jdk     -> $(readlink "$TOOLS_DIR/current-jdk" 2>/dev/null || echo '?')"   || echo "  current-jdk（未设置）"
+}
+
+cmd_current() { list_tools; }
+
+cmd_rollback() {
+  local gh_list=() gh_cur
+  local d
+  for d in "$TOOLS_DIR"/ghidra_*_PUBLIC; do
+    [ -e "$d" ] || continue
+    gh_list+=("$d")
+  done
+  if [ "${#gh_list[@]}" -lt 2 ]; then
+    echo "无可回滚版本：~/tools 下只发现 ${#gh_list[@]} 个 Ghidra 安装。"
+    echo "（config 只锁一个 Ghidra 版本；并存多版本目录后此命令才生效。）"
+    return 0
+  fi
+  gh_cur=""
+  [ -L "$TOOLS_DIR/current-ghidra" ] && gh_cur="$(readlink -f "$TOOLS_DIR/current-ghidra" 2>/dev/null || true)"
+  local target=""
+  for d in "${gh_list[@]}"; do
+    [ "$d" != "$gh_cur" ] && target="$d"
+  done
+  if [ -z "$target" ]; then echo "无可回滚版本。"; return 0; fi
+  echo "记录当前 -> ${gh_cur}"
+  echo "${gh_cur}" > "$TOOLS_DIR/current.previous"
+  ln -sfn "$target" "$TOOLS_DIR/current-ghidra"
+  echo "current-ghidra 已切换 -> ${target}"
+  echo "如需切回：再次 ./rea-ghidra rollback 或手工 ln -sfn。"
+}
+
+# ---- self-update -------------------------------------------------------------
+cmd_self_update() {
+  local mode="apply" dry=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --check) mode="check" ;;
+      --dry-run) dry=1 ;;
+      *) echo "未知 self-update 参数：$1（见 help）" >&2; exit 2 ;;
+    esac
+    shift
+  done
+
+  local cur
+  cur="$(cat "$REPO_DIR/VERSION" 2>/dev/null || echo unknown)"
+  echo "当前版本：$cur"
+
+  if [ -d "$REPO_DIR/.git" ]; then
+    echo "检测到 git 工作副本：仅允许 fast-forward 更新（不产生 merge/force）。"
+    if [ "$mode" = "check" ] || [ "$dry" = 1 ]; then
+      echo "（--check/--dry-run：只 fetch 对比，不写本地）"
+      git -C "$REPO_DIR" fetch --tags 2>/dev/null || echo "（离线，fetch 失败，无法比较）"
+      local behind
+      behind="$(git -C "$REPO_DIR" rev-list --count HEAD..'@{u}' 2>/dev/null || echo "?")"
+      echo "落后上游提交数：${behind}（>0 可更新）"
+      return 0
+    fi
+    if [ -n "$(git -C "$REPO_DIR" status --porcelain)" ]; then
+      echo "检测到本地未提交改动：为避免覆盖，请先 commit 或 stash，再运行 self-update。" >&2
+      return 1
+    fi
+    git -C "$REPO_DIR" pull --ff-only || { echo "ff-only 更新失败（可能有分叉/需手动），未改动工作区。" >&2; return 1; }
+    echo "更新完成，当前版本：$(cat "$REPO_DIR/VERSION" 2>/dev/null)"
+  else
+    echo "非 git（Release tarball 解压）副本：从 GitHub 下载最新 tar.gz + checksums 校验后更新。"
+    if [ "$mode" = "check" ] || [ "$dry" = 1 ]; then
+      echo "（--check/--dry-run：只报告，不写盘）"
+      return 0
+    fi
+    # 真实更新：拉最新 release 元数据
+    local meta tag tgz sum_url expected tmp
+    meta="$(curl -fsSL --max-time 15 https://api.github.com/repos/yyds8170-ctrl/rea-ghidra-setup/releases/latest 2>/dev/null || true)"
+    tag="$(printf '%s' "$meta" | grep -m1 tag_name | sed 's/.*: *"\(.*\)".*/\1/')"
+    [ -n "$tag" ] || { echo "无法获取最新 release（离线/限流），中止。" >&2; return 1; }
+    tgz="https://github.com/yyds8170-ctrl/rea-ghidra-setup/releases/download/${tag}/rea-ghidra-setup-${tag}.tar.gz"
+    sum_url="${tgz}.checksums.txt"
+    echo "最新版本：$tag"
+    tmp="$(mktemp -d)"
+    curl -fsSL --max-time 60 -o "$tmp/app.tar.gz" "$tgz" || { echo "下载 tar.gz 失败。" >&2; return 1; }
+    # 取 checksums 并强校验
+    expected="$(curl -fsSL --max-time 15 "$sum_url" 2>/dev/null | awk '{print $1}' | head -1)"
+    [ -n "$expected" ] || { echo "取不到 checksums.txt，安全起见拒绝更新。" >&2; return 1; }
+    local actual
+    actual="$(sha256sum "$tmp/app.tar.gz" | awk '{print $1}')"
+    if [ "$actual" != "$expected" ]; then
+      echo "校验失败：tar.gz sha256($actual) != checksums($expected)，拒绝更新。" >&2; return 1
+    fi
+    echo "校验通过（sha256 一致）。解压到临时目录……"
+    # git archive 产物根目录前缀 rea-ghidra-setup-<tag>/
+    tar -xzf "$tmp/app.tar.gz" -C "$tmp"
+    local root
+    root="$(find "$tmp" -maxdepth 1 -mindepth 1 -type d | head -1)"
+    [ -n "$root" ] || { echo "解压后未找到目录。" >&2; return 1; }
+    # 受保护路径：绝不覆盖/删除（release 本就不含 offline/fixtures/.git）
+    local protect_re='(^|/)(offline|examples/fixtures|\.git)(/|$)'
+    local ts bkup n=0 updated=0 skipped=0
+    ts="$(date +%Y%m%d-%H%M%S)"
+    bkup="$REPO_DIR/.self-update-backup-${ts}"
+    ( cd "$root" && find . -type f ) | sed 's|^\./||' > "$tmp/list"
+    while IFS= read -r rel; do
+      f="$root/$rel"
+      # 跳过受保护路径
+      if printf '%s' "$rel" | grep -qE "$protect_re"; then skipped=$((skipped+1)); continue; fi
+      n=$((n+1))
+      if [ "$dry" = 1 ]; then
+        if [ -e "$REPO_DIR/$rel" ]; then echo "  [dry-run] 覆盖：$rel"; else echo "  [dry-run] 新增：$rel"; fi
+        continue
+      fi
+      # 备份被替换的旧文件（保留相对目录结构）
+      if [ -e "$REPO_DIR/$rel" ]; then
+        mkdir -p "$bkup/$(dirname "$rel")"
+        cp -p "$REPO_DIR/$rel" "$bkup/$rel"
+      fi
+      mkdir -p "$REPO_DIR/$(dirname "$rel")"
+      cp -p "$f" "$REPO_DIR/$rel"
+      updated=$((updated+1))
+    done < "$tmp/list"
+    if [ "$dry" = 1 ]; then
+      echo "（--dry-run：将更新 ${n} 个文件，未写盘；受保护跳过 ${skipped} 个）"
+    else
+      echo "更新完成：覆盖/新增 ${updated} 个文件；受保护路径跳过 ${skipped} 个。"
+      echo "旧文件备份在：${bkup}"
+      echo "如需回滚：cp -a ${bkup}/. ${REPO_DIR}/"
+      echo "新版本：$(cat "$REPO_DIR/VERSION" 2>/dev/null)"
+    fi
+    rm -rf "$tmp"
+  fi
+}
+
+# ---- 分发 -------------------------------------------------------------------
+sub="${1:-}"
+if [ $# -gt 0 ]; then shift; fi
+case "$sub" in
+  ""|-h|--help|help) usage; exit 0 ;;
+  install)
+    if [ "$(os_name)" = "Darwin" ]; then run install-macos.sh "$@"; else run install.sh "$@"; fi ;;
+  doctor)  run scripts/doctor.sh "$@" ;;
+  verify)
+    if [ "$(os_name)" = "Darwin" ]; then run verify-macos.sh "$@"; else run verify.sh "$@"; fi ;;
+  mcp)         run scripts/mcp-setup.sh "$@" ;;
+  export)      run scripts/ghidra-export.sh "$@" ;;
+  batch)       run scripts/batch-analyze.sh "$@" ;;
+  fixtures)    run scripts/build-fixtures.sh "$@" ;;
+  walkthrough) run examples/walkthrough.sh "$@" ;;
+  version)      cmd_version "$@" ;;
+  self-update)  cmd_self_update "$@" ;;
+  current)     cmd_current ;;
+  rollback)    cmd_rollback ;;
+  *) echo "未知子命令：${sub}（用 ./rea-ghidra help 查看全部）" >&2; exit 2 ;;
+esac

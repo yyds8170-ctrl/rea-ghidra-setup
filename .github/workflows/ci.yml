@@ -260,6 +260,34 @@ jobs:
           if ($d.mcpServers.rea.args[-1] -ne '--mcp') { throw '注册 JSON 缺少 --mcp' }
           Write-Output "e2e MCP 注册 JSON 校验通过：$($d.mcpServers.rea.command)"
 
+      - name: 统一入口自检（Linux / macOS）
+        if: matrix.label != 'windows'
+        shell: bash
+        run: |
+          set -e
+          ./rea-ghidra --help >/dev/null
+          ./rea-ghidra version | grep -q "3.0.0"
+          ./rea-ghidra doctor >/dev/null
+          ./rea-ghidra current
+          ./rea-ghidra self-update --check   # git 副本：只 fetch 对比，不写盘
+      - name: 统一入口 MCP/导出自检（Linux）
+        if: matrix.label == 'linux'
+        shell: bash
+        run: |
+          set -e
+          ./rea-ghidra mcp --check
+          ./rea-ghidra export ./examples/demo --out /tmp/entry-out --kind functions
+
+      - name: 统一入口自检（Windows）
+        if: matrix.label == 'windows'
+        shell: pwsh
+        run: |
+          .\rea-ghidra.ps1 --help | Out-Null
+          .\rea-ghidra.ps1 version | Select-String '3.0.0'
+          .\rea-ghidra.ps1 doctor | Out-Null
+          .\rea-ghidra.ps1 self-update --check
+          exit 0
+
       - name: Ghidra 静态导出回归（Linux / macOS，analyzeHeadless 较慢）
         if: matrix.label != 'windows'
         shell: bash

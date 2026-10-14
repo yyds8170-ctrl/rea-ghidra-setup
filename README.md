@@ -10,6 +10,8 @@
 
 ## 我该用哪个？（快速选择）
 
+> **v3.0 统一入口**：Linux/macOS `./rea-ghidra install && ./rea-ghidra verify`；Windows `.\rea-ghidra.ps1 install` / `.\rea-ghidra.ps1 verify`。子命令 `doctor/mcp/export/batch/self-update/current/rollback`，见 [docs/entry.md](docs/entry.md)。下表旧脚本名仍完全可用。
+
 不确定时先运行 `bash scripts/detect-env.sh`（识别系统 / 架构 / 运行环境）。然后按系统选择：
 
 | 系统 / 环境 | 安装 | 验证 | 说明 |
@@ -301,6 +303,8 @@ bash uninstall.sh --yes  # 跳过确认
 
 ```
 .
+├── rea-ghidra                # v3.0 统一入口（Linux/macOS：install/doctor/verify/mcp/export/batch/self-update/current/rollback）
+├── rea-ghidra.ps1            # v3.0 统一入口（Windows PS5.1/7，同上子命令）
 ├── install.sh                # Linux 一键安装 JDK21 + Ghidra + 环境变量
 ├── install-macos.sh          # macOS 一键安装（Intel + Apple Silicon）
 ├── install.ps1               # Windows 一键安装（PowerShell，用户态免管理员）
@@ -331,6 +335,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── mcp.md                 # MCP 客户端一键注册 + stdio 连接自检（--list/--dry-run/--check）
 │   ├── export.md              # Ghidra 静态分析导出（functions/strings/symbols/calls/decompiled）
 │   ├── batch.md               # 批量并行分析 + 快照缓存（--jobs/--snapshot/失败隔离/summary.json）
+│   └── entry.md               # v3.0 统一入口：子命令全表/self-update 校验/current·rollback 边界
 │   ├── offline.md            # 离线/内网安装（prepare-offline + OFFLINE_DIR + 镜像 save/load）
 │   ├── troubleshooting.md    # 跨平台故障排查
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
@@ -379,6 +384,10 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v3.0（2026-10-15，major 一体化体验）**
+  - **统一入口**：`./rea-ghidra`（bash）/ `.\rea-ghidra.ps1`（PS5.1/7）一条命令收敛 `install/doctor/verify/mcp/export/batch/fixtures/walkthrough/version/self-update/current/rollback`，全部透传到既有脚本并保留退出码，不复制逻辑。
+  - **self-update 安全**：git 副本只 `pull --ff-only`（未提交改动先提示、不覆盖）；tarball 副本下载 tar.gz+checksums 强校验 sha256，不一致拒绝；`--check`/`--dry-run` 不写盘。
+  - **多版本 current/rollback**：安装器原子维护 `~/tools/current-ghidra`/`current-jdk` 软链，发现优先读 current；`current` 列出版本与链接，`rollback` 在多版本并存时切回上一个（单版本如实提示无可回滚）。详见 [docs/entry.md](docs/entry.md)。
 - **v2.9（2026-10-15）**
   - **上游跟进 + 供应链安全**：先验证后改锁——便携 Node `22.19.0→24.22.0`、REA `6.4.0→6.5.0`（Ghidra 12.1.4/JDK21 不变）。改锁前本机真下 node v24.22.0 并通过官方 SHASUMS256；`doctor ghidra available=true`、MCP 握手 `server=rea 6.5.0`、verify 9/9。
   - Release 供应链：新增 `checksums.txt`（tar.gz sha256）+ SBOM（`anchore/sbom-action@v0.17.4` spdx-json，空组件不阻断、失败兜底手写 SPDX 2.3）。

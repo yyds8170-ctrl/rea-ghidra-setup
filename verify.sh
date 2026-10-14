@@ -35,16 +35,11 @@ jdk_major_of() {
     split($2,a,"."); v=a[1]; if(v=="1") v=a[2]; print v; exit
   }'
 }
-# 现有 JAVA_HOME 缺失或版本低于 21（如 CI runner 预置 JDK17）时，改用 ~/tools
-if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME:-/nonexistent}/bin/java" ] \
-     || [ "$(jdk_major_of "$JAVA_HOME" 2>/dev/null || echo 0)" -lt 21 ]; then
-  JHOME="$(find "$HOME/tools" -maxdepth 1 -name 'jdk-21*' 2>/dev/null | head -1 || true)"
-  if [ -n "$JHOME" ]; then export JAVA_HOME="$JHOME"; fi
-fi
-if [ -z "${GHIDRA_INSTALL_DIR:-}" ]; then
-  GDIR="$(find "$HOME/tools" -maxdepth 1 -name 'ghidra_*_PUBLIC' 2>/dev/null | head -1 || true)"
-  if [ -n "$GDIR" ]; then export GHIDRA_INSTALL_DIR="$GDIR"; fi
-fi
+# v3.0 集中发现：显式 env(合法) ＞ current 软链 ＞ 枚举；显式 env 不合法时自动回退
+NEW_JH="$(resolve_jdk_home || true)"
+[ -n "$NEW_JH" ] && export JAVA_HOME="$NEW_JH"
+NEW_GD="$(resolve_ghidra_dir || true)"
+[ -n "$NEW_GD" ] && export GHIDRA_INSTALL_DIR="$NEW_GD"
 [ -n "${JAVA_HOME:-}" ] && export PATH="$JAVA_HOME/bin:$PATH"
 
 # REA：优先全局 rea，否则 npx 锁定版本（cn 模式经 npmmirror 拉取，仅本次进程）

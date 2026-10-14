@@ -28,30 +28,17 @@ if (-not (Test-Path $Bin)) { throw "二进制不存在：$Bin" }
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $scriptPathDir = Join-Path $scriptDir "ghidra"
-$ToolsDir = if ($env:TOOLS_DIR) { $env:TOOLS_DIR } else { Join-Path $env:USERPROFILE 'tools' }
 
-# ---- 定位 JDK21（关键：CI Windows runner 会注入 JAVA_HOME=JDK17，必须强制改回 21）----
-$JavaHome = $env:JAVA_HOME
-if (-not $JavaHome -or (Get-JdkMajor -JavaHome $JavaHome) -lt 21) {
-  $foundJdk = Get-ChildItem -LiteralPath $ToolsDir -Directory -Filter 'jdk-21*' -ErrorAction SilentlyContinue |
-    Where-Object { (Get-JdkMajor -JavaHome $_.FullName) -ge 21 } | Select-Object -First 1
-  if ($foundJdk) { $JavaHome = $foundJdk.FullName }
-}
-if (-not $JavaHome -or (Get-JdkMajor -JavaHome $JavaHome) -lt 21) {
+# ---- v3.0 集中发现：显式 env ＞ current junction ＞ 枚举（CI runner 注入 JDK17 时自动回退）----
+$JavaHome = Resolve-JdkHome
+if (-not $JavaHome) {
   $cur = if ($env:JAVA_HOME) { $env:JAVA_HOME } else { '(空)' }
-  throw "未找到 JDK21（要求 major>=21）。当前 JAVA_HOME=$cur，major=$([int](Get-JdkMajor -JavaHome $cur))；请先跑 install.ps1 或设置 JAVA_HOME 指向 JDK21。"
+  throw "未找到 JDK21（要求 major>=21）。当前 JAVA_HOME=$cur；请先跑 install.ps1 或设置 JAVA_HOME 指向 JDK21。"
 }
-# 强制写回本进程，覆盖 runner 注入的 JDK17
 $env:JAVA_HOME = $JavaHome
 $env:Path = "$(Join-Path $JavaHome 'bin');$env:Path"
 
-# ---- 定位 Ghidra（用 $ToolsDir，与 verify.ps1 一致）----
-$ghidra = $env:GHIDRA_INSTALL_DIR
-if (-not $ghidra -or -not (Test-Path -LiteralPath (Join-Path $ghidra "support\analyzeHeadless.bat"))) {
-  $foundG = Get-ChildItem -LiteralPath $ToolsDir -Directory -Filter 'ghidra_*_PUBLIC' -ErrorAction SilentlyContinue |
-    Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'support\analyzeHeadless.bat') } | Select-Object -First 1
-  if ($foundG) { $ghidra = $foundG.FullName }
-}
+$ghidra = Resolve-GhidraDir
 if (-not $ghidra) { throw "未找到 Ghidra（设 GHIDRA_INSTALL_DIR 或先跑 install.ps1）" }
 $headless = Join-Path $ghidra "support\analyzeHeadless.bat"
 
