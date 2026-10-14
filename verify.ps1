@@ -91,6 +91,32 @@ $Stripped = Join-Path $BinDir 'demo-stripped.exe'
 $WorkDir = Join-Path $env:TEMP ("rea-verify-" + [System.IO.Path]::GetRandomFileName())
 New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
 
+# REA Windows P0 仅支持“固定本地 NTFS 卷”，不支持网络/UNC/重解析点路径。
+# CI 仓库可能位于 D: 数据卷（含重解析点），因此把 fixture 复制到本地临时目录（C:）再分析。
+$LocalFixture = Join-Path $WorkDir 'demo.exe'
+$LocalStripped = Join-Path $WorkDir 'demo-stripped.exe'
+Copy-Item -LiteralPath $Fixture -Destination $LocalFixture -Force
+Copy-Item -LiteralPath $Stripped -Destination $LocalStripped -Force
+
+# 失败时打印 stderr 与 stdout（REA 偶尔把错误写到 stdout），便于定位
+function Show-CommandOutput {
+  param([string]$OutFile, [string]$ErrFile)
+  if (Test-Path -LiteralPath $ErrFile) {
+    $errText = Get-Content -LiteralPath $ErrFile -Raw -ErrorAction SilentlyContinue
+    if (-not [string]::IsNullOrWhiteSpace($errText)) {
+      Write-Output '  --- stderr ---'
+      ($errText.TrimEnd() -split "`n" | Select-Object -Last 20) | ForEach-Object { Write-Output "  $_" }
+    }
+  }
+  if (Test-Path -LiteralPath $OutFile) {
+    $outText = Get-Content -LiteralPath $OutFile -Raw -ErrorAction SilentlyContinue
+    if (-not [string]::IsNullOrWhiteSpace($outText) -and $outText -notmatch '^\s*\{') {
+      Write-Output '  --- stdout（非 JSON）---'
+      ($outText.TrimEnd() -split "`n" | Select-Object -First 30) | ForEach-Object { Write-Output "  $_" }
+    }
+  }
+}
+
 # ---- 1. 前置检查 ------------------------------------------------------------
 Write-Output '== 1. 前置检查 =='
 if (Get-Command node -ErrorAction SilentlyContinue) { Write-Pass 'node 存在' } else { Write-Fail '缺少 node' }
@@ -121,7 +147,7 @@ if (Test-Path -LiteralPath $Fixture) {
 Write-Output '== 3. analyze demo.exe =='
 Write-Step '首次分析会启动 Ghidra headless，可能需 1-3 分钟…'
 $aJson = Join-Path $WorkDir 'analyze.json'; $aErr = Join-Path $WorkDir 'analyze.err'
-$ok = Invoke-ReaToFile -ReaArgs @('analyze', $Fixture, '--provider', 'ghidra', '--format', 'json',
+$ok = Invoke-ReaToFile -ReaArgs @('analyze', $LocalFixture, '--provider', 'ghidra', '--format', 'json',
         '--snapshot', (Join-Path $WorkDir 'demo.snap')) -OutFile $aJson -ErrFile $aErr
 if ($ok) {
   Write-Pass 'analyze 命令成功'
@@ -142,13 +168,13 @@ if ($ok) {
   }
 } else {
   Write-Fail 'analyze 失败'
-  Get-Content -LiteralPath $aErr -Tail 15 -ErrorAction SilentlyContinue
+  Show-CommandOutput -OutFile $aJson -ErrFile $aErr
 }
 
 # ---- 4. decompile secret_check ----------------------------------------------
 Write-Output '== 4. decompile secret_check =='
 $dJson = Join-Path $WorkDir 'secret.json'; $dErr = Join-Path $WorkDir 'secret.err'
-$ok = Invoke-ReaToFile -ReaArgs @('decompile', $Fixture, 'secret_check', '--provider', 'ghidra',
+$ok = Invoke-ReaToFile -ReaArgs @('decompile', $LocalFixture, 'secret_check', '--provider', 'ghidra',
         '--format', 'json', '--snapshot', (Join-Path $WorkDir 'demo.snap')) -OutFile $dJson -ErrFile $dErr
 if ($ok) {
   try {
@@ -162,13 +188,13 @@ if ($ok) {
   } catch { Write-Fail "secret_check JSON 解析失败：$($_.Exception.Message)" }
 } else {
   Write-Fail 'secret_check 反编译失败'
-  Get-Content -LiteralPath $dErr -Tail 15 -ErrorAction SilentlyContinue
+  Show-CommandOutput -OutFile $dJson -ErrFile $dErr
 }
 
 # ---- 5. decompile calc_discount ---------------------------------------------
 Write-Output '== 5. decompile calc_discount =='
 $cJson = Join-Path $WorkDir 'calc.json'; $cErr = Join-Path $WorkDir 'calc.err'
-$ok = Invoke-ReaToFile -ReaArgs @('decompile', $Fixture, 'calc_discount', '--provider', 'ghidra',
+$ok = Invoke-ReaToFile -ReaArgs @('decompile', $LocalFixture, 'calc_discount', '--provider', 'ghidra',
         '--format', 'json', '--snapshot', (Join-Path $WorkDir 'demo.snap')) -OutFile $cJson -ErrFile $cErr
 if ($ok) {
   try {
@@ -182,13 +208,13 @@ if ($ok) {
   } catch { Write-Fail "calc_discount JSON 解析失败：$($_.Exception.Message)" }
 } else {
   Write-Fail 'calc_discount 反编译失败'
-  Get-Content -LiteralPath $cErr -Tail 15 -ErrorAction SilentlyContinue
+  Show-CommandOutput -OutFile $cJson -ErrFile $cErr
 }
 
 # ---- 6. analyze（剥离符号 / 无 PDB）----------------------------------------
 Write-Output '== 6. analyze demo-stripped.exe（无符号）=='
 $sJson = Join-Path $WorkDir 'stripped.json'; $sErr = Join-Path $WorkDir 'stripped.err'
-$ok = Invoke-ReaToFile -ReaArgs @('analyze', $Stripped, '--provider', 'ghidra', '--format', 'json',
+$ok = Invoke-ReaToFile -ReaArgs @('analyze', $LocalStripped, '--provider', 'ghidra', '--format', 'json',
         '--snapshot', (Join-Path $WorkDir 'stripped.snap')) -OutFile $sJson -ErrFile $sErr
 if ($ok) {
   try {
@@ -199,7 +225,7 @@ if ($ok) {
   } catch { Write-Fail "stripped JSON 解析失败：$($_.Exception.Message)" }
 } else {
   Write-Fail 'stripped analyze 失败'
-  Get-Content -LiteralPath $sErr -Tail 15 -ErrorAction SilentlyContinue
+  Show-CommandOutput -OutFile $sJson -ErrFile $sErr
 }
 
 # ---- 汇总 -------------------------------------------------------------------
