@@ -141,7 +141,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: 设置 Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: 构建镜像并加载到本地
         uses: docker/build-push-action@v6
@@ -165,7 +165,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: 设置 Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: 原生构建 arm64 镜像（内含 linux_arm_64 native 编译）
         uses: docker/build-push-action@v6
