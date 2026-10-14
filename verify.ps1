@@ -41,7 +41,11 @@ if (-not $GhidraDir -or -not (Test-Path -LiteralPath (Join-Path $GhidraDir 'supp
     Select-Object -First 1
   if ($found) { $GhidraDir = $found.FullName }
 }
-if ($JavaHome) { $env:Path = "$(Join-Path $JavaHome 'bin');$env:Path" }
+if ($JavaHome) {
+  # 关键：CI runner 可能注入 JAVA_HOME=JDK17（覆盖注册表用户值），必须在本进程强制改回 21
+  $env:JAVA_HOME = $JavaHome
+  $env:Path = "$(Join-Path $JavaHome 'bin');$env:Path"
+}
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   $portableNode = Get-ChildItem -LiteralPath $ToolsDir -Directory -Filter 'node-v*-win-x64' -ErrorAction SilentlyContinue |
     Select-Object -First 1
