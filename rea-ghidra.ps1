@@ -53,6 +53,8 @@ function Run-Target([string]$script, [string[]]$rest) {
 function Get-Version {
   $v = 'unknown'
   try { $v = (Get-Content (Join-Path $RepoDir 'VERSION') -ErrorAction Stop).Trim() } catch {}
+  # --raw：只把版本号写到成功流（供脚本/CI 精确比对；Write-Output 可被管道捕获，不依赖 Write-Host 宿主流）
+  if ($args -contains '--raw') { Write-Output $v; return }
   Write-Host "当前版本：$v"
   if ($args -contains '--check') {
     try {

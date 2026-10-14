@@ -19,12 +19,25 @@
 > 它会报告你的操作系统、CPU 架构、运行环境（physical / wsl / crostini / docker / vm）、
 > Ghidra native 目录及推荐安装脚本。
 
+## 快速开始
+
+- [entry.md](entry.md)：统一入口 `rea-ghidra` 子命令全表、self-update 校验、current/rollback 用法与边界。
+
 ## 通用文档
 
-- [platform-support-matrix.md](platform-support-matrix.md)：4 系统 × 5 运行环境（物理机 / 虚拟机 / WSL / Docker / 云电脑 VDI）支持矩阵，逐项标注「支持 / 部分 / 受限 / 不支持」及原因。
-- [configuration.md](configuration.md)：环境变量调优（内存/超时）、MCP server 接入（`rea mcp add`/`rea setup`）、代理与镜像。
+### 使用
+- [mcp.md](mcp.md)：MCP 客户端一键注册 + stdio 连接自检（`--list/--dry-run/--check`）。
+- [export.md](export.md)：Ghidra 静态分析导出（functions/strings/symbols/calls/decompiled JSON/C）。
+- [batch.md](batch.md)：批量并行分析 + 快照缓存（`--jobs/--snapshot/失败隔离/summary.json`）。
 - [offline.md](offline.md)：离线 / 内网（air-gapped）安装——`prepare-offline` 准备已校验离线包，`OFFLINE_DIR` 离线安装，镜像 save/load。
+
+### 配置与供应链
+- [configuration.md](configuration.md)：环境变量调优（内存/超时）、MCP server 接入、代理与镜像。
+- [mirrors.md](mirrors.md)：国内镜像加速（`REA_MIRROR=cn`）+ 校验防篡改说明。
+
+### 运维
 - [troubleshooting.md](troubleshooting.md)：跨平台常见问题（JDK 版本、Node 门禁、Gatekeeper、native 构建、Windows PATH/路径、Docker 等）。
+- [platform-support-matrix.md](platform-support-matrix.md)：4 系统 × 5 运行环境（物理机 / 虚拟机 / WSL / Docker / 云电脑 VDI）支持矩阵，逐项标注「支持 / 部分 / 受限 / 不支持」及原因。
 
 ## 版本
 

@@ -24,6 +24,9 @@ jobs:
           shopt -s globstar nullglob
           shellcheck -x *.sh lib/*.sh scripts/*.sh
 
+      - name: 文档死链检查
+        run: bash scripts/check-docs-links.sh
+
       - name: bash3.2 兼容（macOS：禁止 $变量 紧跟非 ASCII 字节）
         run: |
           # macOS 自带 bash 3.2 在 set -u 下会把全角中文标点的字节误并入变量名，
@@ -266,10 +269,12 @@ jobs:
         run: |
           set -e
           ./rea-ghidra --help >/dev/null
-          ./rea-ghidra version | grep -q "3.0.0"
+          # 版本号断言：入口 version --raw 必须与 VERSION 文件一致（不逐版本硬编码）
+          got="$(./rea-ghidra version --raw)"
+          [ "$got" = "$(cat VERSION)" ] || { echo "入口版本不符：$got vs $(cat VERSION)"; exit 1; }
           ./rea-ghidra doctor >/dev/null
           ./rea-ghidra current
-          ./rea-ghidra self-update --check   # git 副本：只 fetch 对比，不写盘
+          ./rea-ghidra self-update --check
       - name: 统一入口 MCP/导出自检（Linux）
         if: matrix.label == 'linux'
         shell: bash
@@ -283,7 +288,10 @@ jobs:
         shell: pwsh
         run: |
           .\rea-ghidra.ps1 --help | Out-Null
-          .\rea-ghidra.ps1 version | Select-String '3.0.0'
+          # 版本号断言：入口 version --raw 必须与 VERSION 文件一致（不逐版本硬编码；不依赖 Write-Host 宿主流）
+          $v = (.\rea-ghidra.ps1 version --raw)
+          $exp = (Get-Content VERSION -Raw).Trim()
+          if ("$v" -ne $exp) { throw "入口版本不符：$v vs $exp" }
           .\rea-ghidra.ps1 doctor | Out-Null
           .\rea-ghidra.ps1 self-update --check
           exit 0

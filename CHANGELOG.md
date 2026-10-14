@@ -4,6 +4,18 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [3.1.0] - 2026-10-15
+
+### Changed（文档美化，不改功能）
+- README 重构：顶部 8 个 shields 徽章（CI/release/license/platform/Ghidra 12.1.4/JDK 21/rea 6.5.0/Node 24.22.0）、目录 TOC、30 秒快速开始（统一入口三平台）、mermaid 环境决策树（flowchart TD）与架构示意图（flowchart LR）、常见问题 FAQ 8 条；目录树校正（Docker 注释 Node22→便携 Node 24.22.0）。
+- docs/README.md 索引补全：按快速开始/使用/配置与供应链/运维分组，补全 entry/mcp/export/batch/mirrors/offline 链接。
+
+### Added
+- `scripts/check-docs-links.sh`：文档相对链接死链检查器（bash3.2 兼容，解析 `[文本](相对路径[#锚点])`，跳过外部/锚点/占位，断言目标存在）；接入 CI lint-build。本机实测 20 个 md、120 个相对链接、0 死链；临时死链负向测试正确以非 1 退出。
+
+### 本机实测
+- shellcheck 0、bash -n 过、bash3.2 红线 0、全部 ps1 PSSA Error 0、ci.yml/release.yml yaml 过；`./rea-ghidra verify` 仍 9/9。
+
 ## [3.0.0] - 2026-10-15
 
 ### Added（一体化体验，major）

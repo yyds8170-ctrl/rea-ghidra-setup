@@ -1,6 +1,13 @@
 # REA + Ghidra 云电脑一键部署
 
 [![CI](https://github.com/yyds8170-ctrl/rea-ghidra-setup/actions/workflows/ci.yml/badge.svg)](https://github.com/yyds8170-ctrl/rea-ghidra-setup/actions/workflows/ci.yml)
+[![release](https://img.shields.io/github/v/release/yyds8170-ctrl/rea-ghidra-setup)](https://github.com/yyds8170-ctrl/rea-ghidra-setup/releases)
+[![license](https://img.shields.io/badge/license-PolyForm%20Noncommercial%201.0.0-blue.svg)](LICENSE)
+[![platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#我该用哪个快速选择)
+[![ghidra](https://img.shields.io/badge/Ghidra-12.1.4-4b4a9b.svg)](#版本历史)
+[![jdk](https://img.shields.io/badge/JDK-21-orange.svg)](#版本历史)
+[![rea](https://img.shields.io/badge/rea-6.5.0-green.svg)](#版本历史)
+[![node](https://img.shields.io/badge/Node-24.22.0-blue.svg)](#版本历史)
 
 在云电脑 / Linux 服务器上一键部署 **REA（Reverse Engineer Anything）+ Ghidra**，让 AI 智能体在没有源码的情况下分析二进制、App、抓包，产出带证据的结论。
 
@@ -8,11 +15,50 @@
 - **Ghidra**：`github.com/NationalSecurityAgency/ghidra`，NSA 开源反编译引擎，Apache-2.0
 - 本仓库仅包含**安装/卸载/验证脚本、技能文件与使用文档**（不内置上述第三方二进制）
 
+## 目录
+
+- [30 秒快速开始](#30-秒快速开始)
+- [我该用哪个？（快速选择）](#我该用哪个快速选择)
+- [实测结果](#实测结果2026-10ubuntu-2204-x86_64-云电脑)
+- [架构示意](#架构示意)
+- [常见问题 FAQ](#常见问题-faq)
+- [目录树](#目录树)
+- [版本历史](#版本历史)
+
+## 30 秒快速开始
+
+```bash
+# Linux / macOS
+git clone https://github.com/yyds8170-ctrl/rea-ghidra-setup.git
+cd rea-ghidra-setup
+./rea-ghidra install && ./rea-ghidra verify
+```
+
+```powershell
+# Windows（免管理员，用户态解压）
+git clone https://github.com/yyds8170-ctrl/rea-ghidra-setup.git
+cd rea-ghidra-setup
+.\rea-ghidra.ps1 install
+.\rea-ghidra.ps1 verify
+```
+
+装完即得 JDK21 + Ghidra 12.1.4 + 便携 Node 24.22.0，并自动通过 9 项端到端验证。子命令一览与自更新/回滚见 [docs/entry.md](docs/entry.md)。
+
 ## 我该用哪个？（快速选择）
 
-> **v3.0 统一入口**：Linux/macOS `./rea-ghidra install && ./rea-ghidra verify`；Windows `.\rea-ghidra.ps1 install` / `.\rea-ghidra.ps1 verify`。子命令 `doctor/mcp/export/batch/self-update/current/rollback`，见 [docs/entry.md](docs/entry.md)。下表旧脚本名仍完全可用。
+```mermaid
+flowchart TD
+    Q["我在什么环境？"] --> L["Linux / WSL2 / Crostini / 云电脑"]
+    Q --> M["macOS（Intel / Apple Silicon）"]
+    Q --> W["Windows 10/11 x64"]
+    Q --> D["任意宿主，想用容器"]
+    L --> LI["bash install.sh && bash verify.sh"]
+    M --> MI["bash install-macos.sh && bash verify-macos.sh"]
+    W --> WI[".\\install.ps1 && .\\verify.ps1"]
+    D --> DI["docker build -t rea-ghidra . && 容器内 verify.sh"]
+```
 
-不确定时先运行 `bash scripts/detect-env.sh`（识别系统 / 架构 / 运行环境）。然后按系统选择：
+> 不确定时先运行 `bash scripts/detect-env.sh`（识别系统 / 架构 / 运行环境）。下表是不依赖 mermaid 的可靠兜底：
 
 | 系统 / 环境 | 安装 | 验证 | 说明 |
 | --- | --- | --- | --- |
@@ -45,6 +91,19 @@ int secret_check(int code)
   return iVar1;
 }
 ```
+
+## 架构示意
+
+```mermaid
+flowchart LR
+    Entry["统一入口 rea-ghidra"] --> Ins["install.sh / install-macos.sh / install.ps1"]
+    Ins --> Tools[("~/tools<br/>JDK21 · Ghidra 12.1.4 · 便携 Node 24.22.0<br/>current-ghidra / current-jdk 链接")]
+    Tools --> P1["① REA MCP server<br/>↔ Claude / Cursor"]
+    Tools --> P2["② Ghidra headless<br/>分析 / 反编译"]
+    Tools --> P3["③ export / batch<br/>静态导出 JSON / C"]
+```
+
+三条使用路径：① 把 REA 注册为 MCP server，让 Claude/Cursor 直接调用逆向工具；② 用 `rea analyze/decompile` 或 Ghidra headless 做分析反编译；③ 用 `ghidra-export`/`batch-analyze` 把任意二进制批量导出成机器可读 JSON/C，不依赖 REA。
 
 ## 一键安装（Linux：物理机 / 虚拟机 / WSL2 / Crostini / 云电脑）
 
@@ -182,7 +241,7 @@ bash verify.sh
 ## Docker 容器（无需本机安装）
 
 ```bash
-# 构建镜像（含 JDK21 + Node22 + Ghidra 12.1.4 + 全局 rea）
+# 构建镜像（含 JDK21 + 便携 Node 24.22.0 + Ghidra 12.1.4 + 全局 rea）
 docker build -t rea-ghidra .
 
 # 分析当前目录下的二进制
@@ -299,7 +358,18 @@ bash uninstall.sh --yes  # 跳过确认
 
 禁止：绕过 DRM / 授权 / 反作弊、开发外挂、未授权入侵或抓取线上系统、复制发布他人受版权保护的代码与素材。
 
-## 目录
+## 常见问题 FAQ
+
+- **需要管理员 / root 权限吗？** 不需要。JDK21 / Ghidra / 便携 Node 全部以用户态 zip 解压到 `~/tools`（Windows 为 `%USERPROFILE%\tools`），只写用户级环境变量。
+- **公司网络被墙 / 下载慢？** 用镜像加速：`REA_MIRROR=cn ./rea-ghidra install`（Node/JDK 走 npmmirror、华为云、TUNA，npm 走 npmmirror），仍过官方校验和防篡改。详见 [docs/mirrors.md](docs/mirrors.md)。
+- **为何要求 JDK 21？JDK17 报错怎么办？** Ghidra 12.x 硬要求 JDK21；脚本会自动检测并改用便携 JDK21。如仍报错，确认 `JAVA_HOME` 指向 JDK21 或重跑 install。
+- **能离线 / 内网部署吗？** 能。有网机器用 `prepare-offline` 准备已校验离线包，内网 `OFFLINE_DIR` 离线安装。见 [docs/offline.md](docs/offline.md)。
+- **如何卸载？** Linux `./uninstall.sh`、macOS `./uninstall-macos.sh`、Windows `.\uninstall.ps1`，只删本项目安装内容。
+- **如何自更新 / 回滚？** `./rea-ghidra self-update`（git 副本 ff-only；tarball 副本校验 checksums 后覆盖，旧文件自动备份）；多版本并存时 `current` 查看、`rollback` 切回。见 [docs/entry.md](docs/entry.md)。
+- **Windows SmartScreen / macOS Gatekeeper 拦截？** Windows 用户态 zip 提示点“仍要运行”；macOS 安装脚本自动解除隔离属性。详见平台文档。
+- **能并存多个 Ghidra 版本吗？** 可以，都解压到 `~/tools`；`current-ghidra` 软链指向当前生效版本，`rollback` 在并存多版本目录时切换。
+
+## 目录树
 
 ```
 .
@@ -339,7 +409,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── offline.md            # 离线/内网安装（prepare-offline + OFFLINE_DIR + 镜像 save/load）
 │   ├── troubleshooting.md    # 跨平台故障排查
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
-├── Dockerfile                # 多架构容器镜像（JDK21 + Node22 + Ghidra + rea，arm64 自动建 native）
+├── Dockerfile                # 多架构容器镜像（JDK21 + 便携 Node 24.22.0 + Ghidra + rea，arm64 自动建 native）
 ├── docker-compose.yml        # Compose 模板（挂载工作目录、透传 rea 命令与内存/超时）
 ├── skill/SKILL.md            # 逆向工程智能体技能（可装入 Agent）
 ├── scripts/
@@ -384,6 +454,10 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v3.1（2026-10-15，文档美化）**
+  - README 重构：顶部徽章行（CI/release/license/platform/Ghidra/JDK/rea/Node）、目录 TOC、30 秒快速开始、mermaid 环境决策树与架构示意图、常见问题 FAQ（8 条）、目录树校正。
+  - docs/README.md 索引补全（entry/mcp/export/batch/mirrors/offline 分组链接）；新增 `scripts/check-docs-links.sh` 死链检查器并接入 CI lint。
+  - 纯文档版本，不改任何安装/分析逻辑。
 - **v3.0（2026-10-15，major 一体化体验）**
   - **统一入口**：`./rea-ghidra`（bash）/ `.\rea-ghidra.ps1`（PS5.1/7）一条命令收敛 `install/doctor/verify/mcp/export/batch/fixtures/walkthrough/version/self-update/current/rollback`，全部透传到既有脚本并保留退出码，不复制逻辑。
   - **self-update 安全**：git 副本只 `pull --ff-only`（未提交改动先提示、不覆盖）；tarball 副本下载 tar.gz+checksums 强校验 sha256，不一致拒绝；`--check`/`--dry-run` 不写盘。

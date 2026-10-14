@@ -55,6 +55,8 @@ run() { local script="$1"; shift; bash "$REPO_DIR/$script" "$@"; exit $?; }
 cmd_version() {
   local v
   v="$(cat "$REPO_DIR/VERSION" 2>/dev/null || echo unknown)"
+  # --raw：只输出版本号到 stdout（供脚本/CI 精确比对，无装饰、不联网）
+  if [ "${1:-}" = "--raw" ]; then printf '%s\n' "$v"; return 0; fi
   echo "当前版本：$v"
   if [ "${1:-}" = "--check" ]; then
     local latest
