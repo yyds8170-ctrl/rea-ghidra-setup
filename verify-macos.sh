@@ -99,9 +99,36 @@ else
 fi
 
 # ---- 4/5. decompile 两个函数 ------------------------------------------------
+# Mach-O 中 C 函数符号通常带前导下划线（_secret_check），用 search 解析 Ghidra 内的真实函数名
+resolve_func() {
+  local pattern="$1" out="$WORKDIR/search-$1.json"
+  "${REA[@]}" search "$EX_DIR/demo" "$pattern" --provider ghidra --kind procedures \
+      --mode regex --format json --snapshot "$WORKDIR/demo.snap" >"$out" 2>/dev/null
+  node -e '
+    const j=JSON.parse(require("fs").readFileSync(process.argv[1]));
+    const arr=Array.isArray(j.normalized_result)?j.normalized_result:[];
+    const want=process.argv[2];
+    const hit=arr.map(x=>x&&x.value).find(v=>v&&String(v).includes(want));
+    process.stdout.write(hit||"");
+  ' "$out" "$pattern"
+}
+
+# REA 失败时错误信封（{"error":...,"message":...}）写到 stdout，stderr 常为空
+show_rea_error() {
+  local json="$1" err="$2"
+  if [ -s "$json" ] && grep -q '"error"' "$json" 2>/dev/null; then
+    node -e 'try{const j=JSON.parse(require("fs").readFileSync(process.argv[1]));console.log("    REA: "+(j.message||j.error||JSON.stringify(j).slice(0,400)));}catch(e){}' "$json"
+  fi
+  [ -s "$err" ] && tail -8 "$err" | sed 's/^/    /'
+}
+
 decomp_check() {
-  local func="$1" const="$2" json="$3" err="$4"
-  if "${REA[@]}" decompile "$EX_DIR/demo" "$func" --provider ghidra --format json \
+  local want="$1" const="$2" json="$3" err="$4"
+  local name
+  name="$(resolve_func "$want")"
+  [ -z "$name" ] && name="$want"
+  info "decompile 解析到函数名：$name"
+  if "${REA[@]}" decompile "$EX_DIR/demo" "$name" --provider ghidra --format json \
        --snapshot "$WORKDIR/demo.snap" >"$json" 2>"$err"; then
     local r
     r="$(node -e '
@@ -109,11 +136,11 @@ decomp_check() {
       const code=String(j.normalized_result||"");
       const ok=j.confidence==="observed" && code.includes(process.argv[2]) && code.includes(process.argv[3]);
       console.log((ok?"1":"0")+"|confidence="+j.confidence);
-    ' "$json" "$func" "$const")"
-    if [ "${r%%|*}" = "1" ]; then ok "$func 还原（observed，含 ${const}，${r#1|}）"
-    else bad "$func 结果不符（${r#0|}）"; fi
+    ' "$json" "$want" "$const")"
+    if [ "${r%%|*}" = "1" ]; then ok "$want 还原（observed，含 ${const}，${r#1|}）"
+    else bad "$want 结果不符（${r#0|}）"; fi
   else
-    bad "$func 反编译失败（见 ${err}）"; tail -5 "$err"
+    bad "$want 反编译失败（见 ${err}）"; show_rea_error "$json" "$err"
   fi
 }
 echo "== 4. decompile secret_check =="
