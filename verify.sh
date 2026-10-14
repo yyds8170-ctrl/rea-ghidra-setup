@@ -24,8 +24,16 @@ ok()   { printf '  \033[32m[PASS]\033[0m %s\n' "$1"; PASS=$((PASS+1)); }
 bad()  { printf '  \033[31m[FAIL]\033[0m %s\n' "$1"; FAIL=$((FAIL+1)); }
 info() { printf '  \033[36m[....]\033[0m %s\n' "$1"; }
 
-# ---- 定位 JDK / Ghidra（环境变量优先，其次 ~/tools 默认位置）----------------
-if [ -z "${JAVA_HOME:-}" ]; then
+# ---- 定位 JDK 21 / Ghidra（Ghidra 12.1 要求 JDK 21+）-----------------------
+# 读取某个 JDK 目录的主版本号（兼容 "1.8" 与 "21" 两种输出）
+jdk_major_of() {
+  "$1/bin/java" -version 2>&1 | awk -F'"' '/version/ {
+    split($2,a,"."); v=a[1]; if(v=="1") v=a[2]; print v; exit
+  }'
+}
+# 现有 JAVA_HOME 缺失或版本低于 21（如 CI runner 预置 JDK17）时，改用 ~/tools
+if [ -z "${JAVA_HOME:-}" ] || [ ! -x "${JAVA_HOME:-/nonexistent}/bin/java" ] \
+     || [ "$(jdk_major_of "$JAVA_HOME" 2>/dev/null || echo 0)" -lt 21 ]; then
   JHOME="$(find "$HOME/tools" -maxdepth 1 -name 'jdk-21*' 2>/dev/null | head -1 || true)"
   if [ -n "$JHOME" ]; then export JAVA_HOME="$JHOME"; fi
 fi

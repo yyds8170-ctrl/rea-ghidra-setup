@@ -91,6 +91,17 @@ else
   echo "[3/4] 环境变量已写入 $RC_FILE"
 fi
 
+# GitHub Actions：非交互步骤不读取 .bashrc，改写 GITHUB_ENV / GITHUB_PATH 生效
+if [ -n "${GITHUB_ENV:-}" ]; then
+  echo "JAVA_HOME=$JDK_DIR" >> "$GITHUB_ENV"
+  echo "GHIDRA_INSTALL_DIR=$GHIDRA_DIR" >> "$GITHUB_ENV"
+  echo "      已写入 GITHUB_ENV（供后续 CI 步骤）"
+fi
+if [ -n "${GITHUB_PATH:-}" ]; then
+  echo "$JDK_DIR/bin" >> "$GITHUB_PATH"
+  echo "      已写入 GITHUB_PATH（JDK 加入 PATH）"
+fi
+
 # ---- 4. 验证 ---------------------------------------------------------------
 echo "[4/4] 验证 ..."
 export JAVA_HOME="$JDK_DIR"
