@@ -10,3 +10,10 @@ examples/demo
 examples/demo_stripped
 *.snap
 decompiled/
+
+# Windows 构建中间产物（保留 examples/bin 下的预编译 fixture .exe）
+*.pdb
+*.obj
+*.lib
+*.exp
+

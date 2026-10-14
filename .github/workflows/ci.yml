@@ -30,6 +30,46 @@ jobs:
       - name: 编译 demo
         run: make -C examples
 
+  # PowerShell 静态检查：每次 push / PR 都跑（ubuntu 上的 pwsh 即可解析 .ps1）
+  lint-ps:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force -ErrorAction Stop
+
+      - name: 语法解析（不依赖规则的兜底）
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem -Recurse -Filter *.ps1
+          $parseErrors = 0
+          foreach ($f in $files) {
+            $tokens = $null; $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile($f.FullName, [ref]$tokens, [ref]$errors) | Out-Null
+            if ($errors.Count -gt 0) {
+              Write-Output "语法错误：$($f.FullName)"
+              $errors | ForEach-Object { Write-Output "  $_" }
+              $parseErrors++
+            }
+          }
+          if ($parseErrors -gt 0) { exit 1 }
+          Write-Output "PowerShell 语法解析通过（$($files.Count) 个文件）"
+
+      - name: PSScriptAnalyzer（Error + Warning 均判失败）
+        shell: pwsh
+        run: |
+          $issues = Invoke-ScriptAnalyzer -Path . -Recurse -IncludeRule *.ps1
+          $issues = $issues | Where-Object { $_.Path -like '*.ps1' -and $_.Severity -in @('Error','Warning') }
+          if ($issues) {
+            $issues | Format-Table -AutoSize
+            throw "PSScriptAnalyzer 发现 $($issues.Count) 个 Error/Warning"
+          }
+          Write-Output 'PSScriptAnalyzer：无 Error/Warning'
+
   # 完整端到端：仅在每周计划任务或手动触发时运行（含 JDK + Ghidra 下载）
   e2e:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
@@ -79,6 +119,30 @@ jobs:
 
       - name: 端到端验证（Mach-O）
         run: bash verify-macos.sh
+
+  # Windows 端到端（windows-latest = x64，用户态 zip + PowerShell）
+  # 仅每周/手动触发；使用仓库自带的预编译 PE fixture，无需 C 编译器
+  e2e-windows:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 缓存 JDK + Ghidra（Windows）
+        uses: actions/cache@v4
+        with:
+          path: C:\Users\runneradmin\tools
+          key: Windows-ghidra-12.1.4-jdk21-v1
+
+      - name: 一键部署（install.ps1）
+        run: .\install.ps1
+
+      - name: 端到端验证（PE fixture）
+        run: .\verify.ps1
 
   # 容器镜像构建 + 容器内端到端验证（每周/手动）
   docker:

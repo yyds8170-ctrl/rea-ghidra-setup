@@ -48,6 +48,31 @@ source ~/.bashrc    # zsh 用户：source ~/.zshrc
 > Docker / 云电脑（VDI）的安装与验证，请见 [docs/README.md](docs/README.md) 文档导航与
 > [平台×环境支持矩阵](docs/platform-support-matrix.md)。
 
+## 一键安装（Windows 10/11 x64，免管理员）
+
+```powershell
+git clone https://github.com/yyds8170-ctrl/rea-ghidra-setup.git
+cd rea-ghidra-setup
+powershell -ExecutionPolicy Bypass -File .\install.ps1   # 推荐 pwsh 7
+# 重新打开终端后：
+powershell -ExecutionPolicy Bypass -File .\verify.ps1
+```
+
+- JDK21 / Ghidra / 便携 Node 全部以**用户态 zip** 解压到 `%USERPROFILE%\tools`，只写用户级环境变量，**不需要管理员**
+- Windows x64 的 `win_x86_64` native decompiler 为**官方预编译**；验证用仓库自带预编译 PE fixture，**不需要 C 编译器**
+- 物理机 / 虚拟机 / 云电脑 VDI / ARM64（受限）等差异见 [docs/platform-windows.md](docs/platform-windows.md)
+
+## 一键安装（macOS：Intel / Apple Silicon）
+
+```bash
+bash install-macos.sh
+source ~/.zshrc        # bash 用户：source ~/.bash_profile
+bash verify-macos.sh
+```
+
+- Apple Silicon 上自动构建 `mac_arm_64` native decompiler（需 Xcode 命令行工具），并解除 Gatekeeper 隔离
+- 详见 [docs/platform-macos.md](docs/platform-macos.md)
+
 ## 端到端验证
 
 ```bash
@@ -181,14 +206,18 @@ bash uninstall.sh --yes  # 跳过确认
 .
 ├── install.sh                # Linux 一键安装 JDK21 + Ghidra + 环境变量
 ├── install-macos.sh          # macOS 一键安装（Intel + Apple Silicon）
+├── install.ps1               # Windows 一键安装（PowerShell，用户态免管理员）
 ├── uninstall.sh              # Linux 卸载脚本（仅删本项目安装内容）
 ├── uninstall-macos.sh        # macOS 卸载脚本
+├── uninstall.ps1             # Windows 卸载脚本
 ├── verify.sh                 # Linux 端到端自检（编译 + 真实分析 + 断言）
 ├── verify-macos.sh           # macOS 端到端自检（Mach-O）
+├── verify.ps1                # Windows 端到端自检（预编译 PE fixture）
 ├── config/
 │   └── versions.env          # 版本号单一事实源（Ghidra/JDK/Node/REA）
 ├── lib/
-│   └── common.sh             # 各平台脚本共用的版本加载/URL/日志函数
+│   ├── common.sh             # 各平台 bash 脚本共用的版本加载/URL/日志函数
+│   └── common.ps1            # Windows PowerShell 共用函数
 ├── docs/                     # 按「操作系统 × 运行环境」组织的文档（见 docs/README.md）
 │   ├── README.md             # 文档导航（按平台快速选择）
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
@@ -201,10 +230,11 @@ bash uninstall.sh --yes  # 跳过确认
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
 │   ├── demo.c                # 反编译测试程序（secret_check / calc_discount / main）
-│   └── Makefile              # 编译 demo（含符号）与 demo_stripped（剥离）
+│   ├── Makefile              # 编译 demo（含符号）与 demo_stripped（剥离）
+│   └── bin/windows-x64/      # 仓库自带的预编译 Windows PE fixture（demo.exe / demo-stripped.exe）
 ├── VERSION                   # 当前版本号
 ├── .github/
-│   ├── workflows/ci.yml      # CI：lint-build（每次）/ e2e + docker（每周·手动）
+│   ├── workflows/ci.yml      # CI：lint（每次）/ e2e Linux·macOS·Windows + docker（每周·手动）
 │   └── dependabot.yml        # Actions 与 Docker 基础镜像更新提醒
 ├── CONTRIBUTING.md / SECURITY.md
 ├── LICENSE                   # PolyForm Noncommercial 1.0.0
@@ -213,6 +243,15 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v1.6（2026-10-14）**
+  - 新增 **Windows 支持（PowerShell）**：`install.ps1` / `verify.ps1` / `uninstall.ps1` + `lib/common.ps1`，覆盖 Windows 10/11 x64
+  - 全程**用户态、免管理员**：Temurin JDK21 / Ghidra / 便携 Node 以 zip 解压到 `%USERPROFILE%\tools`，用 `[Environment]::SetEnvironmentVariable(...,'User')` 写用户级变量，PATH 分号分隔且幂等；自动把 `%APPDATA%\npm` 加入 PATH；校验路径不含 `!`/`^`
+  - 校验官方自带 `win_x86_64\decompile.exe`；Node 版本门禁与 bash 版一致（`^22.19||^24.11||>=26`，经单测）
+  - 仓库自带**预编译 PE fixture** `examples/bin/windows-x64/demo.exe`（含导出函数）与 `demo-stripped.exe`，Windows 验证无需 C 编译器；`demo.c` 增加可移植 `REA_EXPORT` 宏（ELF 上为空、行为不变）
+  - 已在 Linux 主机用 Ghidra 实测该 PE fixture：`format=pe`、`secret_check`/`calc_discount` 均 `observed` 且含 `0x539`/`0x32`、stripped 可分析
+  - 新增 [docs/platform-windows.md](docs/platform-windows.md)：物理机 / 虚拟机 / WSL（改用 Linux 流程）/ 云电脑 VDI / Windows on ARM64（受限）与 fixture 重新生成说明
+  - CI 新增 `lint-ps`（每次：PSScriptAnalyzer + 语法解析，Error/Warning 均失败）与 `e2e-windows`（windows-latest x64，真实安装+验证，每周/手动）
+  - 修复：所有「`$变量` 后紧跟中文」的展开加花括号，兼容 macOS 自带 bash 3.2 的非 UTF-8 解析
 - **v1.5（2026-10-14）**
   - 新增 **macOS 支持**：`install-macos.sh` / `verify-macos.sh` / `uninstall-macos.sh`，覆盖 Intel（x64）与 Apple Silicon（arm64）
   - 适配 macOS 特有 JDK 布局（Temurin tar.gz 的 `<bundle>/Contents/Home`）；安装后自动 `xattr -dr com.apple.quarantine` 解除 Gatekeeper 隔离（REA 不代做）
