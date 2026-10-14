@@ -180,8 +180,11 @@ bash uninstall.sh --yes  # 跳过确认
 ```
 .
 ├── install.sh                # Linux 一键安装 JDK21 + Ghidra + 环境变量
+├── install-macos.sh          # macOS 一键安装（Intel + Apple Silicon）
 ├── uninstall.sh              # Linux 卸载脚本（仅删本项目安装内容）
+├── uninstall-macos.sh        # macOS 卸载脚本
 ├── verify.sh                 # Linux 端到端自检（编译 + 真实分析 + 断言）
+├── verify-macos.sh           # macOS 端到端自检（Mach-O）
 ├── config/
 │   └── versions.env          # 版本号单一事实源（Ghidra/JDK/Node/REA）
 ├── lib/
@@ -210,6 +213,14 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v1.5（2026-10-14）**
+  - 新增 **macOS 支持**：`install-macos.sh` / `verify-macos.sh` / `uninstall-macos.sh`，覆盖 Intel（x64）与 Apple Silicon（arm64）
+  - 适配 macOS 特有 JDK 布局（Temurin tar.gz 的 `<bundle>/Contents/Home`）；安装后自动 `xattr -dr com.apple.quarantine` 解除 Gatekeeper 隔离（REA 不代做）
+  - 自动检测并从源码构建缺失的 native decompiler：`mac_arm_64`（Apple Silicon）/ `mac_x86_64`（Intel），`build-ghidra-native.sh` 已支持 `ARCH_TYPE`/`OSDIR` 覆盖
+  - 环境变量幂等写入 `~/.zshrc`（默认）与 `~/.bash_profile`（兼容 bash）
+  - `verify-macos.sh` 用 clang 编译 Mach-O demo，复用同一组断言（analyze/decompile/stripped，9 项），用 Node 解析 JSON（macOS 不依赖 python3）
+  - 新增 [docs/platform-macos.md](docs/platform-macos.md)：物理机 / 虚拟机（Apple Silicon 仅 arm64 guest）/ 云 Mac / Docker Desktop 差异与 Gatekeeper、Xcode CLT 排障
+  - CI 新增 `e2e-macos`（macos-latest = arm64，真实安装+构建 native+验证，每周/手动）；ShellCheck 覆盖根目录所有 `.sh`
 - **v1.4（2026-10-14）**
   - Linux 安装加固：启动时自动识别**操作系统 / 运行环境（物理机 / 虚拟机·容器 / WSL2 / Crostini）/ 架构（x64·aarch64）**并打印
   - 支持 **arm64（aarch64）**：JDK 自动选 Temurin aarch64；新增 [`scripts/build-ghidra-native.sh`](scripts/build-ghidra-native.sh)，在官方未预编译时从源码构建 `os/linux_arm_64`（及后续 macOS）native decompiler，安装器自动调用
