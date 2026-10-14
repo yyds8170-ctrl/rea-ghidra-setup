@@ -22,9 +22,9 @@
 ## 通用文档
 
 - [platform-support-matrix.md](platform-support-matrix.md)：4 系统 × 5 运行环境（物理机 / 虚拟机 / WSL / Docker / 云电脑 VDI）支持矩阵，逐项标注「支持 / 部分 / 受限 / 不支持」及原因。
-- [configuration.md](configuration.md)：环境变量调优、MCP server 配置、代理与镜像。
-- [offline.md](offline.md)：离线 / 内网（air-gapped）安装与校验和说明。
-- [troubleshooting.md](troubleshooting.md)：跨平台常见问题汇总。
+- [configuration.md](configuration.md)：环境变量调优（内存/超时）、MCP server 接入（`rea mcp add`/`rea setup`）、代理与镜像。
+- [offline.md](offline.md)：离线 / 内网（air-gapped）安装——`prepare-offline` 准备已校验离线包，`OFFLINE_DIR` 离线安装，镜像 save/load。
+- [troubleshooting.md](troubleshooting.md)：跨平台常见问题（JDK 版本、Node 门禁、Gatekeeper、native 构建、Windows PATH/路径、Docker 等）。
 
 ## 版本
 

@@ -125,11 +125,17 @@ node_satisfies_rea() {
 
 # 下载并解压便携 Node 到 $1=tools_dir；$2=os(darwin|linux)；$3=arch(x64|aarch64)
 # 建立版本无关软链 <tools_dir>/node，echo 该软链路径。
+# 若已 source lib/checksums.sh（fetch_artifact 可用），则走带校验/离线的下载。
 install_node_portable() {
-  local tools_dir="$1" os="$2" arch="$3" tmp
+  local tools_dir="$1" os="$2" arch="$3" tmp name
   tmp="$(mktemp -d)"
-  curl -fSL "$(node_tarball_url "$os" "$arch")" -o "$tmp/node.tar.gz"
-  tar -xzf "$tmp/node.tar.gz" -C "$tools_dir"
+  name="$(node_tarball_dir "$os" "$arch").tar.gz"
+  if type -t fetch_artifact >/dev/null 2>&1; then
+    fetch_artifact node "$name" "$(node_tarball_url "$os" "$arch")" "$tmp/$name"
+  else
+    curl -fSL "$(node_tarball_url "$os" "$arch")" -o "$tmp/$name"
+  fi
+  tar -xzf "$tmp/$name" -C "$tools_dir"
   rm -rf "$tmp"
   ln -sfn "$tools_dir/$(node_tarball_dir "$os" "$arch")" "$tools_dir/node"
   printf '%s\n' "$tools_dir/node"

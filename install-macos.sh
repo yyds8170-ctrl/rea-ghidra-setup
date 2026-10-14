@@ -14,6 +14,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
+# shellcheck source=lib/checksums.sh
+source "$SCRIPT_DIR/lib/checksums.sh"
 load_versions
 
 [ "$(uname -s)" = "Darwin" ] || { echo "本脚本仅用于 macOS（Linux 请用 install.sh）" >&2; exit 1; }
@@ -28,6 +30,7 @@ case "$ARCH" in
   *) echo "不支持的 CPU 架构：$ARCH" >&2; exit 1 ;;
 esac
 JDK_API="$(adoptium_jdk_url mac "$JDK_ARCH")"
+JDK_PKG="jdk21-mac-${JDK_ARCH}.tar.gz"
 GHIDRA_URL="$(ghidra_release_url)"
 NATIVE_OS_DIR="mac_x86_64"; [ "$ARCH" = "aarch64" ] && NATIVE_OS_DIR="mac_arm_64"
 
@@ -59,7 +62,7 @@ if [[ -n "$JDK_HOME" && -x "$JDK_HOME/bin/java" ]]; then
   echo "[1/5] JDK 21 已存在：$JDK_HOME"
 else
   echo "[1/5] 下载 Temurin JDK 21（mac/${JDK_ARCH}）..."
-  curl -fSL "$JDK_API" -o "$TMP_DIR/jdk21.tar.gz"
+  fetch_artifact jdk "$JDK_PKG" "$JDK_API" "$TMP_DIR/jdk21.tar.gz"
   tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
   JDK_BUNDLE="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' -type d | head -1)"
   JDK_HOME="$JDK_BUNDLE/Contents/Home"
@@ -86,7 +89,7 @@ if [[ -x "$GHIDRA_DIR/support/analyzeHeadless" ]]; then
   echo "[3/5] Ghidra $GHIDRA_VERSION 已存在：$GHIDRA_DIR"
 else
   echo "[3/5] 下载 Ghidra $GHIDRA_VERSION ..."
-  curl -fSL "$GHIDRA_URL" -o "$TMP_DIR/ghidra.zip"
+  fetch_artifact ghidra "$(ghidra_zip_name)" "$GHIDRA_URL" "$TMP_DIR/ghidra.zip"
   unzip -q -o "$TMP_DIR/ghidra.zip" -d "$TOOLS_DIR"
   echo "      已安装：$GHIDRA_DIR"
 fi

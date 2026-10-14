@@ -15,6 +15,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
+# shellcheck source=lib/checksums.sh
+source "$SCRIPT_DIR/lib/checksums.sh"
 load_versions   # 从 config/versions.env 载入默认版本；已 export 的同名变量优先
 
 # ---- 可调参数 ---------------------------------------------------------------
@@ -28,6 +30,8 @@ case "$ARCH" in
 esac
 GHIDRA_URL="$(ghidra_release_url)"
 JDK_API="$(adoptium_jdk_url linux "$JDK_ARCH")"
+# 离线包内 JDK 的稳定文件名（prepare-offline.sh 一致）
+JDK_PKG="jdk21-linux-${JDK_ARCH}.tar.gz"
 
 # ---- 运行环境识别（信息性，不影响安装）--------------------------------------
 ENV_NAME="$(env_label)"
@@ -70,7 +74,7 @@ if [[ -n "$JDK_DIR" && -x "$JDK_DIR/bin/java" ]]; then
   echo "[1/5] JDK 21 已存在：$JDK_DIR"
 else
   echo "[1/5] 下载 Temurin JDK 21（${JDK_ARCH}）..."
-  curl -fSL "$JDK_API" -o "$TMP_DIR/jdk21.tar.gz"
+  fetch_artifact jdk "$JDK_PKG" "$JDK_API" "$TMP_DIR/jdk21.tar.gz"
   tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
   JDK_DIR="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' | head -1)"
   echo "      已安装：$JDK_DIR"
@@ -94,7 +98,7 @@ if [[ -x "$GHIDRA_DIR/support/analyzeHeadless" ]]; then
   echo "[3/5] Ghidra $GHIDRA_VERSION 已存在：$GHIDRA_DIR"
 else
   echo "[3/5] 下载 Ghidra $GHIDRA_VERSION ..."
-  curl -fSL "$GHIDRA_URL" -o "$TMP_DIR/ghidra.zip"
+  fetch_artifact ghidra "$(ghidra_zip_name)" "$GHIDRA_URL" "$TMP_DIR/ghidra.zip"
   unzip -q -o "$TMP_DIR/ghidra.zip" -d "$TOOLS_DIR"
   echo "      已安装：$GHIDRA_DIR"
 fi

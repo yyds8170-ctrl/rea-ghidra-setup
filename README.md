@@ -262,8 +262,8 @@ bash uninstall.sh --yes  # 跳过确认
 ├── config/
 │   └── versions.env          # 版本号单一事实源（Ghidra/JDK/Node/REA）
 ├── lib/
-│   ├── common.sh             # 各平台 bash 脚本共用的版本加载/URL/日志函数
-│   └── common.ps1            # Windows PowerShell 共用函数
+│   ├── common.sh / common.ps1        # 共用：版本加载/URL/架构/环境识别/下载
+│   └── checksums.sh / checksums.ps1  # 下载物 SHA-256 校验（上游 + 离线清单）
 ├── docs/                     # 按「操作系统 × 运行环境」组织的文档（见 docs/README.md）
 │   ├── README.md             # 文档导航（按平台快速选择）
 │   ├── platform-linux.md     # Linux：物理机/虚拟机/WSL/Docker/VDI
@@ -272,6 +272,8 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── platform-chromeos.md  # ChromeOS：Crostini（x86_64 完整 / ARM64 受限）
 │   ├── platform-docker.md    # Docker：linux/amd64 + linux/arm64（多架构 buildx）
 │   ├── configuration.md      # 环境变量调优 + MCP 接入（mcp add/setup）+ 代理镜像
+│   ├── offline.md            # 离线/内网安装（prepare-offline + OFFLINE_DIR + 镜像 save/load）
+│   ├── troubleshooting.md    # 跨平台故障排查
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
 ├── Dockerfile                # 多架构容器镜像（JDK21 + Node22 + Ghidra + rea，arm64 自动建 native）
 ├── docker-compose.yml        # Compose 模板（挂载工作目录、透传 rea 命令与内存/超时）
@@ -283,6 +285,8 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── doctor.sh             # 只读自检：Node/JDK21/Ghidra/native/内存/磁盘（Linux/macOS）
 │   ├── doctor.ps1            # 只读自检（Windows）
 │   ├── build-ghidra-native.sh # 从源码构建 arm64/macOS native decompiler
+│   ├── prepare-offline.sh    # 有网机器上准备已校验离线包（Linux/macOS）
+│   ├── prepare-offline.ps1   # 同上（Windows x64）
 │   ├── verify-check.js       # 跨平台统一的 analyze/decompile 断言（Node，三个 verify 共用）
 │   └── check-versions.sh     # 版本一致性 + 上游最新版检查
 ├── examples/
@@ -292,6 +296,7 @@ bash uninstall.sh --yes  # 跳过确认
 ├── VERSION                   # 当前版本号
 ├── .github/
 │   ├── workflows/ci.yml      # CI：lint（每次）/ e2e 三平台 matrix + docker amd64/arm64（每周·手动）
+│   ├── workflows/release.yml # 推 v* 标签时创建 GitHub Release（含源码快照）
 │   └── dependabot.yml        # Actions 与 Docker 基础镜像更新提醒
 ├── CONTRIBUTING.md / SECURITY.md
 ├── LICENSE                   # PolyForm Noncommercial 1.0.0
@@ -300,6 +305,11 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v2.2（2026-10-14）**
+  - **下载物 SHA-256 校验**：新增 `lib/checksums.sh` / `lib/checksums.ps1`，三个平台安装器（`install.sh`/`install-macos.sh`/`install.ps1`）对 JDK（Adoptium JSON `package.checksum`）、Node（官方 `SHASUMS256.txt`）、Ghidra（GitHub release `digest`）逐一强校验；**不匹配即删除中止**，离线/限流无清单时才警告放行。本机实测：JDK/Node/Ghidra 三源校验全部一致，篡改样本被拒（退出 1）
+  - **离线安装**：新增 `scripts/prepare-offline.sh` 与 `scripts/prepare-offline.ps1`，在有网机器生成已校验离线包（JDK+Node+Ghidra+`rea-agents.tgz`+`SHA256SUMS.txt`/`MANIFEST.txt`），目标机用 `OFFLINE_DIR=<目录> bash install.sh` 离线安装；本机完整生成离线包并验证“离线取包→清单校验”与“篡改拒绝”链路。新增 [docs/offline.md](docs/offline.md)
+  - 新增 [docs/troubleshooting.md](docs/troubleshooting.md)：汇总真实踩坑（JDK 版本、Node 门禁、macOS bash 3.2 多字节/Gatekeeper/Mach-O 下划线、Windows JDK17 注入/`%APPDATA%\npm`/路径与 NTFS、arm64 native、Docker QEMU/AppArmor）
+  - 新增 [`.github/workflows/release.yml`](.github/workflows/release.yml)：推 `v*` 标签自动 shellcheck、`git archive` 源码快照并用 `softprops/action-gh-release` 创建 Release
 - **v2.1（2026-10-14）**
   - 新增跨平台只读诊断 `scripts/doctor.sh`（Linux/macOS）与 `scripts/doctor.ps1`（Windows）：检查 Node 版本门禁、JDK 21、`analyzeHeadless(.bat)`、对应架构 native decompiler、macOS Gatekeeper 隔离、`!`/`^` 路径禁忌、磁盘与堆内存；PASS/WARN/FAIL 汇总，任一 FAIL 退出 1；健康/干净环境本机均验证
   - 新增 [docs/configuration.md](docs/configuration.md)：环境变量（`GHIDRA_HEADLESS_MAXMEM` / `GHIDRA_MAXMEM` / `REA_GHIDRA_STARTUP_TIMEOUT_MS` 等，均按 REA 官方文档核实）、MCP 接入（`rea mcp add` / `rea mcp doctor` / `rea setup` / 手动 `claude_desktop_config.json`）、代理与 npm 镜像

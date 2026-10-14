@@ -19,6 +19,7 @@
   pwsh -File .\install.ps1
 #>
 . (Join-Path $PSScriptRoot 'lib/common.ps1')
+. (Join-Path $PSScriptRoot 'lib/checksums.ps1')
 
 $Cfg = Import-VersionConfig
 $Arch = Get-WindowsArch
@@ -54,7 +55,7 @@ if ($JdkHome -and (Get-JdkMajor -JavaHome $JdkHome) -ge 21) {
 } else {
   $jdkZip = Join-Path $dlDir 'jdk21.zip'
   Write-Info '下载 Temurin JDK 21 zip（约 200MB）…'
-  Get-RemoteFile -Url (Get-JdkUrl $Cfg) -Destination $jdkZip
+  Get-VerifiedArtifact -Kind jdk -Name 'jdk21-windows-x64.zip' -Url (Get-JdkUrl $Cfg) -Out $jdkZip -Cfg $Cfg
   Expand-ZipArchive -Zip $jdkZip -DestinationParent $ToolsDir
   $JdkHome = Get-ChildItem -LiteralPath $ToolsDir -Directory -Filter 'jdk-21*' |
     Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName 'bin\java.exe') } |
@@ -78,7 +79,8 @@ if ($sysNode -and (Test-NodeVersion -VersionString ((& node --version 2>$null) -
   if (-not (Test-Path -LiteralPath (Join-Path $NodeDir 'node.exe'))) {
     $nodeZip = Join-Path $dlDir 'node.zip'
     Write-Info "下载便携 Node $($Cfg.REA_NODE_VERSION)（win-x64）…"
-    Get-RemoteFile -Url (Get-NodeZipUrl $Cfg) -Destination $nodeZip
+    $nodePkg = "$(Get-NodeDirName $Cfg).zip"
+    Get-VerifiedArtifact -Kind node -Name $nodePkg -Url (Get-NodeZipUrl $Cfg) -Out $nodeZip -Cfg $Cfg
     Expand-ZipArchive -Zip $nodeZip -DestinationParent $ToolsDir
     Remove-Item -LiteralPath $nodeZip -Force -ErrorAction SilentlyContinue
   }
@@ -100,7 +102,7 @@ if (Test-Path -LiteralPath (Join-Path $GhidraDir 'support\analyzeHeadless.bat'))
 } else {
   $ghZip = Join-Path $dlDir 'ghidra.zip'
   Write-Info '下载 Ghidra zip（约 570MB）…'
-  Get-RemoteFile -Url (Get-GhidraUrl $Cfg) -Destination $ghZip
+  Get-VerifiedArtifact -Kind ghidra -Name (Get-GhidraZipName $Cfg) -Url (Get-GhidraUrl $Cfg) -Out $ghZip -Cfg $Cfg
   Expand-ZipArchive -Zip $ghZip -DestinationParent $ToolsDir
   Remove-Item -LiteralPath $ghZip -Force -ErrorAction SilentlyContinue
   if (-not (Test-Path -LiteralPath (Join-Path $GhidraDir 'support\analyzeHeadless.bat'))) {

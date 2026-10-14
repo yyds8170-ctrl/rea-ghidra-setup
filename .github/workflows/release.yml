@@ -1,0 +1,43 @@
+# 发布工作流：推送 v* 标签时创建 GitHub Release
+#
+# 用法：
+#   git tag v2.2.0 && git push origin v2.2.0
+#
+# 本项目是脚本/技能（无编译产物），Release 附带一个干净的源码快照
+# （git archive，自动排除 offline/、.git 等未跟踪内容）。
+# 多架构 Docker 镜像请在各自环境用 buildx 构建并推送到自己的 registry
+# （本项目不发布官方镜像）。
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: shellcheck 全量
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          shellcheck -x *.sh lib/*.sh scripts/*.sh
+
+      - name: 打源码快照
+        run: |
+          NAME="rea-ghidra-setup-${GITHUB_REF_NAME}"
+          git archive --format=tar.gz --prefix="${NAME}/" -o "${NAME}.tar.gz" HEAD
+          echo "ASSET=${NAME}.tar.gz" >> "$GITHUB_ENV"
+
+      - name: 创建 Release 并上传
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            ${{ env.ASSET }}
