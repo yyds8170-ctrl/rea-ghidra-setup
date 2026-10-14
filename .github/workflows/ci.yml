@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  schedule:
+    # 每周一 03:20 UTC 跑一次完整端到端回归
+    - cron: '20 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  # 轻量检查：每次 push / PR 都跑
+  lint-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装依赖
+        run: sudo apt-get update && sudo apt-get install -y shellcheck make gcc
+
+      - name: ShellCheck
+        run: shellcheck -x install.sh verify.sh
+
+      - name: 编译 demo
+        run: make -C examples
+
+  # 完整端到端：仅在每周计划任务或手动触发时运行（含 JDK + Ghidra 下载）
+  e2e:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node 22（REA 要求 >=22.19）
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 缓存 JDK + Ghidra
+        uses: actions/cache@v4
+        with:
+          path: ~/tools
+          key: ghidra-12.1.4-jdk21-v1
+
+      - name: 一键部署 JDK + Ghidra
+        run: bash install.sh
+
+      - name: 端到端验证
+        run: bash verify.sh

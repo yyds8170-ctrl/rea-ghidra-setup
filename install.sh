@@ -28,15 +28,29 @@ mkdir -p "$TOOLS_DIR"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
+# ---- 磁盘空间检查（Ghidra 解压约 1.5GB，JDK 约 0.3GB，安装包在临时目录）----
+TOOLS_NEED_KB=2700000   # TOOLS_DIR 约需 2.6GB
+TMP_NEED_KB=800000      # 临时目录约需 0.8GB
+avail_kb="$(df -P "$TOOLS_DIR" | awk 'NR==2{print $4}')"
+if [[ "${avail_kb:-0}" -lt "$TOOLS_NEED_KB" ]]; then
+  echo "$TOOLS_DIR 可用空间不足（需约 2.6GB，当前约 $((avail_kb/1024/1024))GB）" >&2
+  exit 1
+fi
+tmp_kb="$(df -P "$TMP_DIR" | awk 'NR==2{print $4}')"
+if [[ "${tmp_kb:-0}" -lt "$TMP_NEED_KB" ]]; then
+  echo "临时目录 $TMP_DIR 可用空间不足（需约 0.8GB）" >&2
+  exit 1
+fi
+
 # ---- 1. 安装 JDK 21 ---------------------------------------------------------
-JDK_DIR="$(ls -d "$TOOLS_DIR"/jdk-21* 2>/dev/null | head -1 || true)"
+JDK_DIR="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' 2>/dev/null | head -1 || true)"
 if [[ -n "$JDK_DIR" && -x "$JDK_DIR/bin/java" ]]; then
   echo "[1/4] JDK 21 已存在：$JDK_DIR"
 else
   echo "[1/4] 下载 Temurin JDK 21 ..."
   curl -fSL "$JDK_API" -o "$TMP_DIR/jdk21.tar.gz"
   tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
-  JDK_DIR="$(ls -d "$TOOLS_DIR"/jdk-21* | head -1)"
+  JDK_DIR="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' | head -1)"
   echo "      已安装：$JDK_DIR"
 fi
 
@@ -51,7 +65,7 @@ else
   echo "      已安装：$GHIDRA_DIR"
 fi
 
-# ---- 3. 配置环境变量（幂等写入 ~/.bashrc）-----------------------------------
+# ---- 3. 配置环境变量（幂等同步 ~/.bashrc；升级版本时自动更新为最新路径）-----
 BLOCK_START="# >>> REA + Ghidra env >>>"
 BLOCK_END="# <<< REA + Ghidra env <<<"
 RC_FILE="$HOME/.bashrc"
@@ -63,8 +77,15 @@ export PATH=\$JAVA_HOME/bin:\$GHIDRA_INSTALL_DIR:\$PATH
 $BLOCK_END
 EOF
 )"
+touch "$RC_FILE"
 if grep -qF "$BLOCK_START" "$RC_FILE" 2>/dev/null; then
-  echo "[3/4] 环境变量已在 $RC_FILE 中（保持不变）"
+  # 删除旧标记块后写入最新路径；标记块之外的用户配置原样保留
+  awk -v s="$BLOCK_START" -v e="$BLOCK_END" \
+    '$0==s{skip=1;next} $0==e{skip=0;next} !skip{print}' \
+    "$RC_FILE" > "$TMP_DIR/bashrc.new"
+  printf '%s\n' "$ENV_BLOCK" >> "$TMP_DIR/bashrc.new"
+  mv "$TMP_DIR/bashrc.new" "$RC_FILE"
+  echo "[3/4] 环境变量已在 $RC_FILE 中（同步为最新路径）"
 else
   printf '\n%s\n' "$ENV_BLOCK" >> "$RC_FILE"
   echo "[3/4] 环境变量已写入 $RC_FILE"

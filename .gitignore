@@ -4,3 +4,8 @@ tools/
 *.zip
 .rea/
 node_modules/
+
+# 编译产物与分析快照
+examples/demo
+examples/demo_stripped
+*.snap
