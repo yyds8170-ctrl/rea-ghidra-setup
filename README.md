@@ -131,7 +131,14 @@ docker run --rm -v "$PWD:/workspace" rea-ghidra decompile ./demo secret_check --
 docker run --rm --entrypoint bash rea-ghidra /opt/rea-ghidra-setup/verify.sh
 ```
 
-镜像默认入口为 `rea`，工作目录 `/workspace`，默认面向 **linux/amd64**；arm64 需自行构建 native decompiler（见故障排查）。
+镜像默认入口为 `rea`，工作目录 `/workspace`，**多架构支持 `linux/amd64` 与 `linux/arm64`**（arm64 镜像内自动源码构建 `linux_arm_64` native decompiler）。也可用 Compose：
+
+```bash
+docker compose build
+docker compose run --rm rea analyze ./demo --provider ghidra --format json
+```
+
+完整说明（多架构 buildx、WSL2/VDI/Crostini、rootless、内存与超时）见 [docs/platform-docker.md](docs/platform-docker.md)。
 
 ## 不依赖 REA：原生 Ghidra 批量反编译
 
@@ -249,8 +256,10 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── platform-windows.md   # Windows：物理机/虚拟机/VDI/ARM64
 │   ├── platform-macos.md     # macOS：Intel/Apple Silicon
 │   ├── platform-chromeos.md  # ChromeOS：Crostini（x86_64 完整 / ARM64 受限）
+│   ├── platform-docker.md    # Docker：linux/amd64 + linux/arm64（多架构 buildx）
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
-├── Dockerfile                # 容器镜像（JDK21 + Node22 + Ghidra + rea）
+├── Dockerfile                # 多架构容器镜像（JDK21 + Node22 + Ghidra + rea，arm64 自动建 native）
+├── docker-compose.yml        # Compose 模板（挂载工作目录、透传 rea 命令与内存/超时）
 ├── skill/SKILL.md            # 逆向工程智能体技能（可装入 Agent）
 ├── scripts/
 │   ├── DecompileAll.java     # Ghidra 原生批量反编译脚本
@@ -265,7 +274,7 @@ bash uninstall.sh --yes  # 跳过确认
 │   └── bin/windows-x64/      # 仓库自带的预编译 Windows PE fixture（demo.exe / demo-stripped.exe）
 ├── VERSION                   # 当前版本号
 ├── .github/
-│   ├── workflows/ci.yml      # CI：lint（每次）/ e2e Linux·macOS·Windows + docker（每周·手动）
+│   ├── workflows/ci.yml      # CI：lint（每次）/ e2e 三平台 matrix + docker amd64/arm64（每周·手动）
 │   └── dependabot.yml        # Actions 与 Docker 基础镜像更新提醒
 ├── CONTRIBUTING.md / SECURITY.md
 ├── LICENSE                   # PolyForm Noncommercial 1.0.0
@@ -274,6 +283,11 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v1.9（2026-10-14）**
+  - **Docker 多架构**：`Dockerfile` 改用 buildx 注入的 `TARGETARCH` 自动选择 JDK（x64/aarch64）与 Node（x64/arm64）；**linux/arm64 镜像内自动 `make ghidra_opt` 构建 `os/linux_arm_64` native decompiler**，构建期按架构校验对应 `decompile` 就位；支持 `docker buildx build --platform linux/amd64,linux/arm64`
+  - 新增 [`docker-compose.yml`](docker-compose.yml)：模板化构建与挂载（`./:/workspace`），透传 `GHIDRA_HEADLESS_MAXMEM` / 启动超时，`docker compose run --rm rea <命令>` 即用
+  - 新增 [docs/platform-docker.md](docs/platform-docker.md)：amd64/arm64 构建、QEMU 与原生 arm64 runner 取舍、WSL2/VDI/Crostini/rootless/SELinux/内存超时排障
+  - CI 新增 `docker-arm64` 作业（原生 `ubuntu-24.04-arm` runner，免 QEMU 构建 arm64 镜像并在容器内跑 `verify.sh`）；与既有 amd64 `docker` 作业并存，每周/手动触发
 - **v1.8（2026-10-14）**
   - **跨平台 CI 合并为 matrix**：原来的 `e2e` / `e2e-macos` / `e2e-windows` 三个作业合并为一个 `e2e (linux/macos/windows)` 矩阵作业，通过 `include` 为每个平台指定 runner、shell、安装/验证命令、独立缓存路径与 key，`fail-fast: false`；每周/手动触发，缓存命中后约 4-6 分钟
   - **统一三端 verify 断言**：抽出 [`scripts/verify-check.js`](scripts/verify-check.js)（Node，零依赖），`verify.sh` / `verify-macos.sh` / `verify.ps1` 全部调用它做 `analyze` / `decompile` / `count` 断言与函数名解析（`funcname`），断言逻辑与常量（`0x539`/`0x32`）只在一处维护；Linux 不再依赖 python3

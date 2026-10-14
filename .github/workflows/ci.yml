@@ -154,3 +154,27 @@ jobs:
 
       - name: 容器内运行 verify.sh
         run: docker run --rm --entrypoint bash rea-ghidra:ci /opt/rea-ghidra-setup/verify.sh
+
+  # 容器镜像（linux/arm64）：用原生 arm64 runner，避免 QEMU 模拟编译 native 的极慢过程
+  # 该 runner 为 Public preview；仅每周/手动触发
+  docker-arm64:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 原生构建 arm64 镜像（内含 linux_arm_64 native 编译）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: rea-ghidra:arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 容器内运行 verify.sh（arm64）
+        run: docker run --rm --entrypoint bash rea-ghidra:arm64 /opt/rea-ghidra-setup/verify.sh

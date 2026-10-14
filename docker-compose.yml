@@ -1,0 +1,35 @@
+# =============================================================================
+# REA + Ghidra 的 Compose 用法
+#
+# 本文件不常驻服务，而是把“构建镜像 + 挂载工作目录 + 运行 rea 命令”模板化。
+# 用法（在要分析的目标所在目录或本仓库目录）：
+#
+#   1. 构建镜像（默认当前主机架构）：
+#        docker compose build
+#   2. 分析一个二进制（把命令追加在 -- 后，透传给 rea）：
+#        docker compose run --rm rea analyze ./demo --provider ghidra --format json
+#   3. 反编译：
+#        docker compose run --rm rea decompile ./demo secret_check --provider ghidra
+#   4. 容器内跑自检：
+#        docker compose run --rm --entrypoint bash rea /opt/rea-ghidra-setup/verify.sh
+#
+# 默认把当前目录（.）挂载到容器 /workspace；把目标二进制放到当前目录即可。
+# 跨架构镜像：DOCKER_DEFAULT_PLATFORM=linux/arm64 docker compose build
+# =============================================================================
+services:
+  rea:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: rea-ghidra:latest
+    # 把宿主机当前目录挂载为容器的工作目录
+    volumes:
+      - ./:/workspace
+    # 透传 REA / Ghidra 的可调环境变量（按需在 shell 或 .env 中覆盖）
+    environment:
+      GHIDRA_HEADLESS_MAXMEM: "${GHIDRA_HEADLESS_MAXMEM:-2G}"
+      REA_GHIDRA_STARTUP_TIMEOUT_MS: "${REA_GHIDRA_STARTUP_TIMEOUT_MS:-330000}"
+    # 默认入口是 rea；命令通过 `docker compose run --rm rea <args...>` 追加
+    working_dir: /workspace
+    # 本地测试遇到 AppArmor 限制时可加：
+    # security_opt: ["apparmor=unconfined"]
