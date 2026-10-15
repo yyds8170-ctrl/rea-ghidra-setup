@@ -43,6 +43,8 @@ BIN="$(echo "$BIN" | xargs)"
 [ -n "$BIN" ] || { echo "缺少目标二进制（见 --help）" >&2; exit 2; }
 [ -f "$BIN" ] || { echo "二进制不存在：$BIN" >&2; exit 2; }
 BIN="$(cd "$(dirname "$BIN")" && pwd)/$(basename "$BIN")"
+ORIG_BIN="$BIN"   # 原始路径，用于报告 meta；导入可能用 ASCII 临时副本
+IMPORT_BIN="$BIN"
 
 # ---- 定位 Ghidra / JDK（集中发现：显式 env ＞ current 软链 ＞ 枚举）----
 TOOLS_DIR="${TOOLS_DIR:-$HOME/tools}"
@@ -62,6 +64,21 @@ OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 PROJ_DIR="$(mktemp -d)"
 trap 'rm -rf "$PROJ_DIR"' EXIT
 
+# ---- 自愈：Ghidra headless 的 checkValidFilename 拒绝非 ASCII 文件名（目录可含非 ASCII）----
+# 若目标文件名含非 ASCII 字符，复制为 ASCII 临时名再导入；报告仍记录原始路径。
+ORIG_BASE="$(basename "$ORIG_BIN")"
+if printf '%s' "$ORIG_BASE" | LC_ALL=C grep -qP '[^\x00-\x7F]'; then
+  SAFE_DIR="$PROJ_DIR/safe"
+  mkdir -p "$SAFE_DIR"
+  SAFE_EXT=""
+  case "$ORIG_BASE" in
+    *.*) SAFE_EXT=".${ORIG_BASE##*.}" ;;
+  esac
+  IMPORT_BIN="$SAFE_DIR/target${SAFE_EXT}"
+  cp -f "$ORIG_BIN" "$IMPORT_BIN"
+  echo "  自愈：原文件名含非 ASCII 字符（Ghidra 不接受），已复制为 ASCII 临时名导入；报告中原路径不变。"
+fi
+
 run_headless() {
   local to="${REA_EXPORT_TIMEOUT:-1800}"
   if command -v timeout >/dev/null 2>&1; then
@@ -78,10 +95,10 @@ echo "  Ghidra=$GHIDRA_INSTALL_DIR  JAVA_HOME=${JAVA_HOME:-}(默认)  format=$FO
 echo "  产物目录：$OUT_DIR"
 
 run_headless "$PROJ_DIR" Proj \
-  -import "$BIN" \
+  -import "$IMPORT_BIN" \
   -overwrite \
   -scriptPath "$SCRIPT_DIR/ghidra" \
-  -postScript ExportReport.java "$OUT_DIR" "$BIN" \
+  -postScript ExportReport.java "$OUT_DIR" "$ORIG_BIN" \
   -deleteProject
 
 echo "完成。报告与数据："

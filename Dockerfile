@@ -80,17 +80,46 @@ ENV JAVA_HOME=/opt/tools/jdk21
 ENV GHIDRA_INSTALL_DIR=/opt/tools/ghidra
 ENV PATH=/opt/tools/jdk21/bin:${PATH}
 
-WORKDIR /workspace
+# ---- 非 root 用户（容器安全加固）----
+# 固定 UID/GID=1001；创建可写 HOME（rea/node 缓存）、工作目录。
+RUN set -eux; \
+    groupadd --system --gid 1001 rea; \
+    useradd  --system --uid 1001 --gid rea --create-home --home-dir /home/rea --shell /bin/bash rea; \
+    mkdir -p /workspace; \
+    # verify.sh 在仓库副本内编译 examples/demo，需让非 root 可写该副本；
+    chown -R rea:rea /opt/rea-ghidra-setup /workspace /home/rea; \
+    # /tmp 已 1777；显式给出用户可写的 tmp 兜底（只读 rootfs 时挂载）。
+    mkdir -p /home/rea/tmp && chown -R rea:rea /home/rea/tmp
+ENV HOME=/home/rea
+ENV _JAVA_OPTIONS=-Djava.io.tmpdir=/tmp
 
-# 构建期自检：analyzeHeadless 与对应架构的 native decompiler 必须就位
+# 构建期自检：analyzeHeadless 与对应架构的 native decompiler 必须就位（以 root 执行）
 RUN set -eux; \
     java -version 2>&1 | head -1; \
     test -x "$GHIDRA_INSTALL_DIR/support/analyzeHeadless"; \
+    test -x /usr/local/bin/rea; \
     case "$TARGETARCH" in \
       arm64) test -x "$GHIDRA_INSTALL_DIR/Ghidra/Features/Decompiler/os/linux_arm_64/decompile" ;; \
       *)     test -x "$GHIDRA_INSTALL_DIR/Ghidra/Features/Decompiler/os/linux_x86_64/decompile" ;; \
     esac; \
-    echo "Ghidra headless + native decompiler OK ($TARGETARCH)"
+    echo "Ghidra headless + native decompiler + rea OK ($TARGETARCH)"
+
+# 以非 root 用户运行
+USER rea
+WORKDIR /workspace
+
+# 健康探针：本镜像为命令行工具、无常驻 daemon/端口，故只做关键文件存在性探针。
+HEALTHCHECK --interval=60s --timeout=10s --start-period=10s --retries=3 \
+  CMD test -x "$GHIDRA_INSTALL_DIR/support/analyzeHeadless" && test -x /usr/local/bin/rea || exit 1
+
+# OCI 标准标签
+LABEL org.opencontainers.image.title="rea-ghidra-setup" \
+      org.opencontainers.image.description="Noncommercial image bundling Ghidra + rea-agents (REA) for headless reverse-engineering" \
+      org.opencontainers.image.url="https://github.com/yyds8170-ctrl/rea-ghidra-setup" \
+      org.opencontainers.image.documentation="https://github.com/yyds8170-ctrl/rea-ghidra-setup#readme" \
+      org.opencontainers.image.source="https://github.com/yyds8170-ctrl/rea-ghidra-setup" \
+      org.opencontainers.image.licenses="PolyForm-Noncommercial-1.0.0" \
+      org.opencontainers.image.vendor="yyds8170-ctrl"
 
 ENTRYPOINT ["rea"]
 CMD ["--help"]

@@ -31,5 +31,9 @@ services:
       REA_GHIDRA_STARTUP_TIMEOUT_MS: "${REA_GHIDRA_STARTUP_TIMEOUT_MS:-330000}"
     # 默认入口是 rea；命令通过 `docker compose run --rm rea <args...>` 追加
     working_dir: /workspace
+    # 非 root 加固：容器以 uid/gid 1001 运行，而挂载的宿主目录通常属主是 1000，
+    # analyzeHeadless 写项目文件会 Permission denied。在 .env 设 PUID/PGID（如
+    # PUID=1000、PGID=1000），再放开下面一行映射到宿主 UID：
+    # user: "${PUID}:${PGID}"
     # 本地测试遇到 AppArmor 限制时可加：
     # security_opt: ["apparmor=unconfined"]

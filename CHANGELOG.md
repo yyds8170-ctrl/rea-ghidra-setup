@@ -4,6 +4,29 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [3.5.0] - 2026-10-15
+
+### Security（容器加固）
+- `Dockerfile` 改为以**非 root 用户**运行（固定 uid/gid 1001，可写 HOME=/home/rea、工作目录 /workspace）；仓库副本 `/opt/rea-ghidra-setup` chown 给 1001，使容器内自检可在其中编译 examples。
+- 新增关键文件存在性 `HEALTHCHECK`（命令行工具、无端口，故不伪装 HTTP 探针）；新增 OCI 标准标签（title/description/url/source/licenses=PolyForm-Noncommercial-1.0.0/vendor）。
+- 构建期自检确认 analyzeHeadless、rea 与对应架构 native decompiler 就位。
+
+### Added（路径健壮性 / 自愈）
+- `ghidra-report.sh`：实测发现 Ghidra headless `checkValidFilename` 拒绝**非 ASCII 文件名**（空格与非 ASCII 目录均正常）。新增自愈——文件名含非 ASCII 时自动复制为 ASCII 临时名导入，报告仍记录原始路径；分别用「纯空格路径 / 非 ASCII 目录 / 非 ASCII 文件名」三类真实路径验证。
+
+### Added（性能基准）
+- `scripts/benchmark.sh`：对同一目标重复运行报告管线（默认 3 次），测量墙钟耗时并解析 Ghidra 分析阶段 `Total Time`，输出 min/median/max 到 `benchmark.md`/`benchmark.json`。本机实测 examples/demo：墙钟 min/median/max=24.99/25.23/25.43s，分析阶段稳定 4s。
+
+### Changed（文档）
+- `docs/platform-docker.md`：新增「非 root 安全加固与挂载卷权限」（`--user $(id -u):$(id -g)` 解决挂载目录写权限、只读 rootfs 处理、HEALTHCHECK 说明）；`docker-compose.yml` 补充 PUID/PGID 映射的可选配置。
+
+### 核实与说明
+- 核对 Ghidra 12.1.4 的 `analyzeHeadless`/`launch.sh`：`GHIDRA_HEADLESS_MAXMEM` 为脚本原生支持的堆变量（默认 2G），无需额外映射。
+- 容器非 root 行为需在 docker CI（`docker`/`docker-arm64` 作业）真实跑 `verify.sh` 确认；本机无 docker，依赖 GitHub Actions。
+
+### 本机实测
+- shellcheck -x 0（含 benchmark）、bash -n；三类特殊路径报告/导出真实跑通；benchmark 3 次数据一致；Dockerfile 语法与变量经逐行审查（镜像构建在 GHA 验证）。
+
 ## [3.4.0] - 2026-10-15
 
 ### Added（结构化逆向报告生成器）

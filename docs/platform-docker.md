@@ -1,7 +1,8 @@
 # Docker 平台部署指南（linux/amd64 + linux/arm64）
 
 > 容器镜像内置 **Temurin JDK 21 + Node 24.22.0 + Ghidra 12.1.4 + 全局 rea**，宿主无需安装任何依赖，
-> 是 WSL2 / 云电脑 VDI / CI / 隔离环境中最省事的方式。镜像默认入口为 `rea`，工作目录 `/workspace`。
+> 是 WSL2 / 云电脑 VDI / CI / 隔离环境中最省事的方式。镜像默认入口为 `rea`，工作目录 `/workspace`，
+> **默认以非 root 用户（uid/gid 1001）运行**，并带关键文件存在性 HEALTHCHECK 与 OCI 标准标签。
 
 ## 一、支持矩阵（Docker）
 
@@ -31,6 +32,22 @@ docker run --rm -v "$PWD:/workspace" rea-ghidra decompile ./demo secret_check --
 # 容器内跑端到端自检（编译 + 真实分析 + 9 项断言）
 docker run --rm --entrypoint bash rea-ghidra /opt/rea-ghidra-setup/verify.sh
 ```
+
+## 二之二、非 root 安全加固与挂载卷权限
+
+镜像以固定 uid/gid **1001** 运行，`HOME=/home/rea`，`/workspace` 为工作目录，仓库副本位于
+`/opt/rea-ghidra-setup`（已 chown 给 1001，容器内自检可在其中编译 examples）。
+
+- **挂载 `$PWD` 写不进去？** 宿主文件属主通常是你的 UID（如 1000），容器内是 1001，analyzeHeadless
+  要在挂载目录写项目文件会 Permission denied。最干净的做法是运行时映射到宿主 UID：
+  ```bash
+  docker run --rm --user "$(id -u):$(id -g)" -v "$PWD:/workspace" \
+    rea-ghidra analyze ./demo --provider ghidra --format json
+  ```
+  （映射 UID 后若 HOME 不可写，可加 `-e HOME=/tmp`，JVM/Gradle 缓存有处可写即可。）
+- **只读 rootfs**：`--read-only` 时显式给临时目录 `-v "$(mktemp -d):/tmp"` 或 `-e _JAVA_OPTIONS=-Djava.io.tmpdir=/tmp`。
+- **HEALTHCHECK**：本镜像是命令行工具、无常驻进程/端口，故探针只确认 `analyzeHeadless` 与 `rea` 就位，
+  不伪装成 HTTP 健康检查；可用 `docker inspect --format '{{.State.Health.Status}}' <容器>` 查看。
 
 ## 三、用 Docker Compose（推荐给非命令行重度用户）
 
