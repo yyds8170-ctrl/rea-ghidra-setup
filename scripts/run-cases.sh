@@ -103,6 +103,13 @@ sym_names  = set(s.get("name", "") for s in symbols)
 all_decomp  = "\n".join(decomp.values())
 low_decomp  = all_decomp.lower()
 
+# 跨平台归一化：Mach-O（macOS）给 C 符号加前导下划线（_printf），ELF 不加。
+# 去掉命名空间限定（末段）与前导下划线后比较；供“识别某导入函数”类断言使用。
+def norm(n):
+    n = n.split("::")[-1]
+    return n[1:] if n.startswith("_") and len(n) > 1 else n
+extern_names = set(norm(n) for n in sym_names) | set(norm(n) for n in callees)
+
 results = []  # (ok, message)
 def check(ok, msg):
     results.append((bool(ok), msg))
@@ -161,7 +168,8 @@ elif case == "05-export-flow":
     check(len(calls) >= 1,    f"calls 非空（{len(calls)}）")
     check(len(symbols) >= 1,  f"symbols 非空（{len(symbols)}）")
     for lib in ("printf", "strlen", "strcmp"):
-        check(lib in sym_names, f"符号表识别 libc 导入 {lib}")
+        # 跨平台：ELF 为 printf；Mach-O 为 _printf（归一化后比较）。
+        check(lib in extern_names, f"识别 libc 导入 {lib}（符号/调用，跨平台）")
 
 else:
     print(f"[FAIL] 未知案例 {case}")

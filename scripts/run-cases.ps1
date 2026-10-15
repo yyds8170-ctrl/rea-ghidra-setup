@@ -88,6 +88,15 @@ function Invoke-CaseAssert {
   $symNameSet = @{}
   foreach ($s in $symbols) { $symNameSet[$s.name] = $true }
 
+  # 跨平台归一化：Mach-O 给 C 符号加前导下划线（_printf）；去命名空间末段与下划线后比较。
+  $externSet = @{}
+  foreach ($k in @($symNameSet.Keys) + @($callees.Keys)) {
+    if (-not $k) { continue }
+    $seg = ($k -split '::')[-1]
+    $n = if ($seg.StartsWith('_') -and $seg.Length -gt 1) { $seg.Substring(1) } else { $seg }
+    if ($n) { $externSet[$n] = $true }
+  }
+
   $strText = ($strings | ForEach-Object { $_.value }) -join "`n"
 
   $decompText = ''
@@ -130,7 +139,7 @@ function Invoke-CaseAssert {
       Check ($calls.Count   -ge 1) "calls 非空（$($calls.Count)）"
       Check ($symbols.Count -ge 1) "symbols 非空（$($symbols.Count)）"
       foreach ($lib in @('printf','strlen','strcmp')) {
-        Check ($symNameSet.ContainsKey($lib)) "符号表识别 libc 导入 $lib"
+        Check ($externSet.ContainsKey($lib)) "识别 libc 导入 $lib（跨平台）"
       }
     }
     default {
@@ -179,7 +188,7 @@ foreach ($c in $cases) {
     Write-Output '----------------------------------------------------------------'
     Write-Output ">> 导出 $stem  [$mode]"
     if (-not (Test-Path $bin)) {
-      Write-Output "[FAIL] $stem: 二进制不存在（需先编译或提供预编译产物）"
+      Write-Output "[FAIL] ${stem}: 二进制不存在（需先编译或提供预编译产物）"
       $failTotal++
       continue
     }
@@ -188,7 +197,7 @@ foreach ($c in $cases) {
     try {
       & $exportPs1 -Bin $bin -Out $out -Kind all | Out-Null
     } catch {
-      Write-Output "[FAIL] $stem: ghidra-export.ps1 异常：$($_.Exception.Message)"
+      Write-Output "[FAIL] ${stem}: ghidra-export.ps1 异常：$($_.Exception.Message)"
       $failTotal++
       continue
     }

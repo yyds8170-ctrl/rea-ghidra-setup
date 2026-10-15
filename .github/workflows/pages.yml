@@ -35,7 +35,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: pip
+          # 不启用 cache: pip —— 没有 requirements.txt/lockfile，setup-python 的缓存会找不到文件而失败。
 
       - name: Install mkdocs toolchain
         run: |

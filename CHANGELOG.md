@@ -4,6 +4,21 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [4.0.1] - 2026-10-15（首个全绿收官补丁）
+
+### Fixed（全量 CI 真实跑通后修复）
+- `scripts/run-cases.ps1`：两处 PowerShell 解析错误（`$stem:` 被当成作用域分隔符，改为 `${stem}:`）；此前该文件未经 pwsh 解析验证。
+- `scripts/run-cases.sh` / `run-cases.ps1`：案例 05 的 libc 导入断言改为**跨平台**——Mach-O（macOS）给 C 符号加前导下划线（`_printf`），归一化（去命名空间末段 + 去前导下划线）后比较。修复 macOS e2e 案例 05 断言失败。
+- `.github/workflows/pages.yml`：移除 `setup-python` 的 `cache: pip`（无 requirements/lockfile，缓存找不到文件会失败）。
+- GitHub Pages 已通过 API 启用（build_type=workflow），无需手动在 Settings 切换。
+
+### Verified（本机 + CI）
+- 本机装便携 pwsh 7.5.2：12 个 .ps1 全部解析通过、PSScriptAnalyzer 0 Error（Warning 为既有样式、非阻塞）；bash 版 run-cases 复跑 10/10 通过。
+- 全量 CI（workflow_dispatch）：lint-build、e2e linux/windows、docker、docker-arm64、fixture-multiarch、checksum 均通过；v4.0.0 上失败的 lint-ps 与 e2e macos 由本补丁修复。
+
+### Notes
+- PowerShell 脚本仅支持 Windows（JDK 检测按 `bin\java.exe`）；Linux/macOS 用 bash 脚本，不在 Linux 上跑 ps1。
+
 ## [4.0.0] - 2026-10-15（收官版本 / first complete release）
 
 > 里程碑：在 v3.2 基础上，经多轮全球检索与真实端到端验证，补齐合规署名、报告生成、案例库、
