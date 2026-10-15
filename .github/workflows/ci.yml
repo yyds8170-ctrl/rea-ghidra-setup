@@ -235,7 +235,7 @@ jobs:
           node-version: '22'
 
       - name: 缓存 JDK + Ghidra（按平台独立 key；restore-keys 兜住同版本 key 微调）
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ${{ matrix.cache-path }}
           key: ${{ matrix.cache-key }}
@@ -456,7 +456,7 @@ jobs:
           node-version: '22'
 
       - name: 缓存 JDK + Ghidra
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/tools
           key: Linux-ghidra-12.1.4-jdk21-v2
