@@ -4,6 +4,23 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [3.6.0] - 2026-10-15
+
+### Added（双语文档站）
+- `docs-site/`：基于 mkdocs-material 的双语（中/英）文档站，7 个内容页 ×2 语言 = 14 页 + 404，含开始/安装/使用/案例/报告/支持矩阵/FAQ；带导航 tabs、明暗主题、语言切换、代码复制、搜索（中英）。
+- `mkdocs.yml`：独立 `docs_dir: docs-site`（与仓库原有 `docs/` 隔离）；用 `mkdocs-static-i18n` 1.3.x 的 `docs_structure: suffix` + `reconfigure_material/search` 配置（本机构建按真实插件版本校准，非旧键）；页脚 `copyright` 含署名与 NOTICE/TRADEMARKS 链接及无隶属声明。
+- `.github/workflows/pages.yml`：用官方 Pages 动作（configure-pages@v5 / upload-pages-artifact@v4 / deploy-pages@v4）部署，仅 main / v* tag / 手动触发，PR 不部署；构建走 `mkdocs build --strict`。
+
+### Fixed（文档站内容对齐）
+- 修正 Docker 快捷命令（镜像 ENTRYPOINT 为 `rea`，须 `--entrypoint bash .../verify.sh`）：docs-site 首页/安装页中英共 4 处；compose 改为 `run` 而非 `up`。
+- 案例页与报告页对齐真实脚本：`run-cases.sh`、`ghidra-report.sh <bin> --out --format`，并补齐 5 个案例的真实常量与断言原理；校验全部 48 个 `blob/main` 绝对链接均指向现有文件。
+
+### 前置条件（需手动）
+- 首次部署需在仓库 Settings → Pages → Source 选择 **GitHub Actions**；之后推 main 即自动发布到 `https://yyds8170-ctrl.github.io/rea-ghidra-setup/`。
+
+### 本机实测
+- `mkdocs build --strict` 干净（0 WARNING/ERROR，MkDocs 2.0 横幅为上游预告非错误）；首页经无头浏览器截图检查；docs-site 未引入新的相对死链（外链为绝对 GitHub URL）。
+
 ## [3.5.0] - 2026-10-15
 
 ### Security（容器加固）

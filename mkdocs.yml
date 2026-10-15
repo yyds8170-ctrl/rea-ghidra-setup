@@ -1,0 +1,98 @@
+# mkdocs-material 站点配置（独立 docs-site 内容目录）
+# 注意：本文件只服务于文档站；仓库原有 docs/ 目录由根 README 与脚本引用，不动。
+
+site_name: rea-ghidra-setup
+site_url: https://yyds8170-ctrl.github.io/rea-ghidra-setup/
+repo_url: https://github.com/yyds8170-ctrl/rea-ghidra-setup
+repo_name: yyds8170-ctrl/rea-ghidra-setup
+edit_uri: ""                # 站点内容独立托管，不指回 docs-site 的在线编辑
+docs_dir: docs-site
+site_description: >-
+  一键部署 REA + Ghidra 的第三方安装/编排工具文档站（Linux / macOS / Windows / Docker / ChromeOS）。
+site_author: 洋洋 (yyds8170-ctrl)
+
+copyright: >-
+  Copyright &copy; 2026 洋洋 (yyds8170-ctrl) ·
+  <a href="https://github.com/yyds8170-ctrl/rea-ghidra-setup/blob/main/NOTICE">NOTICE</a> ·
+  <a href="https://github.com/yyds8170-ctrl/rea-ghidra-setup/blob/main/TRADEMARKS.md">TRADEMARKS</a> ·
+  独立第三方项目，与 NSA / Ghidra / morluto / REA 无隶属、无背书关系。
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.tracking
+    - navigation.sections
+    - navigation.indexes
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      toggle:
+        icon: material/brightness-7
+        name: 切换到深色模式
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      toggle:
+        icon: material/brightness-4
+        name: 切换到浅色模式
+
+plugins:
+  - search:
+      lang:
+        - zh
+        - en
+  - i18n:
+      docs_structure: suffix
+      fallback_to_default: true
+      reconfigure_material: true
+      reconfigure_search: true
+      languages:
+        - locale: zh
+          name: 简体中文
+          default: true
+          build: true
+          site_name: rea-ghidra-setup
+        - locale: en
+          name: English
+          build: true
+          site_name: rea-ghidra-setup (EN)
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+  - tables
+  - fenced_code
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+
+# nav 使用未本地化文件名（i18n 插件会自动追加 .en 后缀）
+nav:
+  - 开始: index.md
+  - 安装:
+      - install.md
+      - 支持矩阵: support-matrix.md
+  - 使用:
+      - usage.md
+      - 报告生成器: report.md
+  - 案例与报告:
+      - cases.md
+  - FAQ: faq.md
