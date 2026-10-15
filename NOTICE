@@ -1,0 +1,59 @@
+NOTICE
+======
+
+rea-ghidra-setup
+Copyright (c) 2026 洋洋 (GitHub: yyds8170-ctrl)
+Licensed under the PolyForm Noncommercial License 1.0.0
+(see the LICENSE file for the full terms)
+
+------------------------------------------------------------------
+Independence
+------------------------------------------------------------------
+
+This repository is an independent, third-party deployment and orchestration
+tool. It is NOT affiliated with, endorsed by, sponsored by, or connected to
+any of the upstream projects, organizations, or individuals named below.
+
+This repository does NOT redistribute, embed, vendor, or modify the binaries
+or source code of the upstream components. At runtime, on the user's behalf,
+the scripts download and install them from their official sources. The
+upstream components remain solely under their own licenses and copyrights.
+
+------------------------------------------------------------------
+Upstream components (downloaded at runtime, not included here)
+------------------------------------------------------------------
+
+1. Ghidra
+   A software reverse engineering framework developed and owned by the
+   National Security Agency (NSA), licensed under the Apache License 2.0.
+   Copyright belongs to the National Security Agency.
+   Upstream: https://github.com/NationalSecurityAgency/ghidra
+   License:  https://www.apache.org/licenses/LICENSE-2.0
+
+2. rea-agents (referred to in this project as "REA")
+   Copyright (c) 2026 morluto, licensed under the MIT License.
+   Upstream: https://github.com/morluto/rea
+   REA itself does not redistribute Ghidra; it can use an existing local
+   Ghidra installation.
+
+3. Other runtime dependencies
+   - A Temurin/OpenJDK JDK (GPL v2 with the Classpath Exception) is
+     downloaded by the installer when a suitable JDK is not present.
+   - A portable Node.js runtime (MIT-like, see the Node.js license) is
+     downloaded when a suitable Node.js is not present.
+
+All product names, logos, and trademarks referenced in this repository
+(including "Ghidra", the Ghidra logo, "REA", and "rea-agents") are the
+property of their respective owners and are used here solely for descriptive
+identification. See TRADEMARKS.md for the full trademark notice.
+
+------------------------------------------------------------------
+中文说明
+------------------------------------------------------------------
+
+本项目（rea-ghidra-setup）是一个独立的第三方部署/编排工具，与美国国家
+安全局（NSA）、Ghidra、morluto、REA 等均无隶属、背书或赞助关系。本仓库
+不内置、不修改、不随仓库分发上述第三方软件，仅在运行时经用户确认从其官方
+来源下载安装，第三方成果的版权与许可证始终归各自权利人所有。本项目自有脚本
+与文档版权归 洋洋（GitHub: yyds8170-ctrl）所有，采用 PolyForm
+Noncommercial 1.0.0 许可证。

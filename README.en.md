@@ -17,6 +17,10 @@ One-click deploy **REA (Reverse Engineer Anything) + Ghidra** on a cloud desktop
 - **Ghidra**: `github.com/NationalSecurityAgency/ghidra`, NSA open-source decompiler, Apache-2.0.
 - This repo contains only install/uninstall/verify scripts, skill files and docs (no bundled third-party binaries).
 
+> **Maintainer: 洋洋 (Yangyang) — [yyds8170-ctrl](https://github.com/yyds8170-ctrl)**
+>
+> This is an **independent third-party installer/orchestrator**. It is **not affiliated with, endorsed by, or sponsored by** the NSA, Ghidra, morluto, or REA. "Ghidra" and "REA" are names of their respective owners, used here only for descriptive identification. Third-party copyright and licenses are retained; see [NOTICE](NOTICE) and [TRADEMARKS](TRADEMARKS.md).
+
 ## Contents
 
 - [30-second quick start](#30-second-quick-start)
@@ -188,6 +192,7 @@ See the Chinese README [`README.md`](README.md#目录树) for the full annotated
 
 ## Version history
 
+- **v3.3 (2026-10-15)**: Compliance & governance — replaced the PolyForm template placeholder (Yoyodyne) in LICENSE with the real copyright holder **洋洋 (yyds8170-ctrl)** and added a proper Required Notice; added NOTICE (third-party attribution + no-affiliation), TRADEMARKS (bilingual), CITATION.cff; added community-health files (Contributor Covenant 2.1, issue/PR templates, CODEOWNERS, FUNDING) and a Maintainer line. No functional change.
 - **v3.2 (2026-10-15)**: Internationalization — English README + English docs index + 8 translated docs; language switch links; support matrix refresh; final review. No functional change.
 - **v3.1 (2026-10-15)**: README polish — badges, TOC, 30-second start, mermaid decision/architecture diagrams, 8 FAQ; docs index completion; docs link checker added to CI.
 - **v3.0 (2026-10-15, major)**: unified entrypoint `rea-ghidra`; self-update with checksums; multi-version `current`/`rollback`; centralized JDK/Ghidra discovery.

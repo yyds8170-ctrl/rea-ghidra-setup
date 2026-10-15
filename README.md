@@ -17,6 +17,10 @@
 - **Ghidra**：`github.com/NationalSecurityAgency/ghidra`，NSA 开源反编译引擎，Apache-2.0
 - 本仓库仅包含**安装/卸载/验证脚本、技能文件与使用文档**（不内置上述第三方二进制）
 
+> **维护者 / Maintainer：洋洋（[yyds8170-ctrl](https://github.com/yyds8170-ctrl)）**
+>
+> 本项目是**独立的第三方部署/编排工具**，与 NSA、Ghidra、morluto、REA 及各自权利人**无隶属、无背书、无赞助关系**；「Ghidra」「REA」等名称归各自权利人，本项目仅做指示性说明。第三方版权与许可证始终保留，详见 [NOTICE](NOTICE)、[TRADEMARKS](TRADEMARKS.md)。
+
 ## 目录
 
 - [30 秒快速开始](#30-秒快速开始)
@@ -450,12 +454,23 @@ bash uninstall.sh --yes  # 跳过确认
 │   ├── workflows/release.yml # 推 v* 标签时创建 GitHub Release（含源码快照）
 │   └── dependabot.yml        # Actions 与 Docker 基础镜像更新提醒
 ├── CONTRIBUTING.md / SECURITY.md
-├── LICENSE                   # PolyForm Noncommercial 1.0.0
+├── CODE_OF_CONDUCT.md        # 行为准则（Contributor Covenant 2.1）
+├── NOTICE                    # 第三方归属 + 无隶属声明（Ghidra/REA 版权归各自权利人）
+├── TRADEMARKS.md             # 商标声明（中英）
+├── CITATION.cff              # 引用元数据（作者：洋洋）
+├── LICENSE                   # PolyForm Noncommercial 1.0.0（含真实 Required Notice）
 └── .gitignore / .dockerignore
 ```
 
+> `.github/` 下另有 `CODEOWNERS`、`FUNDING.yml`、`ISSUE_TEMPLATE/`（bug/feature/config）、`pull_request_template.md`。
+
 ## 版本历史
 
+- **v3.3（2026-10-15，合规与治理）**
+  - 修复 LICENSE 中 PolyForm 模板占位符（Yoyodyne），替换为真实版权人 **洋洋（yyds8170-ctrl）**；文末新增规范 Required Notice。
+  - 新增 [NOTICE](NOTICE)（第三方归属 + 无隶属声明，保留 Ghidra/NSA、REA/morluto 全部版权与许可）、[TRADEMARKS](TRADEMARKS.md)（商标指示性合理使用声明，中英）、[CITATION.cff](CITATION.cff)（作者：洋洋）。
+  - 新增社区健康文件：[CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)（Contributor Covenant 2.1）、issue/PR 模板、CODEOWNERS、FUNDING；README 标注 Maintainer。
+  - 纯合规/文档版本，不改安装/分析功能；署名「洋洋」为作者行使署名权，不侵权。
 - **v3.2（2026-10-15，国际化）**
   - 新增完整英文 README（`README.en.md`）与英文文档索引（`docs/README.en.md`）；8 篇关键文档英译对照（entry/mcp/export/batch/mirrors/configuration/troubleshooting/platform-support-matrix）；中英互链语言切换；支持矩阵刷新；纯文档版本，不改功能。
 - **v3.1（2026-10-15，文档美化）**

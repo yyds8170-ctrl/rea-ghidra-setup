@@ -4,6 +4,28 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [3.3.0] - 2026-10-15
+
+### Fixed（合规）
+- 修复 `LICENSE` 中 PolyForm Noncommercial 的模板占位符「Copyright Yoyodyne, Inc. (http://example.com)」，替换为本项目真实版权人；文末新增 Licensor 节与规范 Required Notice：`Copyright (c) 2026 洋洋 (https://github.com/yyds8170-ctrl/rea-ghidra-setup)`。已全文检索确认无 Yoyodyne / example.com 等占位残留。
+
+### Added（归属与商标）
+- `NOTICE`：声明本项目为独立第三方部署/编排工具，**不分发、不内嵌、不修改** Ghidra/REA，仅运行时下载；完整保留 Ghidra（NSA，Apache-2.0）、rea-agents（morluto，MIT）、JDK、Node 的版权与许可；附中文说明。
+- `TRADEMARKS.md`：中英商标声明（no affiliation / no endorsement / names belong to owners），名称使用为指示性合理使用（nominative use）。
+- `CITATION.cff`：CFF 1.2.0，authors=洋洋（family-names），license=PolyForm-Noncommercial-1.0.0，含 repository-code。
+
+### Added（社区健康）
+- `CODE_OF_CONDUCT.md`：Contributor Covenant 2.1（联系方式改为维护者 GitHub）。
+- `.github/ISSUE_TEMPLATE/`：bug_report / feature_request / config.yml（讨论与私密安全报告入口）。
+- `.github/pull_request_template.md`、`.github/CODEOWNERS`（`* @yyds8170-ctrl`）、`.github/FUNDING.yml`（暂注释）。
+- `README.md` / `README.en.md`：新增 Maintainer: 洋洋（yyds8170-ctrl）与独立第三方声明；目录树补全新文件；版本历史补 v3.3。
+
+### 法律结论
+- 作者在自己原创脚本/文档上署笔名「洋洋」，系行使《著作权法》第十条署名权，**不侵权**；同时保留全部第三方版权与许可，不将 Ghidra/REA 据为己有。本项目不随仓库分发第三方二进制，故无 Apache-2.0 第 4(d) 条 NOTICE 强制义务；现以 NOTICE/TRADEMARKS 做善意归属与无隶属声明。
+
+### 本机实测
+- shellcheck 0、bash -n 过、bash3.2 红线 0；全部 ps1 PSSA Error 0；`check-docs-links.sh` 0 死链（新 md 已计入）；`check-versions.sh` 过；CI lint 静态自检通过。版本号一致性 VERSION/CHANGELOG/CI 断言/CFF。
+
 ## [3.2.0] - 2026-10-15
 
 ### Added（国际化，纯文档）

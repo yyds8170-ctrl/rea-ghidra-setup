@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "rea-ghidra-setup"
+version: "3.3.0"
+date-released: 2026-10-15
+authors:
+  - family-names: "洋洋"
+    website: "https://github.com/yyds8170-ctrl"
+license: "PolyForm-Noncommercial-1.0.0"
+repository-code: "https://github.com/yyds8170-ctrl/rea-ghidra-setup"
+url: "https://github.com/yyds8170-ctrl/rea-ghidra-setup"
+abstract: "Cross-platform, noncommercial installer and orchestration tool that sets up Ghidra and rea-agents (REA) on Linux, macOS, Windows, and Docker, with headless static export, batching, MCP integration, real-world cases, and a structured reverse-engineering report generator."
+keywords:
+  - ghidra
+  - reverse-engineering
+  - installer
+  - rea-agents
+  - static-analysis
+  - headless
+preferred-citation:
+  type: software
+  title: "rea-ghidra-setup"
+  authors:
+    - family-names: "洋洋"
+  year: 2026

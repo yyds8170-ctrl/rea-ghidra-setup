@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用问题与讨论 / Questions & Discussions
+    url: https://github.com/yyds8170-ctrl/rea-ghidra-setup/discussions
+    about: 安装/使用问题请先在 Discussions 提问（For usage questions, please start a discussion）。
+  - name: 安全漏洞 / Security vulnerability
+    url: https://github.com/yyds8170-ctrl/rea-ghidra-setup/security/advisories/new
+    about: 请勿公开提报安全问题，请走私密漏洞报告（Please report vulnerabilities privately）。
