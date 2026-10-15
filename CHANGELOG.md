@@ -4,6 +4,21 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [5.0.0] - 2026-10-15（收官里程碑）
+
+完成 v4.1→v4.3 迭代周期的收官：全量文档同步、新增里程碑状态页、最终体检。无新功能破坏，为该周期的稳定基线。
+
+### Added
+- **文档站里程碑状态页** `docs-site/milestones.md`（+ `.en.md`）并接入 mkdocs nav：记录本周期 v4.1.0/v4.2.0/v4.3.0/v5.0.0 的 tag/commit/CI 9 作业/Release 资产字节数/验证摘要，以及"仍做不到/未实机/未授权"风险清单。
+
+### 最终体检（本周期收尾实跑）
+- shellcheck -x 0 告警；bash3.2 非 ASCII 紧邻零匹配；全部脚本 `bash -n` 通过。
+- verify.sh 9/9；run-cases 10 二进制 55 断言 0 失败；selftest-batch 4/4；selftest-install-lock 7/7；selfcheck-checksums 通过。
+- CI 全量 9 作业全绿（lint-build/lint-ps/fixture-multiarch/checksum/docker/docker-arm64/e2e×3）。
+- 死链 0（299 链接）；mkdocs build --strict（zh+en）通过。
+- 版本一致性：VERSION=5.0.0，CHANGELOG/README 中英同步。
+- 约束合规扫描：版本历史区无"洋洋"（仅 README 维护者行/mkdocs 署名/docs-site 维护者段保留）；无 GHCR/外部注册表推送迹象。
+
 ## [4.3.0] - 2026-10-15（路径/编码/供应链加固）
 
 针对特殊字符路径、WSL 性能陷阱、上游版本漂移三类风险做加固与巡检，不盲目升级上游。
