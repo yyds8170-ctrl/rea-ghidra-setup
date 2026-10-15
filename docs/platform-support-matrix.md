@@ -1,3 +1,5 @@
+[English](platform-support-matrix.en.md) | 简体中文
+
 # 平台 × 运行环境支持矩阵
 
 > 状态含义：
@@ -10,6 +12,13 @@
 > 安装逻辑**按操作系统组织**；物理机 / 虚拟机 / 云电脑（VDI）复用对应 OS 的安装脚本，
 > 差异仅在资源、网络与嵌套虚拟化。WSL 是 Windows 宿主上的 Linux 客户机，内部走 Linux 流程。
 > 先运行 `bash scripts/detect-env.sh` 可自动识别当前系统、架构与运行环境。
+
+## 零、锁定版本与统一能力（v3.x）
+
+- 锁定版本（`config/versions.env`）：**Ghidra 12.1.4 / JDK 21 / 便携 Node 24.22.0 / REA 6.5.0**。
+- 统一入口：`./rea-ghidra install|verify|doctor|mcp|export|batch|current|rollback|self-update`（Windows `.\rea-ghidra.ps1`）。
+- 能力：MCP 一键对接（[mcp.md](mcp.md)）、静态导出（[export.md](export.md)）、批量并行 + 快照缓存（[batch.md](batch.md)）、多架构 fixture CI（`fixture-multiarch`，ELF32/AArch64/PE32）、自更新 ff-only / checksums 校验、`current-ghidra`·`current-jdk` 软链与回滚、Docker amd64+arm64、Release 附带 `checksums.txt` + SBOM。
+- 发现逻辑：显式 env（`JAVA_HOME`/`GHIDRA_INSTALL_DIR`）＞ `~/tools/current-*` 软链 ＞ 版本化目录枚举（旧行为兜底）。
 
 ## 一、系统 × 运行环境总表
 

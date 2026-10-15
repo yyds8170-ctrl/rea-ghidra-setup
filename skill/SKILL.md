@@ -48,7 +48,7 @@ description: 当需要在没有源码的情况下分析一个已编译/已打包
 | macOS（Intel / Apple Silicon） | `bash install-macos.sh` | `bash verify-macos.sh` |
 | Docker（任意宿主，amd64/arm64） | `docker build -t rea-ghidra .` 或 `docker compose build` | 容器内 `verify.sh` |
 
-安装脚本会自动装 JDK 21 + Node 22（满足 REA 版本门禁）、下载 Ghidra 并在 arm64/macOS 上源码构建
+安装脚本会自动装 JDK 21 + Node 24.22.0（满足 REA 版本门禁）、下载 Ghidra 并在 arm64/macOS 上源码构建
 缺失的 native decompiler。安装后/排障前先跑只读诊断：`bash scripts/doctor.sh`（Windows 用 `.\scripts\doctor.ps1`），
 它检查 Node 版本、JDK 21、`analyzeHeadless`、native decompiler 是否就位；再跑 `rea doctor` 验证 provider 连接。
 

@@ -1,3 +1,5 @@
+[English](export.en.md) | 简体中文
+
 # Ghidra 静态分析导出（无需 REA）
 
 `ghidra-export` 用 Ghidra 原生 `analyzeHeadless` 把一个二进制分析后导出成机器可读产物（JSON / 伪代码），**不依赖 rea-agents / Node / npm**，是纯 Ghidra 能力。适合：批量逆向、导出函数清单/调用图给下游工具、CI 中做二进制回归。

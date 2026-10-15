@@ -2,7 +2,7 @@
 # =============================================================================
 # scripts/mcp-setup.sh — REA MCP server 一键注册 + 连接自检（Linux / macOS）
 #
-# 真实能力（rea-agents@6.4.0，2026-10-15 实测）：
+# 真实能力（rea-agents@6.5.0，2026-10-15 实测）：
 #   - MCP over stdio 用【换行分隔 JSONL】，无 Content-Length 帧；
 #     发一行 initialize，回一行 {"result":{...},"jsonrpc":"2.0","id":1}。
 #   - `rea mcp doctor --json` 是官方握手校验（healthy / initialize / tools 对账）。

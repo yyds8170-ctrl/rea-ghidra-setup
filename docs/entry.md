@@ -1,3 +1,5 @@
+[English](entry.en.md) | 简体中文
+
 # 统一入口 `rea-ghidra`（v3.0）
 
 一条命令收敛前几版散落的脚本。入口是**极薄分发层**：定位仓库根、选择对应脚本、透传参数并保留退出码；真实逻辑仍在 `install.sh` / `verify.sh` / `scripts/*`，不复制实现。

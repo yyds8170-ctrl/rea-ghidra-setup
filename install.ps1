@@ -6,7 +6,7 @@
 .DESCRIPTION
   与 install.sh / install-macos.sh 对应：
     1. 下载 Temurin JDK 21（Windows x64 zip，解压到 %USERPROFILE%\tools）
-    2. 检查 Node（不满足 REA 要求 ^22.19||^24.11||>=26 时解压便携 Node 22）
+    2. 检查 Node（不满足 REA 要求 ^22.19||^24.11||>=26 时解压便携 Node 24.22.0）
     3. 下载并解压 Ghidra（跨平台同一个 zip）
     4. 校验官方自带的 win_x86_64 native decompiler
     5. 写入用户级环境变量 JAVA_HOME / GHIDRA_INSTALL_DIR / PATH（幂等）
@@ -146,7 +146,7 @@ if ($JdkHome -and (Get-JdkMajor -JavaHome $JdkHome) -ge 21) {
 if ((Get-JdkMajor -JavaHome $JdkHome) -lt 21) { Stop-Fatal "JDK 主版本低于 21：$JdkHome" }
 
 # ---------------------------------------------------------------------------
-# 2. Node（满足 REA 要求则用系统 Node；否则解压便携 Node 22）
+# 2. Node（满足 REA 要求则用系统 Node；否则解压便携 Node 24.22.0）
 # ---------------------------------------------------------------------------
 Write-Info "[2/5] 检查 Node（REA 要求 ^22.19 || ^24.11 || >=26）..."
 $NodeDir = $null

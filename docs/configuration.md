@@ -1,3 +1,5 @@
+[English](configuration.en.md) | 简体中文
+
 # 配置与 MCP 接入指南
 
 > 本文覆盖三部分：① 环境变量调优（内存/超时/路径）；② 把 REA 注册为 MCP server

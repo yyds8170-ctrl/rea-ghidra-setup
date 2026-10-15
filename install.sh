@@ -2,7 +2,7 @@
 # =============================================================================
 # REA + Ghidra 一键部署脚本（Linux：x86_64 完整支持 / arm64 需自建 native）
 #
-# 作用：在本机安装 Temurin JDK 21 + Ghidra +（可选）便携 Node 22，并配置 REA
+# 作用：在本机安装 Temurin JDK 21 + Ghidra +（可选）便携 Node 24.22.0，并配置 REA
 #       环境变量；arm64 上自动从源码构建 Ghidra native decompiler。
 # 适用环境：物理本机、虚拟机、WSL2、ChromeOS Crostini、云电脑（VDI）——同一套
 #           Linux 流程，仅在启动时打印检测到的环境。

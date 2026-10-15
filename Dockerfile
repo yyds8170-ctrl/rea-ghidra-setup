@@ -2,7 +2,7 @@
 # =============================================================================
 # REA + Ghidra 容器镜像（多架构：linux/amd64 与 linux/arm64）
 #
-# 含：Temurin JDK 21、Node 22、Ghidra、全局安装的 rea、技能与脚本。
+# 含：Temurin JDK 21、Node 24.22.0（versions.env 锁定）、Ghidra、全局安装的 rea、技能与脚本。
 # 所有版本号集中在 config/versions.env（单一事实源）。
 #
 # 单架构构建：
@@ -39,7 +39,7 @@ RUN set -eux; . /opt/versions.env; \
     ln -sfn /opt/tools/jdk-21* /opt/tools/jdk21; \
     rm -f /tmp/jdk.tar.gz
 
-# Node 22（REA 要求 >=22.19；按 TARGETARCH 选择 x64 / arm64）
+# Node（REA 要求 >=22.19；版本取自 versions.env REA_NODE_VERSION=24.22.0；按 TARGETARCH 选择 x64 / arm64）
 RUN set -eux; . /opt/versions.env; \
     case "$TARGETARCH" in arm64) NARCH=arm64 ;; *) NARCH=x64 ;; esac; \
     curl -fSL "https://nodejs.org/dist/v${REA_NODE_VERSION}/node-v${REA_NODE_VERSION}-linux-${NARCH}.tar.gz" \

@@ -40,7 +40,7 @@ bash verify-macos.sh     # 编译 Mach-O demo 并真实反编译，9 项断言
 安装器（5 步）：
 
 1. 下载 Temurin JDK 21（自动选 mac/aarch64 或 mac/x64），解包到 `~/tools`，识别 macOS 特有的 `<bundle>/Contents/Home` 布局并设置 `JAVA_HOME`；
-2. 检测系统 Node，不满足 REA 要求（`^22.19 || ^24.11 || >=26`）时安装便携 Node 22（`SKIP_NODE=1` 可跳过）；
+2. 检测系统 Node，不满足 REA 要求（`^22.19 || ^24.11 || >=26`）时安装便携 Node 24.22.0（`SKIP_NODE=1` 可跳过）；
 3. 下载并解压 Ghidra；
 4. **解除 Gatekeeper 隔离**：对整个 Ghidra/JDK 目录递归 `xattr -dr com.apple.quarantine`（REA 不会替你做这步，必须由部署脚本处理）；随后构建缺失的 native decompiler；
 5. 幂等写入 `~/.zshrc` 与 `~/.bash_profile`。

@@ -35,7 +35,7 @@ bash verify.sh          # 端到端自检，9 项断言全过即就绪
 安装器（v1.4+）完成 5 步：
 
 1. 下载 Temurin JDK 21（按架构自动选 x64/aarch64）到 `~/tools`；
-2. 检测系统 Node，缺失或版本不满足（REA 要求 `^22.19 || ^24.11 || >=26`）时，自动安装**便携版 Node 22** 到 `~/tools/node`（无需 root；`SKIP_NODE=1` 可跳过）；
+2. 检测系统 Node，缺失或版本不满足（REA 要求 `^22.19 || ^24.11 || >=26`）时，自动安装**便携版 Node 24.22.0** 到 `~/tools/node`（无需 root；`SKIP_NODE=1` 可跳过）；
 3. 下载并解压 Ghidra（跨平台 zip）；
 4. 校验 native decompiler：x86_64 官方自带直接通过；arm64 自动从源码构建；
 5. 幂等写入 `~/.bashrc`（以及存在时的 `~/.zshrc`）环境变量块。

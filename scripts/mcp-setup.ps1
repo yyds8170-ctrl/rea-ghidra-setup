@@ -3,7 +3,7 @@
   REA MCP server 一键注册 + 连接自检（Windows；PS 5.1/7 兼容，也可在 Linux pwsh 下跑 -DryRun/-List）。
 
 .DESCRIPTION
-  与 scripts/mcp-setup.sh 等价。真实能力（rea-agents@6.4.0）：MCP over stdio 为换行分隔 JSONL
+  与 scripts/mcp-setup.sh 等价。真实能力（rea-agents@6.5.0）：MCP over stdio 为换行分隔 JSONL
   （无 Content-Length）；发一行 initialize，回一行 {"result":{...},"id":1}。
   本脚本自己写标准 MCP stdio JSON（最小副作用：备份 .bak → 只合并 mcpServers.rea → 不动其它条目）。
 

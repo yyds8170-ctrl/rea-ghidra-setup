@@ -111,7 +111,7 @@ normalize_arch() {
   esac
 }
 
-# Node 解压后的目录名（tar.gz 包），如 node-v22.19.0-linux-x64
+# Node 解压后的目录名（tar.gz 包），如 node-v24.22.0-linux-x64
 node_tarball_dir() {
   local os="$1" arch="$2" narch="$2"
   [ "$arch" = "aarch64" ] && narch="arm64"

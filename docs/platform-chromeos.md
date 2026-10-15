@@ -76,7 +76,7 @@ bash verify.sh
   ```bash
   sudo apt install -y build-essential bison
   ```
-- Node 不满足 REA 要求时自动装便携 Node 22。
+- Node 不满足 REA 要求时自动装便携 Node 24.22.0。
 
 > 因为 `analyzeHeadless` 是纯命令行、不需要 GUI，Crostini 里跑 headless 分析是最顺的用法，
 > 不依赖 Wayland/X 转发。

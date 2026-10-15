@@ -11,7 +11,7 @@
 # 断言逻辑统一走 scripts/verify-check.js（与 verify-macos.sh / verify.ps1 一致）。
 # 全部通过退出码 0；任一失败退出码 1。可作为 CI 的一个步骤。
 # 用法：bash verify.sh
-#   可覆盖：REA_VERSION=6.4.0 GHIDRA_INSTALL_DIR=... JAVA_HOME=... ./verify.sh
+#   可覆盖：REA_VERSION=6.5.0 GHIDRA_INSTALL_DIR=... JAVA_HOME=... ./verify.sh
 # =============================================================================
 set -uo pipefail
 

@@ -4,7 +4,7 @@
 #
 # 产物目录（默认 ./offline，可用 OUT_DIR 覆盖）：
 #   jdk21-<os>-<arch>.tar.gz      Temurin JDK 21（按当前机器架构）
-#   node-v<ver>-<os>-<arch>.tar.gz  便携 Node 22
+#   node-v<ver>-<os>-<arch>.tar.gz  便携 Node 24.22.0
 #   ghidra_<ver>_PUBLIC_<date>.zip   Ghidra 跨平台 zip
 #   rea-agents-<ver>.tgz            （可选）npm 打包的 rea-agents，供离线全局安装
 #   SHA256SUMS.txt                  上述全部文件的 SHA-256 清单（目标机离线强校验）

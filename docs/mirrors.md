@@ -1,3 +1,5 @@
+[English](mirrors.en.md) | 简体中文
+
 # 国内镜像加速（REA_MIRROR）
 
 中国大陆网络访问 nodejs.org、api.adoptium.net、GitHub Release 往往慢或不稳。

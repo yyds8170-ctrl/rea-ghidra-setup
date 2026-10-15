@@ -2,7 +2,7 @@
 # =============================================================================
 # REA + Ghidra 一键部署脚本（macOS：Intel x86_64 / Apple Silicon arm64）
 #
-# 作用：安装 Temurin JDK 21 + Ghidra +（可选）便携 Node 22，解除 Gatekeeper
+# 作用：安装 Temurin JDK 21 + Ghidra +（可选）便携 Node 24.22.0，解除 Gatekeeper
 #       隔离，并在官方未预编译时从源码构建 native decompiler。
 # 适用环境：Mac 物理机、Apple Silicon 虚拟机（仅 arm64 guest）、云 Mac（CI）。
 # 特点：无需 root、无需 Homebrew（tar.gz 解压到 ~/tools）、幂等。

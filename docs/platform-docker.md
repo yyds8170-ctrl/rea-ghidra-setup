@@ -1,13 +1,13 @@
 # Docker 平台部署指南（linux/amd64 + linux/arm64）
 
-> 容器镜像内置 **Temurin JDK 21 + Node 22 + Ghidra 12.1.4 + 全局 rea**，宿主无需安装任何依赖，
+> 容器镜像内置 **Temurin JDK 21 + Node 24.22.0 + Ghidra 12.1.4 + 全局 rea**，宿主无需安装任何依赖，
 > 是 WSL2 / 云电脑 VDI / CI / 隔离环境中最省事的方式。镜像默认入口为 `rea`，工作目录 `/workspace`。
 
 ## 一、支持矩阵（Docker）
 
 | 项 | linux/amd64 | linux/arm64 |
 | --- | --- | --- |
-| 镜像内 JDK 21 / Node 22 / Ghidra | ✅ | ✅（自动选 aarch64 包） |
+| 镜像内 JDK 21 / Node 24.22.0 / Ghidra | ✅ | ✅（自动选 aarch64 包） |
 | native decompiler | ✅ 官方预编译 `linux_x86_64` | 🟠 镜像内**源码构建** `linux_arm_64`（Dockerfile 自动完成） |
 | 单架构 `docker build` | ✅ | ✅（在 arm64 机器上原生构建） |
 | `buildx --platform` 多架构一次构建 | ✅ | 🟠 可在 amd64 上用 QEMU 模拟，但**编译 native 极慢**，建议原生 arm64 runner |

@@ -12,7 +12,7 @@
 | 架构 | **x64 官方支持并在 CI（windows-latest）实测**；ARM64（Windows on ARM）借助 x64 模拟，属「受限支持」，见文末 |
 | JDK | Temurin 21（脚本自动下载用户态 zip，解压到 `%USERPROFILE%\tools`） |
 | Ghidra | 跨平台 zip；Windows x64 的 `win_x86_64\decompile.exe` 为**官方预编译**，无需自行构建 |
-| Node | 满足 `^22.19 || ^24.11 || >=26` 即用系统 Node；否则脚本自动解压便携 Node 22 |
+| Node | 满足 `^22.19 || ^24.11 || >=26` 即用系统 Node；否则脚本自动解压便携 Node 24.22.0 |
 | C 编译器 | **不需要**。验证使用仓库自带的预编译 PE fixture，见 [examples/bin/windows-x64](../examples/bin/windows-x64) |
 
 > 安装路径**不能包含 `!` 或 `^`**（Ghidra headless 无法启动）；默认 `%USERPROFILE%\tools` 安全。可用 `TOOLS_DIR` 环境变量覆盖。
@@ -41,7 +41,7 @@ pwsh -File .\install.ps1
 安装器（5 步）：
 
 1. 下载 Temurin JDK 21（windows/x64 zip）→ 解压到 `%USERPROFILE%\tools\jdk-21*`；
-2. 检测系统 Node，不满足要求时解压便携 Node 22（`node-v24.22.0-win-x64`）；
+2. 检测系统 Node，不满足要求时解压便携 Node 24.22.0（`node-v24.22.0-win-x64`）；
 3. 下载并解压 Ghidra（约 570MB）→ `%USERPROFILE%\tools\ghidra_<版本>_PUBLIC`；
 4. 校验官方自带的 `win_x86_64\decompile.exe`；
 5. 写入**用户级**环境变量（HKCU，免管理员，幂等）：

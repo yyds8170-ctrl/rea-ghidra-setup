@@ -1,3 +1,5 @@
+[English](mcp.en.md) | 简体中文
+
 # REA MCP 客户端对接（一键注册 + 连接自检）
 
 REA 自带一个 MCP server（`rea-agents --mcp`，stdio 传输）。本仓库提供

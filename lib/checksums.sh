@@ -100,7 +100,7 @@ cs_verify() {
 #
 # 参数：
 #   $1 kind      node | jdk | ghidra
-#   $2 basename  交付物文件名（如 node-v22.19.0-linux-x64.tar.gz）
+#   $2 basename  交付物文件名（如 node-v24.22.0-linux-x64.tar.gz）
 #   $3 url       在线下载地址
 #   $4 out       落地路径（下载/复制到这里）
 # 环境：

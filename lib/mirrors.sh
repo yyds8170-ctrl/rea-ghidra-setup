@@ -44,7 +44,7 @@ rea_mode() {
   printf '%s' "$REA_MIRROR_MODE"
 }
 
-# Node 二进制候选 URL（$1=交付物 basename，如 node-v22.19.0-linux-x64.tar.gz）。
+# Node 二进制候选 URL（$1=交付物 basename，如 node-v24.22.0-linux-x64.tar.gz）。
 # 各镜像目录下文件名与官方完全一致，故直接 basename 拼接。
 # echo 空格分隔列表：cn 模式镜像在前、官方兜底；global 模式官方在前。
 node_candidate_urls() {

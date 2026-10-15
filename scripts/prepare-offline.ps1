@@ -1,7 +1,7 @@
 #Requires -Version 7
 <#
 .SYNOPSIS
-  在【有网】的 Windows x64 机器上准备离线安装包（JDK21 + Node22 + Ghidra + 校验清单）。
+  在【有网】的 Windows x64 机器上准备离线安装包（JDK21 + Node 24.22.0 + Ghidra + 校验清单）。
 
 .DESCRIPTION
   产物目录（默认 .\offline，可用 -OutDir 或 $env:OUT_DIR 覆盖）：

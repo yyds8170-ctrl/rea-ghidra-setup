@@ -1,3 +1,5 @@
+[English](troubleshooting.en.md) | 简体中文
+
 # 故障排查（跨平台）
 
 > 第一步永远是跑只读诊断：`bash scripts/doctor.sh`（Windows 用 `.\scripts\doctor.ps1`），
@@ -17,7 +19,7 @@ Ghidra 12.x 要求**恰好 JDK 21**。常见错误是系统/CI 上默认 JDK 17�
 
 ### 2. Node 版本不满足（^22.19 || ^24.11 || >=26）
 
-- REA 拒绝 Node 23/25 及低版本 22/24。安装脚本会装便携 Node 22.19；`SKIP_NODE=1` 时请自行切换。
+- REA 拒绝 Node 23/25 及低版本 22/24。安装脚本会装便携 Node 24.22.0；`SKIP_NODE=1` 时请自行切换。
 - 用 fnm/nvm 时注意它注入的 `NODE_VERSION` 变量；本项目的版本变量因此命名为 `REA_NODE_VERSION`。
 - 验证：`node --version` 需 ≥ v22.19（或 v24.11 / v26+）。
 

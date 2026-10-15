@@ -4,6 +4,21 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [3.2.0] - 2026-10-15
+
+### Added（国际化，纯文档）
+- 完整英文 `README.en.md`（徽章/TOC/Quick Start/mermaid 决策树与架构图/真实数字/FAQ/版本历史 v1.0→v3.2）。
+- 英文文档索引 `docs/README.en.md`（按 Getting started/Platforms/Usage/Configuration & supply chain/Operations 分组）。
+- 8 篇关键文档英译对照：entry/mcp/export/batch/mirrors/configuration/troubleshooting/platform-support-matrix（`docs/*.en.md`）；每篇顶部中英互链；无英文版的 platform/offline 页在英文索引标注 (Chinese only)。
+- 中英 README 与 docs 顶部语言切换行；支持矩阵新增“锁定版本与统一能力”节。
+
+### Changed
+- 刷新文档与脚本注释里的旧版本表述（安装器实际便携 Node 统一为 24.22.0、实测能力 rea-agents 6.5.0），覆盖 README、平台/故障文档、install*.sh/.ps1、doctor、prepare-offline、SKILL、Dockerfile 注释、mcp-setup 与 verify 示例；版本门禁 `^22.19 || ^24.11 || >=26` 与 CHANGELOG/版本历史中的历史快照保持不变。`check-docs-links.sh` 增加剔除行内 code span 以正确处理文档示例语法。
+
+### 本机实测
+- `bash scripts/check-docs-links.sh`：30 个 md、190 个相对链接、0 死链；临时死链负向测试正确非 0。
+- shellcheck 0、bash -n 过、bash3.2 红线 0、全部 ps1 PSSA Error 0、ci.yml/release.yml yaml 过；`./rea-ghidra verify` 仍 9/9。
+
 ## [3.1.0] - 2026-10-15
 
 ### Changed（文档美化，不改功能）
