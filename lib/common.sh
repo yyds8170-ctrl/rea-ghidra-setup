@@ -167,7 +167,7 @@ install_node_portable() {
     [ -e "$cand/bin/node" ] || continue
     if node_bin_satisfies_rea "$cand/bin/node"; then
       ln -sfn "$cand" "$tools_dir/node"
-      echo "[便携Node] 复用已有 $cand（$("$cand/bin/node" --version 2>/dev/null)），跳过下载" >&2
+      echo "[便携Node] 复用已有 ${cand}（$("$cand/bin/node" --version 2>/dev/null)），跳过下载" >&2
       printf '%s\n' "$tools_dir/node"
       return 0
     fi

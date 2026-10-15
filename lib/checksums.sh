@@ -131,7 +131,7 @@ fetch_artifact() {
     # v4.0.4（FIX-3c）：指定了 OFFLINE_DIR 却缺当前锁定版本的包文件时，
     # 醒目告警「回退联网下载」，不再静默回退（否则“完全离线安装”名不副实）。
     if [ -n "${OFFLINE_DIR:-}" ] && [ ! -f "$OFFLINE_DIR/$name" ]; then
-      echo "[警告] 离线包缺少 $name（期望版本见 config/versions.env），将回退联网下载；" >&2
+      echo "[警告] 离线包缺少 ${name}（期望版本见 config/versions.env），将回退联网下载；" >&2
       echo "        若需真正离线安装，请先在联网机器上运行 bash scripts/prepare-offline.sh 刷新离线包。" >&2
     fi
     local dl_urls="$url"

@@ -83,7 +83,7 @@ PY
       if [ -s "$T_OUT/$MARK" ]; then
         ok=1; break
       fi
-      last_err="Ghidra 分析未产出结果文件 $MARK（输入可能不可识别/非可执行二进制）"
+      last_err="Ghidra 分析未产出结果文件 ${MARK}（输入可能不可识别/非可执行二进制）"
     else
       last_err="$(tail -3 "$T_OUT/headless.log" 2>/dev/null | tr '\n' ' ')"
     fi
