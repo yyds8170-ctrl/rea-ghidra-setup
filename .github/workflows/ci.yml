@@ -80,6 +80,9 @@ jobs:
       - name: 编译 demo
         run: make -C examples
 
+      - name: 编译端到端案例库（5 案例，含 strip 版构建）
+        run: make -C examples/cases all
+
   # PowerShell 静态检查：每次 push / PR 都跑（ubuntu 上的 pwsh 即可解析 .ps1）
   lint-ps:
     runs-on: ubuntu-latest
@@ -305,6 +308,30 @@ jobs:
         if: matrix.label == 'linux'
         shell: bash
         run: bash scripts/selftest-batch.sh
+
+      - name: 端到端案例库断言（仅 Linux：5 案例 × 带符号/strip，共 10 二进制）
+        if: matrix.label == 'linux'
+        shell: bash
+        run: bash scripts/run-cases.sh
+
+      - name: 报告生成器断言（仅 Linux：生成 md+html+JSON 并校验关键常量）
+        if: matrix.label == 'linux'
+        shell: bash
+        run: |
+          set -e
+          REPORT_OUT="$(mktemp -d)"
+          # 案例库已编译的 01 crackme 作为真实目标
+          bash scripts/ghidra-report.sh examples/cases/build/01-crackme-password \
+            --out "$REPORT_OUT" --format both
+          test -s "$REPORT_OUT/report.md"
+          test -s "$REPORT_OUT/report.html"
+          test -s "$REPORT_OUT/constants.json"
+          python3 -c 'import json,sys,os; d=sys.argv[1]; vals="\n".join(s.get("value","") for s in json.load(open(os.path.join(d,"strings.json")))); assert "S3cr3t-2026" in vals and "ACCESS GRANTED" in vals, "报告缺少关键字符串"; print("报告生成器断言通过：md/html/JSON 齐全，关键字符串命中")' "$REPORT_OUT"
+
+      - name: 端到端案例库断言（macOS：同样真实跑，验证跨平台 Ghidra 行为）
+        if: matrix.label == 'macos'
+        shell: bash
+        run: bash scripts/run-cases.sh
 
       - name: Ghidra 静态导出回归（Windows，PE fixture，只跑 functions）
         if: matrix.label == 'windows'

@@ -4,6 +4,30 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [3.4.0] - 2026-10-15
+
+### Added（结构化逆向报告生成器）
+- `scripts/ghidra/ExportReport.java`：单次 headless 自动分析后，一次性产出 `meta/functions/strings/symbols/calls/decompiled` + `imports/exports/constants/xrefs` 共 10 类 JSON，并汇总 `report.md`（10 节）与自包含 `report.html`（内联 CSS、无 CDN/JS，可离线分发）。
+- `scripts/ghidra-report.sh`：定位 Ghidra/JDK（可用 `GHIDRA_INSTALL_DIR`/`JAVA_HOME` 覆盖），传 outDir/目标路径，不依赖 REA/Node；支持 `--format md|html|both|json`，结束前校验报告完整性。
+
+### Added（端到端真实案例库）
+- `examples/cases/`：5 个难度递进的真实案例，每个含 C 源码、Makefile 与中英 README（业务背景、预期常量、断言原理）：
+  - 01-crackme-password（strcmp 口令 `S3cr3t-2026`、`ACCESS GRANTED`）
+  - 02-license-key（异或 `0x5A`、求和目标 `0x1B7`=439，正确 key `A6868`）
+  - 03-tiered-pricing（阈值 100/10、满减常量 `0x32`=50）
+  - 04-switch-dispatch（jumptable，do_login/do_buy/do_about/do_exit）
+  - 05-export-flow（完整导出管线，libc 导入 printf/strlen/strcmp/snprintf）
+- `scripts/run-cases.sh` / `scripts/run-cases.ps1`：编译 5 案例（带符号 + stripped 共 10 二进制），对每个跑真实 Ghidra 导出并用 python 逐项断言【字符串/函数名/调用边/反编译常量】，任一失败退出非 0。
+
+### Changed（CI）
+- `lint-build`：新增「编译端到端案例库」；`e2e` Linux 新增 `run-cases.sh` 全量断言与 `ghidra-report.sh` 报告断言（校验 md/html/JSON 齐全且关键字符串命中）；`e2e` macOS 同样真实跑 `run-cases.sh`，验证跨平台 Ghidra 行为。
+
+### Fixed（真实编译驱动，未凭记忆）
+- 首次真实编译抓到并修复 3 处 API 误用：`getExternalLocations(lib)` 返回 `ExternalLocationIterator`（改为 hasNext/next 循环）；`ExternalLocation` 无 `getOrdinal()`（移除该字段，地址列替代）；`Instruction` 无 `getScalarLengths()`（改用 `getNumOperands/getOperandType + OperandType.isScalar + getScalar()`）。
+
+### 本机实测
+- 报告生成器在 `examples/demo` 真跑通：constants 捕获 secret_check 1337/0x539、9000/0x2328，calc_discount 50/0x32；HTML 经无头浏览器截图检查、标签平衡、无外链。案例库独立干净重跑 10/10 二进制全部 PASS、exit 0。shellcheck -x 0、bash -n、bash3.2 非 ASCII 红线 0；全部 workflow YAML 解析过。
+
 ## [3.3.0] - 2026-10-15
 
 ### Fixed（合规）
