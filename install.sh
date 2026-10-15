@@ -95,9 +95,11 @@ if node_satisfies_rea; then
 elif [ "$SKIP_NODE" = "1" ]; then
   echo "[2/5] SKIP_NODE=1，跳过便携 Node 安装（请自行确保 Node 22.19+/24.11+/26+）"
 else
-  echo "[2/5] 未检测到满足要求的 Node，下载便携 Node ${REA_NODE_VERSION}（${ARCH}）..."
+  # v4.0.4：文案不写死“下载”——install_node_portable 内部会优先复用 TOOLS_DIR 下
+  # 已满足 REA 的便携 Node（FIX-5 幂等），实际下载/复用由它打 stderr 日志说明。
+  echo "[2/5] 准备便携 Node ${REA_NODE_VERSION}（${ARCH}；已存在则复用，不重复下载）..."
   NODE_HOME="$(install_node_portable "$TOOLS_DIR" linux "$ARCH")"
-  echo "      已安装：${NODE_HOME}（$("$NODE_HOME/bin/node" --version)）"
+  echo "      已就绪：${NODE_HOME}（$("$NODE_HOME/bin/node" --version)）"
 fi
 
 # ---- 3. 安装 Ghidra ---------------------------------------------------------

@@ -86,9 +86,10 @@ if node_satisfies_rea; then
 elif [ "$SKIP_NODE" = "1" ]; then
   echo "[2/5] SKIP_NODE=1，跳过便携 Node 安装（请自行确保 Node 22.19+/24.11+/26+）"
 else
-  echo "[2/5] 下载便携 Node ${REA_NODE_VERSION}（darwin/${ARCH}）..."
+  # v4.0.4：文案不写死“下载”——install_node_portable 优先复用 TOOLS_DIR 下已有便携 Node（FIX-5）。
+  echo "[2/5] 准备便携 Node ${REA_NODE_VERSION}（darwin/${ARCH}；已存在则复用，不重复下载）..."
   NODE_HOME="$(install_node_portable "$TOOLS_DIR" darwin "$ARCH")"
-  echo "      已安装：${NODE_HOME}（$("$NODE_HOME/bin/node" --version)）"
+  echo "      已就绪：${NODE_HOME}（$("$NODE_HOME/bin/node" --version)）"
 fi
 
 # ---- 3. 安装 Ghidra ---------------------------------------------------------

@@ -27,6 +27,8 @@
 | `self-update [--check|--dry-run]` | 自更新（见下） | — |
 | `current` | 列出 `~/tools` 下 Ghidra/JDK 版本与 current 软链指向 | — |
 | `rollback` | 多版本并存时把 current 切回上一个 | — |
+| `uninstall` | 卸载 JDK/Ghidra 并清理 `~/.bashrc` 环境块（按平台分发，交互确认；`--yes` 跳过） | uninstall.sh / uninstall-macos.sh / uninstall.ps1 |
+| `detect-env` | 只读识别系统/架构/运行环境（physical/wsl/crostini/docker/vm），判断是否需自建 native | scripts/detect-env.sh |
 | `help` / `--help` | 中文用法 | — |
 
 ## 快速开始

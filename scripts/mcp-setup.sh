@@ -19,6 +19,7 @@
 #   bash scripts/mcp-setup.sh --dry-run --client claude-desktop
 #   bash scripts/mcp-setup.sh --client claude-desktop --yes
 #   bash scripts/mcp-setup.sh --check                # 原生 stdio 握手 + (有 Ghidra 时) doctor
+# END USAGE
 # =============================================================================
 set -euo pipefail
 
@@ -41,7 +42,7 @@ while [ $# -gt 0 ]; do
     --yes|-y) MODE_YES=1; shift ;;
     --client) [ $# -ge 2 ] || { echo "--client 需要客户端名" >&2; exit 2; }; CLIENT="$2"; shift 2 ;;
     -h|--help)
-      sed -n '2,30p' "$0" | sed 's/^# \?//'
+      sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \?//; /^END USAGE$/d'
       exit 0 ;;
     *) echo "未知参数：$1（见 --help）" >&2; exit 2 ;;
   esac

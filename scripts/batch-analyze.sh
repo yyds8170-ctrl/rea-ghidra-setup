@@ -13,6 +13,7 @@
 # 示例：
 #   scripts/batch-analyze.sh ./bins/ --recurse --out ./batch-out --kind functions --jobs 4 --snapshot ./cache
 #   第二次跑同样命令：全部命中快照缓存，显著更快。
+# END USAGE
 # =============================================================================
 set -euo pipefail
 
@@ -76,7 +77,13 @@ PY
   while [ "$TRIED" -le "$RETRIES" ]; do
     TRIED=$((TRIED+1))
     if "$SCRIPT_DIR/ghidra-export.sh" "$TARGET" --out "$T_OUT" --kind "$KIND" >/dev/null 2>>"$T_OUT/headless.log"; then
-      ok=1; break
+      # v4.0.4（FIX-2 / BUG-003）：headless 退出 0 不代表真有产物——对随机垃圾/
+      # 不可识别二进制，Ghidra 可能“无产出但退出 0”。必须校验本次 kind 对应的产物
+      # 文件真实存在且非空（-s），否则判失败、不写快照，避免空目录被误记 success。
+      if [ -s "$T_OUT/$MARK" ]; then
+        ok=1; break
+      fi
+      last_err="Ghidra 分析未产出结果文件 $MARK（输入可能不可识别/非可执行二进制）"
     else
       last_err="$(tail -3 "$T_OUT/headless.log" 2>/dev/null | tr '\n' ' ')"
     fi
@@ -100,7 +107,7 @@ BIN_ARGS=(); DIR=""; RECURSE=0; PATTERN=""
 OUT_DIR="./batch-out"; KIND="all"; JOBS=""; RETRIES=1; SNAP=""; CONTINUE=0
 while [ $# -gt 0 ]; do
   case "$1" in
-    --help|-h) sed -n '2,22p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    --help|-h) sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \?//; /^END USAGE$/d'; exit 0 ;;
     --dir) DIR="$2"; shift 2 ;;
     --recurse) RECURSE=1; shift ;;
     --pattern) PATTERN="$2"; shift 2 ;;
@@ -142,6 +149,14 @@ N="$(grep -zc '' "$LIST" 2>/dev/null || true)"
 
 mkdir -p "$OUT_DIR/targets" "$OUT_DIR/.results"
 [ -n "$SNAP" ] && mkdir -p "$SNAP"
+
+# v4.0.4（FIX-6 / BUG-004）：非 --continue 模式下，每次运行开始时清空本次 out 目录的
+# 旧 .results 与 summary.json，避免 summary 累积历史运行结果；--continue 断点续跑时
+# 保留旧结果（worker 对已有完整产物的目标走 skipped 分支）。
+if [ "$CONTINUE" != "1" ]; then
+  rm -rf "$OUT_DIR/.results" "$OUT_DIR/summary.json"
+  mkdir -p "$OUT_DIR/.results"
+fi
 
 # jobs：nproc（Linux）/ sysctl hw.ncpu（macOS），封顶 4，且不超过目标数
 if [ -z "$JOBS" ]; then

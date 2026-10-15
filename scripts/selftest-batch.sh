@@ -65,6 +65,36 @@ else
   fail "失败隔离(status=$st, exit=$wr)"
 fi
 
+echo "[selftest-batch] ④ 空产物隔离（v4.0.4/FIX-2：随机垃圾文件应 failed 且不写快照）"
+# Ghidra 对随机垃圾二进制“无产出但退出 0”，worker 必须校验产物文件存在且非空，
+# 否则会把空目录误记 success、并把垃圾 sha 写入快照缓存。
+CORRUPT="$WORK/corrupt"; head -c 200 /dev/urandom > "$CORRUPT"
+SNAP2="$WORK/snap2"; OUT3="$WORK/out3"
+set +e
+timeout 600 bash "$SCRIPT_DIR/batch-analyze.sh" "$WORK/t1" "$CORRUPT" \
+  --out "$OUT3" --kind functions --jobs 2 --snapshot "$SNAP2" >/tmp/batch4.log 2>&1
+set -e
+if python3 - "$OUT3" "$SNAP2" <<'PY'
+import json,sys,os
+out, snap = sys.argv[1], sys.argv[2]
+d = json.load(open(f"{out}/summary.json"))
+by = {os.path.basename(t["input"]): t for t in d["targets"]}
+corrupt, good = by.get("corrupt", {}), by.get("t1", {})
+snap_entries = os.listdir(snap) if os.path.isdir(snap) else []
+ok = (corrupt.get("status") == "failed"
+      and good.get("status") == "success"
+      and len(snap_entries) == 1
+      and "未产出结果文件" in (corrupt.get("error") or ""))
+print(f"    t1={good.get('status')} corrupt={corrupt.get('status')} snap_entries={len(snap_entries)}")
+print(f"    corrupt.error={(corrupt.get('error') or '')[:50]}")
+sys.exit(0 if ok else 1)
+PY
+then
+  pass "垃圾文件空产物判 failed 且不写快照"
+else
+  fail "垃圾文件空产物隔离"
+fi
+
 if [ "$FAILED" = "0" ]; then
   echo "[selftest-batch] 全部通过"
 else

@@ -4,6 +4,26 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [4.0.4] - 2026-10-15（体检修复版）
+
+对 46 项 bash 测试 + 10 项 Ghidra 回归实测后，按真实证据逐项修复安装/批量/离线/入口链路的缺陷。
+
+### Fixed
+- **便携 Node 下载污染 `~/.bashrc`（BUG-001）**：`fetch_artifact`/`download` 把 `[下载]`/`[校验]`/`[离线]` 进度日志打到 stdout，被 `NODE_HOME="$(install_node_portable ...)"` 命令替换捕获，导致写入 rc 的环境块混入多行垃圾、PATH 损坏。统一将此类进度/校验日志改打 stderr（`lib/download.sh`、`lib/checksums.sh`），stdout 只承载纯返回路径。
+- **batch 空产物误判 SUCCESS（BUG-003）**：worker 原来只看 `ghidra-export.sh` 退出码；Ghidra 对随机垃圾/不可识别二进制“无产出但退出 0”。现退出 0 后必须校验本次 kind 对应产物文件存在且非空（`-s`），否则记 `status=failed`、error 注明“Ghidra 分析未产出结果文件（输入可能不可识别）”，不写快照；批处理失败隔离语义不变。`scripts/selftest-batch.sh` 新增第 ④ 例“随机垃圾文件→failed 且不写快照、好目标照常 success”。
+- **离线包版本落后 + 静默回退**：`offline/` 内 node v22.19.0 / rea-agents 6.4.0 落后 `config/versions.env`（24.22.0 / 6.5.0）。已真跑 `scripts/prepare-offline.sh` 刷新到 node v24.22.0（官方 SHASUMS 校验通过）+ rea-agents 6.5.0，重生成 `MANIFEST.txt`/`SHA256SUMS.txt` 并删除旧包；指定 `OFFLINE_DIR` 却缺当前锁定版本包时，改为醒目中文告警“离线包缺少 …，回退联网下载”，不再静默。
+- **`--help` 泄露源码行（BUG-005）**：`ghidra-export.sh`/`ghidra-report.sh`/`benchmark.sh`/`batch-analyze.sh`（及同类 `mcp-setup.sh`/`run-cases.sh`）原先按硬编码行号截取注释，注释块增长后会把 `set -euo pipefail`/`SCRIPT_DIR=` 等代码行打进帮助。各脚本注释块末尾加 `# END USAGE` 哨兵，截取改为 `sed -n '2,/^# END USAGE/p'`。
+- **install 幂等重跑重复下载 Node（BUG-002）**：`install_node_portable` 先复用 `$TOOLS_DIR` 下已满足 REA 版本要求的便携 Node（新增 `node_bin_satisfies_rea`），第二次跑不再下载、耗时显著下降；安装器 [2/5] 文案改为中性的“准备（已存在则复用）”。
+- **batch `summary.json` 累积历史结果（BUG-004）**：非 `--continue` 模式每次运行开始清空本次 out 目录的旧 `.results` 与 `summary.json`；`--continue` 断点续跑保留旧结果的语义不变。
+- **`build-fixtures.sh` 普通 x86_64 必然失败 + 旧产物残留（bug#2/#3）**：新增必成的 native x86_64 目标（`gcc fixture.c -o linux_x86_64`），无交叉工具链的普通机器也能 built≥1、exit 0；构建前清空 `examples/fixtures/` 旧产物，保证输出与本次运行一一对应。
+- **入口与脚本参数缺口**：`rea-ghidra` 补上 `uninstall`（按平台分发到 uninstall 脚本）与 `detect-env`（调 `scripts/detect-env.sh`）子命令并更新帮助；`verify.sh`/`uninstall.sh` 增加 `--help/-h`（旧行为是用户敲 `--help` 却直接跑 9 项 e2e / 进入交互删除）。
+
+### Verified
+- 沙箱（`PATH=/usr/bin:/bin`、独立 `HOME=/tmp/rea-sandbox*`、ghidra/jdk 软链复用）真实安装：`.bashrc` 环境块只含合法 `export PATH=...`、无 `[下载]`/`[校验]` 字样；`source ~/.bashrc && node --version` 输出便携 Node v24.22.0；第二次跑复用 Node、exit 0。
+- batch 混入 200 字节随机垃圾：该目标 `failed` 且 error 可读、好目标 `success`、快照不含垃圾条目、第二次仍重新分析且整体不崩；selftest-batch 4/4 PASS。
+- 离线目录与 `versions.env` 完全一致，`sha256sum -c offline/SHA256SUMS.txt` 全 OK；真实离线安装全部 `[离线]` 取包、无回退警告。
+- 说明：`scripts/selfcheck-checksums.sh` 的 Ghidra 上游校验和一项因匿名 GitHub API 限流返回空（Node/JDK 校验和可获取、Node 下载校验解包 PASS），属网络限流而非回归；离线 `SHA256SUMS.txt` 中 ghidra 校验独立验证为 OK。
+
 ## [4.0.3] - 2026-10-15（最终干净收官）
 
 ### Changed（Pages 部署卫生）
@@ -126,21 +146,20 @@
 ## [3.3.0] - 2026-10-15
 
 ### Fixed（合规）
-- 修复 `LICENSE` 中 PolyForm Noncommercial 的模板占位符「Copyright Yoyodyne, Inc. (http://example.com)」，替换为本项目真实版权人；文末新增 Licensor 节与规范 Required Notice：`Copyright (c) 2026 洋洋 (https://github.com/yyds8170-ctrl/rea-ghidra-setup)`。已全文检索确认无 Yoyodyne / example.com 等占位残留。
+- 修复 `LICENSE` 中 PolyForm Noncommercial 的模板占位符「Copyright Yoyodyne, Inc. (http://example.com)」，替换为本项目真实版权人；文末新增 Licensor 节与规范 Required Notice：`Copyright (c) 2026 真实版权人（见 LICENSE）`。已全文检索确认无 Yoyodyne / example.com 等占位残留。
 
 ### Added（归属与商标）
 - `NOTICE`：声明本项目为独立第三方部署/编排工具，**不分发、不内嵌、不修改** Ghidra/REA，仅运行时下载；完整保留 Ghidra（NSA，Apache-2.0）、rea-agents（morluto，MIT）、JDK、Node 的版权与许可；附中文说明。
 - `TRADEMARKS.md`：中英商标声明（no affiliation / no endorsement / names belong to owners），名称使用为指示性合理使用（nominative use）。
-- `CITATION.cff`：CFF 1.2.0，authors=洋洋（family-names），license=PolyForm-Noncommercial-1.0.0，含 repository-code。
+- `CITATION.cff`：CFF 1.2.0，license=PolyForm-Noncommercial-1.0.0，含 repository-code（引用元数据见文件）。
 
 ### Added（社区健康）
 - `CODE_OF_CONDUCT.md`：Contributor Covenant 2.1（联系方式改为维护者 GitHub）。
 - `.github/ISSUE_TEMPLATE/`：bug_report / feature_request / config.yml（讨论与私密安全报告入口）。
 - `.github/pull_request_template.md`、`.github/CODEOWNERS`（`* @yyds8170-ctrl`）、`.github/FUNDING.yml`（暂注释）。
-- `README.md` / `README.en.md`：新增 Maintainer: 洋洋（yyds8170-ctrl）与独立第三方声明；目录树补全新文件；版本历史补 v3.3。
+- `README.md` / `README.en.md`：新增 Maintainer 行与独立第三方声明；目录树补全新文件；版本历史补 v3.3。
 
-### 法律结论
-- 作者在自己原创脚本/文档上署笔名「洋洋」，系行使《著作权法》第十条署名权，**不侵权**；同时保留全部第三方版权与许可，不将 Ghidra/REA 据为己有。本项目不随仓库分发第三方二进制，故无 Apache-2.0 第 4(d) 条 NOTICE 强制义务；现以 NOTICE/TRADEMARKS 做善意归属与无隶属声明。
+- 合规与署名信息详见 [LICENSE](LICENSE) / [NOTICE](NOTICE) / [CITATION.cff](CITATION.cff)。
 
 ### 本机实测
 - shellcheck 0、bash -n 过、bash3.2 红线 0；全部 ps1 PSSA Error 0；`check-docs-links.sh` 0 死链（新 md 已计入）；`check-versions.sh` 过；CI lint 静态自检通过。版本号一致性 VERSION/CHANGELOG/CI 断言/CFF。

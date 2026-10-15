@@ -13,6 +13,24 @@ BLOCK_START="# >>> REA + Ghidra env >>>"
 BLOCK_END="# <<< REA + Ghidra env <<<"
 RC_FILE="$HOME/.bashrc"
 
+# v4.0.4（FIX-8）：--help/-h 只打印用法并退出 0，绝不进入删除/交互确认（旧行为是
+# 用户敲 --help 却直接跑了完整卸载流程）。
+case "${1:-}" in
+  -h|--help)
+    cat <<'EOF'
+uninstall.sh — 卸载 install.sh 安装的 JDK / Ghidra，并清理 ~/.bashrc 环境块
+
+用法：
+  bash uninstall.sh           （列出将删除的内容，交互确认 y 后执行）
+  bash uninstall.sh --yes     （跳过确认直接执行）
+  bash uninstall.sh --help    （本帮助，不做任何改动）
+
+仅删除本项目安装的内容；不删除 REA 缓存、其他软件与用户数据。
+EOF
+    exit 0
+    ;;
+esac
+
 JDK_TARGETS="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' 2>/dev/null || true)"
 GHIDRA_TARGETS="$(find "$TOOLS_DIR" -maxdepth 1 -name 'ghidra_*_PUBLIC' 2>/dev/null || true)"
 indent() { while IFS= read -r line; do echo "  $line"; done; }

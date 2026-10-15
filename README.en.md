@@ -206,7 +206,16 @@ See the Chinese README [`README.md`](README.md#目录树) for the full annotated
 
 ## Version history
 
-- **v3.3 (2026-10-15)**: Compliance & governance — replaced the PolyForm template placeholder (Yoyodyne) in LICENSE with the real copyright holder **洋洋 (yyds8170-ctrl)** and added a proper Required Notice; added NOTICE (third-party attribution + no-affiliation), TRADEMARKS (bilingual), CITATION.cff; added community-health files (Contributor Covenant 2.1, issue/PR templates, CODEOWNERS, FUNDING) and a Maintainer line. No functional change.
+- **v4.0.4 (2026-10-15, health-check fixes)**: fixes driven by 46 bash tests + 10 Ghidra regression runs.
+  - Portable Node download/progress logs went to stdout and were captured by command substitution, polluting the `~/.bashrc` env block and breaking PATH — progress/checksum logs now go to stderr; the rc block is again clean `export PATH=...` lines.
+  - batch-analyze previously trusted only the exit code; a garbage/unknown binary exits 0 with no output yet was marked success — it now requires the per-kind result file to exist and be non-empty, else `failed` (no snapshot); added a random-garbage regression case.
+  - Offline packages lagged the locked versions (node 22.19.0→24.22.0, rea-agents 6.4.0→6.5.0) — refreshed via `prepare-offline.sh`, regenerated checksums, removed old packages; a missing locked package now warns loudly before falling back to network instead of doing so silently.
+  - `--help` printed source lines (`set -e...`/`SCRIPT_DIR=`) when the comment block grew — anchored to a `# END USAGE` sentinel.
+  - install re-downloaded Node on every idempotent rerun — it now reuses an existing portable Node that satisfies REA.
+  - batch `summary.json` accumulated historical results — non-`--continue` runs now clear prior results (continue semantics unchanged).
+  - `build-fixtures.sh` always failed on a plain x86_64 host — added a guaranteed native x86_64 target and cleaned stale fixtures first.
+  - Unified entrypoint gained `uninstall`/`detect-env`; `verify.sh`/`uninstall.sh` gained `--help` (previously `--help` ran the full 9-check e2e / entered interactive deletion).
+- **v3.3 (2026-10-15)**: Compliance & governance — replaced the PolyForm template placeholder (Yoyodyne) in LICENSE with the real copyright holder (see LICENSE) and added a proper Required Notice; added NOTICE (third-party attribution + no-affiliation), TRADEMARKS (bilingual), CITATION.cff; added community-health files (Contributor Covenant 2.1, issue/PR templates, CODEOWNERS, FUNDING) and a Maintainer line. No functional change.
 - **v3.2 (2026-10-15)**: Internationalization — English README + English docs index + 8 translated docs; language switch links; support matrix refresh; final review. No functional change.
 - **v3.1 (2026-10-15)**: README polish — badges, TOC, 30-second start, mermaid decision/architecture diagrams, 8 FAQ; docs index completion; docs link checker added to CI.
 - **v3.0 (2026-10-15, major)**: unified entrypoint `rea-ghidra`; self-update with checksums; multi-version `current`/`rollback`; centralized JDK/Ghidra discovery.

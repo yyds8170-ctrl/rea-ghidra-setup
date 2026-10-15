@@ -394,7 +394,7 @@ bash uninstall.sh --yes  # 跳过确认
 
 ```
 .
-├── rea-ghidra                # v3.0 统一入口（Linux/macOS：install/doctor/verify/mcp/export/batch/self-update/current/rollback）
+├── rea-ghidra                # v3.0 统一入口（Linux/macOS：install/doctor/verify/mcp/export/batch/fixtures/walkthrough/version/self-update/current/rollback/uninstall/detect-env）
 ├── rea-ghidra.ps1            # v3.0 统一入口（Windows PS5.1/7，同上子命令）
 ├── install.sh                # Linux 一键安装 JDK21 + Ghidra + 环境变量
 ├── install-macos.sh          # macOS 一键安装（Intel + Apple Silicon）
@@ -472,7 +472,7 @@ bash uninstall.sh --yes  # 跳过确认
 ├── CODE_OF_CONDUCT.md        # 行为准则（Contributor Covenant 2.1）
 ├── NOTICE                    # 第三方归属 + 无隶属声明（Ghidra/REA 版权归各自权利人）
 ├── TRADEMARKS.md             # 商标声明（中英）
-├── CITATION.cff              # 引用元数据（作者：洋洋）
+├── CITATION.cff              # 引用元数据
 ├── LICENSE                   # PolyForm Noncommercial 1.0.0（含真实 Required Notice）
 └── .gitignore / .dockerignore
 ```
@@ -481,11 +481,21 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v4.0.4（2026-10-15，体检修复版）**
+  - 体检修复（依据 46 项 bash 测试 + 10 项 Ghidra 回归实测证据）：
+  - 便携 Node 下载进度/校验日志原打 stdout，被命令替换捕获后污染 `~/.bashrc` 环境块、损坏 PATH——统一改打 stderr，rc 环境块恢复为纯 `export PATH=...` 行。
+  - batch-analyze 原仅看退出码，垃圾二进制“无产出但退出 0”被误记 success——现校验产物文件存在且非空，否则记 failed、不写快照；新增随机垃圾文件回归用例。
+  - 离线包落后锁定版本（node 22.19.0→24.22.0、rea-agents 6.4.0→6.5.0）——已真跑 `prepare-offline.sh` 刷新并重生成校验清单、删旧包；离线缺当前版本包时改为醒目告警回退，不再静默。
+  - `--help` 按硬编码行号截取会泄露 `set -e...`/`SCRIPT_DIR=` 等源码行——加 `# END USAGE` 哨兵锚定注释块。
+  - install 幂等重跑重复下载 Node——改为复用 `~/tools` 下已满足版本的便携 Node。
+  - batch `summary.json` 累积历史结果——非 `--continue` 运行前清空本次旧结果（`--continue` 保留语义不变）。
+  - `build-fixtures.sh` 在无交叉工具链的普通 x86_64 必然失败——新增必成的 native x86_64 目标并先清空旧产物。
+  - 统一入口补 `uninstall`/`detect-env` 子命令；`verify.sh`/`uninstall.sh` 补 `--help`（旧行为是 `--help` 却直接跑 9 项 e2e / 进入交互删除）。
 - **v3.3（2026-10-15，合规与治理）**
-  - 修复 LICENSE 中 PolyForm 模板占位符（Yoyodyne），替换为真实版权人 **洋洋（yyds8170-ctrl）**；文末新增规范 Required Notice。
-  - 新增 [NOTICE](NOTICE)（第三方归属 + 无隶属声明，保留 Ghidra/NSA、REA/morluto 全部版权与许可）、[TRADEMARKS](TRADEMARKS.md)（商标指示性合理使用声明，中英）、[CITATION.cff](CITATION.cff)（作者：洋洋）。
+  - 修复 LICENSE 中 PolyForm 模板占位符（Yoyodyne），替换为真实版权人（见 [LICENSE](LICENSE)）；文末新增规范 Required Notice。
+  - 新增 [NOTICE](NOTICE)（第三方归属 + 无隶属声明，保留 Ghidra/NSA、REA/morluto 全部版权与许可）、[TRADEMARKS](TRADEMARKS.md)（商标指示性合理使用声明，中英）、[CITATION.cff](CITATION.cff)（引用元数据）。
   - 新增社区健康文件：[CODE_OF_CONDUCT](CODE_OF_CONDUCT.md)（Contributor Covenant 2.1）、issue/PR 模板、CODEOWNERS、FUNDING；README 标注 Maintainer。
-  - 纯合规/文档版本，不改安装/分析功能；署名「洋洋」为作者行使署名权，不侵权。
+  - 纯合规/文档版本，不改安装/分析功能。
 - **v3.2（2026-10-15，国际化）**
   - 新增完整英文 README（`README.en.md`）与英文文档索引（`docs/README.en.md`）；8 篇关键文档英译对照（entry/mcp/export/batch/mirrors/configuration/troubleshooting/platform-support-matrix）；中英互链语言切换；支持矩阵刷新；纯文档版本，不改功能。
 - **v3.1（2026-10-15，文档美化）**
@@ -493,7 +503,7 @@ bash uninstall.sh --yes  # 跳过确认
   - docs/README.md 索引补全（entry/mcp/export/batch/mirrors/offline 分组链接）；新增 `scripts/check-docs-links.sh` 死链检查器并接入 CI lint。
   - 纯文档版本，不改任何安装/分析逻辑。
 - **v3.0（2026-10-15，major 一体化体验）**
-  - **统一入口**：`./rea-ghidra`（bash）/ `.\rea-ghidra.ps1`（PS5.1/7）一条命令收敛 `install/doctor/verify/mcp/export/batch/fixtures/walkthrough/version/self-update/current/rollback`，全部透传到既有脚本并保留退出码，不复制逻辑。
+  - **统一入口**：`./rea-ghidra`（bash）/ `.\rea-ghidra.ps1`（PS5.1/7）一条命令收敛 `install/doctor/verify/mcp/export/batch/fixtures/walkthrough/version/self-update/current/rollback/uninstall/detect-env`，全部透传到既有脚本并保留退出码，不复制逻辑。
   - **self-update 安全**：git 副本只 `pull --ff-only`（未提交改动先提示、不覆盖）；tarball 副本下载 tar.gz+checksums 强校验 sha256，不一致拒绝；`--check`/`--dry-run` 不写盘。
   - **多版本 current/rollback**：安装器原子维护 `~/tools/current-ghidra`/`current-jdk` 软链，发现优先读 current；`current` 列出版本与链接，`rollback` 在多版本并存时切回上一个（单版本如实提示无可回滚）。详见 [docs/entry.md](docs/entry.md)。
 - **v2.9（2026-10-15）**

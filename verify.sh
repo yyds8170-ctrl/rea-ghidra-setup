@@ -15,6 +15,27 @@
 # =============================================================================
 set -uo pipefail
 
+# v4.0.4（FIX-8）：--help/-h 只打印用法并退出 0，绝不跑 9 项端到端 e2e
+# （旧行为：用户敲 --help 被忽略，直接跑完整验证）。
+case "${1:-}" in
+  -h|--help)
+    cat <<'EOF'
+verify.sh — Linux 端到端自检（ELF）
+
+编译 examples/demo，真实调用 REA 的 Ghidra provider 做 9 项断言（函数识别 /
+反编译常量 / strip 版仍可分析等）；全部通过退出 0，任一失败退出 1。
+
+用法：
+  bash verify.sh                 （跑完整 9 项端到端验证）
+  bash verify.sh --help          （本帮助，不做任何验证）
+
+可覆盖：
+  REA_VERSION=6.5.0 GHIDRA_INSTALL_DIR=... JAVA_HOME=... bash verify.sh
+EOF
+    exit 0
+    ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"

@@ -15,6 +15,7 @@
 # 示例：
 #   scripts/ghidra-report.sh ./examples/demo --out ./report-out
 #   scripts/ghidra-report.sh ./examples/demo --out /tmp/r --format html
+# END USAGE
 # =============================================================================
 set -euo pipefail
 
@@ -28,7 +29,7 @@ FORMAT="both"
 while [ $# -gt 0 ]; do
   case "$1" in
     --help|-h)
-      sed -n '2,20p' "$0" | sed 's/^# \?//'; exit 0 ;;
+      sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \?//; /^END USAGE$/d'; exit 0 ;;
     --out)  [ $# -ge 2 ] || { echo "--out 需要目录" >&2; exit 2; }; OUT_DIR="$2"; shift 2 ;;
     --format)
       [ $# -ge 2 ] || { echo "--format 需要 md|html|both|json" >&2; exit 2; }

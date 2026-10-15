@@ -15,6 +15,7 @@
 # 说明：
 #   - 首次运行含 JVM/类加载冷启动，后续更快；建议 runs>=3 看中位数。
 #   - 计时用 date +%s.%N（macOS 无 %N，回退秒级）。
+# END USAGE
 # =============================================================================
 set -euo pipefail
 
@@ -27,7 +28,7 @@ RUNS=3
 OUT_DIR="./benchmark"
 while [ $# -gt 0 ]; do
   case "$1" in
-    --help|-h) sed -n '2,20p' "$0" | sed 's/^# \?//'; exit 0 ;;
+    --help|-h) sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \?//; /^END USAGE$/d'; exit 0 ;;
     --runs) [ $# -ge 2 ] || { echo "--runs 需要数字" >&2; exit 2; }; RUNS="$2"; shift 2 ;;
     --out)  [ $# -ge 2 ] || { echo "--out 需要目录" >&2; exit 2; }; OUT_DIR="$2"; shift 2 ;;
     -*) echo "未知参数：$1（见 --help）" >&2; exit 2 ;;

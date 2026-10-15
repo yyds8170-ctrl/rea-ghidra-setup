@@ -133,11 +133,46 @@ node_satisfies_rea() {
   return 1
 }
 
+# 判断【指定路径】的 node 可执行文件是否满足 REA 的 Node 版本要求
+#（^22.19 || ^24.11 || >=26）。参数：$1 = node 可执行文件路径。
+# 返回 0 满足、1 不满足/不可执行。供 install_node_portable 幂等复用既有 Node。
+node_bin_satisfies_rea() {
+  local bin="$1"
+  [ -x "$bin" ] || return 1
+  local v major minor
+  v="$("$bin" --version 2>/dev/null | sed 's/^v//; s/-.*//')"
+  major="${v%%.*}"
+  minor="${v#*.}"; minor="${minor%%.*}"
+  case "$major" in ''|*[!0-9]*) return 1 ;; esac
+  [ "$major" -ge 26 ] && return 0
+  [ "$major" -eq 24 ] && [ "${minor:-0}" -ge 11 ] && return 0
+  [ "$major" -eq 22 ] && [ "${minor:-0}" -ge 19 ] && return 0
+  return 1
+}
+
 # 下载并解压便携 Node 到 $1=tools_dir；$2=os(darwin|linux)；$3=arch(x64|aarch64)
 # 建立版本无关软链 <tools_dir>/node，echo 该软链路径。
 # 若已 source lib/checksums.sh（fetch_artifact 可用），则走带校验/离线的下载。
+# v4.0.4：幂等复用——$tools_dir 下已有满足 REA 的便携 Node 时直接复用，不重复下载。
 install_node_portable() {
-  local tools_dir="$1" os="$2" arch="$3" tmp name
+  local tools_dir="$1" os="$2" arch="$3" tmp name cand
+  # ---- 幂等复用（FIX-5）：先看既有 <tools_dir>/node 软链与 node-v* 目录 --------
+  # 复用日志一律走 stderr，stdout 只在最后承载路径返回值（与 FIX-1 协同）。
+  if [ -x "$tools_dir/node/bin/node" ] && node_bin_satisfies_rea "$tools_dir/node/bin/node"; then
+    echo "[便携Node] 复用已有 $tools_dir/node（$("$tools_dir/node/bin/node" --version 2>/dev/null)），跳过下载" >&2
+    printf '%s\n' "$tools_dir/node"
+    return 0
+  fi
+  for cand in "$tools_dir"/node-v*-"$os"-*; do
+    [ -e "$cand/bin/node" ] || continue
+    if node_bin_satisfies_rea "$cand/bin/node"; then
+      ln -sfn "$cand" "$tools_dir/node"
+      echo "[便携Node] 复用已有 $cand（$("$cand/bin/node" --version 2>/dev/null)），跳过下载" >&2
+      printf '%s\n' "$tools_dir/node"
+      return 0
+    fi
+  done
+
   tmp="$(mktemp -d)"
   name="$(node_tarball_dir "$os" "$arch").tar.gz"
   if type -t fetch_artifact >/dev/null 2>&1; then

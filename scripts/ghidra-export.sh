@@ -11,6 +11,7 @@
 # 示例：
 #   scripts/ghidra-export.sh ./examples/demo --out /tmp/out --kind all
 #   scripts/ghidra-export.sh ./examples/demo --kind functions
+# END USAGE
 # =============================================================================
 set -euo pipefail
 
@@ -24,7 +25,7 @@ KIND="all"
 while [ $# -gt 0 ]; do
   case "$1" in
     --help|-h)
-      sed -n '2,20p' "$0" | sed 's/^# \?//'; exit 0 ;;
+      sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \?//; /^END USAGE$/d'; exit 0 ;;
     --out)  [ $# -ge 2 ] || { echo "--out 需要目录" >&2; exit 2; }; OUT_DIR="$2"; shift 2 ;;
     --kind) [ $# -ge 2 ] || { echo "--kind 需要类型" >&2; exit 2; }; KIND="$2"; shift 2 ;;
     --) shift; while [ $# -gt 0 ]; do BIN="${BIN} $1"; shift; done ;;

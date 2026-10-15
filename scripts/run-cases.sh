@@ -17,6 +17,7 @@
 #   bash scripts/run-cases.sh           # 全量跑
 #   bash scripts/run-cases.sh --help
 #   GHIDRA_INSTALL_DIR=... JAVA_HOME=... bash scripts/run-cases.sh
+# END USAGE
 # =============================================================================
 set -euo pipefail
 
@@ -31,7 +32,7 @@ OUT_ROOT="${BUILD_DIR}/ghidra-out"
 CASES="01-crackme-password 02-license-key 03-tiered-pricing 04-switch-dispatch 05-export-flow"
 
 usage() {
-  sed -n '2,20p' "$0" | sed 's/^# \{0,1\}//'
+  sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \{0,1\}//; /^END USAGE$/d'
 }
 
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then

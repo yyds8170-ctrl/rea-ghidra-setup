@@ -27,6 +27,8 @@ A single command that consolidates the scripts scattered across earlier versions
 | `self-update [--check|--dry-run]` | Self-update (see below) | — |
 | `current` | List installed Ghidra/JDK versions under `~/tools` and current symlink targets | — |
 | `rollback` | When multiple versions coexist, switch current back to the previous one | — |
+| `uninstall` | Remove JDK/Ghidra and clean the `~/.bashrc` env block (per-platform; interactive confirm, `--yes` skips) | uninstall.sh / uninstall-macos.sh / uninstall.ps1 |
+| `detect-env` | Read-only OS/arch/runtime detection (physical/wsl/crostini/docker/vm) and whether a native build is needed | scripts/detect-env.sh |
 | `help` / `--help` | Usage | — |
 
 ## Quick start

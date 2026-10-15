@@ -79,7 +79,9 @@ _dl_one_curl() {
   if _dl_curl_supports --retry-all-errors; then
     flags+=( --retry-all-errors )
   fi
-  echo "[下载] $url"
+  # 进度日志一律走 stderr：本函数只以退出码表达成败，stdout 不承载返回值，
+  # 避免被上层命令替换（如 NODE_HOME="$(install_node_portable ...)"）污染捕获。
+  echo "[下载] $url" >&2
   curl "${flags[@]}" -o "$part" "$url"
   local rc=$?
   if [ "$rc" -eq 0 ]; then
@@ -110,7 +112,7 @@ _dl_one_curl() {
 # wget 回退（无 curl 时）。wget -c 自带断点续传。
 _dl_one_wget() {
   local out="$1" url="$2" part="$3"
-  echo "[下载] ${url}（wget）"
+  echo "[下载] ${url}（wget）" >&2
   wget -c --tries="$REA_DL_RETRIES" \
        --timeout="$REA_DL_CONNECT_TIMEOUT" \
        -O "$part" "$url"
