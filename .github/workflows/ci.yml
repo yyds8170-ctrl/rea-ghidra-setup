@@ -14,7 +14,7 @@ jobs:
   lint-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安装依赖
         run: sudo apt-get update && sudo apt-get install -y shellcheck make gcc
@@ -87,7 +87,7 @@ jobs:
   lint-ps:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安装 PSScriptAnalyzer
         shell: pwsh
@@ -190,7 +190,7 @@ jobs:
             cache-path: C:\Users\runneradmin\tools
             cache-key: Windows-ghidra-12.1.4-jdk21-v1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安装 Node 22（REA 要求 >=22.19）
         uses: actions/setup-node@v4
@@ -350,7 +350,7 @@ jobs:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 设置 Buildx
         uses: docker/setup-buildx-action@v3
@@ -374,7 +374,7 @@ jobs:
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 设置 Buildx
         uses: docker/setup-buildx-action@v3
@@ -397,7 +397,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 校验和链路自检
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -409,7 +409,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 安装 Node 22（REA 要求 >=22.19）
         uses: actions/setup-node@v4
