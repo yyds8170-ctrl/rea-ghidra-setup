@@ -48,6 +48,21 @@ cd rea-ghidra-setup
 .\rea-ghidra.ps1 verify
 ```
 
+不想 clone？也可以一行命令直接跑（脚本会引导你确认安装）：
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/install.sh | bash
+```
+
+```powershell
+# Windows PowerShell
+irm https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/install.ps1 | iex
+```
+
+> 提示：`curl | bash` 前可先 `curl -fsSL <url> -o install.sh` 审阅内容再执行。包管理器（Homebrew / Scoop）
+> 资产与步骤见 [packaging/README.md](packaging/README.md)。
+
 装完即得 JDK21 + Ghidra 12.1.4 + 便携 Node 24.22.0，并自动通过 9 项端到端验证。子命令一览与自更新/回滚见 [docs/entry.md](docs/entry.md)。
 
 ## 我该用哪个？（快速选择）

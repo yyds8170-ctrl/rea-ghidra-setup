@@ -1,0 +1,21 @@
+{
+  "version": "4.0.0",
+  "description": "Cross-platform installer/orchestrator for Ghidra + rea-agents (noncommercial)",
+  "homepage": "https://github.com/yyds8170-ctrl/rea-ghidra-setup",
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "url": "https://github.com/yyds8170-ctrl/rea-ghidra-setup/archive/refs/tags/v4.0.0.zip",
+  "hash": "REPLACE_WITH_REAL_SHA256_OF_ZIP",
+  "extract_dir": "rea-ghidra-setup-4.0.0",
+  "bin": [
+    "rea-ghidra.ps1"
+  ],
+  "notes": "First run downloads Ghidra/JDK to ~/tools at runtime; see README.",
+  "checkver": "github",
+  "autoupdate": {
+    "url": "https://github.com/yyds8170-ctrl/rea-ghidra-setup/archive/refs/tags/v$version.zip",
+    "extract_dir": "rea-ghidra-setup-$version",
+    "hash": {
+      "url": "$url.sha256"
+    }
+  }
+}

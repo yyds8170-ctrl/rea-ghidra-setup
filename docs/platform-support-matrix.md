@@ -18,6 +18,7 @@
 - 锁定版本（`config/versions.env`）：**Ghidra 12.1.4 / JDK 21 / 便携 Node 24.22.0 / REA 6.5.0**。
 - 统一入口：`./rea-ghidra install|verify|doctor|mcp|export|batch|current|rollback|self-update`（Windows `.\rea-ghidra.ps1`）。
 - 能力：MCP 一键对接（[mcp.md](mcp.md)）、静态导出（[export.md](export.md)）、批量并行 + 快照缓存（[batch.md](batch.md)）、多架构 fixture CI（`fixture-multiarch`，ELF32/AArch64/PE32）、自更新 ff-only / checksums 校验、`current-ghidra`·`current-jdk` 软链与回滚、Docker amd64+arm64、Release 附带 `checksums.txt` + SBOM。
+- 新增（v3.4–v4.0）：**结构化报告生成器**（`scripts/ghidra-report.sh`，Markdown+自包含 HTML+10 类 JSON，见 [../README.md](../README.md)）；**端到端真实案例库**（`examples/cases/`，5 案例、带符号/strip 共 10 二进制，CI 自动断言）；**性能基准**（`scripts/benchmark.sh`，min/median/max）；容器**非 root + HEALTHCHECK + OCI 标签**；非 ASCII 文件名自愈；**双语文档站**（mkdocs，见 [mkdocs.yml](../mkdocs.yml)）；**Homebrew / Scoop 分发资产**（[packaging/README.md](../packaging/README.md)，个人 tap/bucket）。
 - 发现逻辑：显式 env（`JAVA_HOME`/`GHIDRA_INSTALL_DIR`）＞ `~/tools/current-*` 软链 ＞ 版本化目录枚举（旧行为兜底）。
 
 ## 一、系统 × 运行环境总表
@@ -63,13 +64,16 @@
 
 | 作业 | runner | 内容 | 频率 |
 | --- | --- | --- | --- |
-| `lint-build` | ubuntu-latest | ShellCheck 全量 `.sh` + 版本一致性 + 编译 demo | 每次 push/PR |
-| `lint-ps` | ubuntu-latest（pwsh） | PowerShell 语法解析 + PSScriptAnalyzer（Error/Warning 均失败） | 每次 push/PR |
-| `e2e (linux)` | ubuntu-latest x64 | install.sh + verify.sh（ELF）9/9 | 每周/手动 |
-| `e2e (macos)` | macos-latest **arm64** | install-macos.sh + 构建 `mac_arm_64` + verify-macos.sh（Mach-O）9/9 | 每周/手动 |
-| `e2e (windows)` | windows-latest **x64** | install.ps1 + verify.ps1（PE fixture）9/9 | 每周/手动 |
-| `docker` | ubuntu-latest x64 | 构建 amd64 镜像并在容器内跑 verify.sh | 每周/手动 |
+| `lint-build` | ubuntu-latest | ShellCheck 全量 `.sh` + 版本一致性 + 文档死链 + 编译 demo 与案例库 | 每次 push/PR |
+| `lint-ps` | ubuntu-latest（pwsh） | PowerShell 语法解析 + PSScriptAnalyzer（**Error 判失败**；Warning 仅提示） | 每次 push/PR |
+| `e2e (linux)` | ubuntu-latest x64 | install.sh + verify.sh（ELF）9/9 + **run-cases（10/10）+ ghidra-report 断言** | 每周/手动 |
+| `e2e (macos)` | macos-latest **arm64** | install-macos.sh + 构建 `mac_arm_64` + verify-macos.sh 9/9 + **run-cases** | 每周/手动 |
+| `e2e (windows)` | windows-latest **x64** | install.ps1 + verify.ps1（PE fixture）9/9 + 导出回归 | 每周/手动 |
+| `docker` | ubuntu-latest x64 | 构建 amd64（非 root）镜像并在容器内跑 verify.sh | 每周/手动 |
 | `docker-arm64` | ubuntu-24.04-arm（Public preview） | 原生构建 arm64 镜像（含 `linux_arm_64` 编译）+ 容器内 verify.sh | 每周/手动 |
+| `checksum` | ubuntu-latest | 校验和链路自检 + 真实下载 Node 强校验 | 每周/手动 |
+| `fixture-multiarch` | ubuntu-latest | 交叉编译 ELF32/AArch64/PE32，Ghidra 跨架构识别 | 每周/手动 |
+| `pages` | ubuntu-latest | mkdocs `--strict` 构建并部署双语文档站 | 推 main / v* tag |
 
 无法 CI 实跑、仅文档化的组合：**ChromeOS（任何形态）**、**macOS Intel（macos-13）**、**裸机 Linux arm64**、
 **各类云电脑 VDI**（与普通 OS 同脚本，差异在资源/网络策略）。

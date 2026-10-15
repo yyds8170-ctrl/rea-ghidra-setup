@@ -48,6 +48,20 @@ cd rea-ghidra-setup
 .\rea-ghidra.ps1 verify
 ```
 
+Or a one-liner without cloning:
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/install.sh | bash
+```
+
+```powershell
+# Windows PowerShell
+irm https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/install.ps1 | iex
+```
+
+Package-manager (Homebrew / Scoop) assets and steps: see [packaging/README.md](packaging/README.md). No npm wrapper by design (rationale there).
+
 You get JDK21 + Ghidra 12.1.4 + portable Node 24.22.0, automatically passing 9 end-to-end checks. Subcommands and self-update/rollback: see [docs/entry.en.md](docs/entry.en.md).
 
 ## Which one should I use? (quick pick)

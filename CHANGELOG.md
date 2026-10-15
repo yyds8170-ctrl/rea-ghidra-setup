@@ -4,6 +4,28 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [4.0.0] - 2026-10-15（收官版本 / first complete release）
+
+> 里程碑：在 v3.2 基础上，经多轮全球检索与真实端到端验证，补齐合规署名、报告生成、案例库、
+> 容器加固、双语文档站与分发渠道，达到"当前无明确优化空间"的完整形态。
+
+### Added（分发渠道）
+- `packaging/`：Homebrew 个人 tap formula（`packaging/homebrew/rea-ghidra.rb`）、Scoop 个人 bucket manifest（`packaging/scoop/rea-ghidra.json`），以及中英 `packaging/README.md`（含发布步骤、sha256 计算命令、"需新建独立 tap/bucket 仓库、未擅自创建"的诚实说明，以及不做 npm 包装器的理由）。
+- README（中英）顶部 30 秒快速开始新增单行命令：`curl -fsSL .../install.sh | bash` 与 `irm .../install.ps1 | iex`，并附审阅提示与 packaging 链接。
+
+### Changed（支持矩阵）
+- `docs/platform-support-matrix.md`：零节新增 v3.4–v4.0 能力清单（报告/案例/benchmark/非 root/自愈/文档站/分发）；CI 覆盖表补全 lint-build 案例编译、lint-ps 仅 Error 判失败、e2e 加 run-cases/report，并新增 checksum / fixture-multiarch / pages 三行。
+
+### 收官全链路检查（本机实测）
+- ShellCheck 全量、bash3.2 非 ASCII 紧邻、`mkdocs build --strict`（0 警告）、文档死链（48 md / 292 相对链接 + 48 个绝对 blob 链接全有效）、workflow YAML 解析、版本一致性、旧版本残留 grep 均通过。
+- CLI 自检：`version`/`help` 正常、未知子命令退出码 2；报告管线在 `examples/demo` 复跑成功（12 产物，captures secret_check 1337/0x539、9000/0x2328、calc_discount 50/0x32）。
+- 真实案例 10/10 二进制（5 案例 × 带符号/strip）断言全过。
+
+### 仍做不到 / 需维护者操作（诚实列出）
+- 发布 Homebrew tap / Scoop bucket 需在主仓库外新建两个独立仓库，受"未授权不动其他仓库"约束未创建，资产已就绪。
+- 首次 GitHub Pages 需在 Settings → Pages → Source 选 GitHub Actions。
+- Windows/macOS/Docker e2e 仅 GitHub Actions 可跑（本机无 docker/pwsh）；Ghidra headless 不解析 GNU_STACK/RELRO，报告已注明需 readelf 复核。
+
 ## [3.6.0] - 2026-10-15
 
 ### Added（双语文档站）
