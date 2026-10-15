@@ -54,8 +54,10 @@ echo "=========================================================="
 command -v curl >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 curl"
 command -v unzip >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 unzip"
 mkdir -p "$TOOLS_DIR"
+# v4.2：安装原子锁——防止并发安装写同一 TOOLS_DIR；死锁自动接管
+acquire_install_lock "$TOOLS_DIR"
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
+trap 'rm -rf "$TMP_DIR"; release_install_lock' EXIT
 
 # ---- 磁盘空间（粗略检查）----------------------------------------------------
 TOOLS_NEED_KB=3000000
@@ -70,6 +72,8 @@ if [[ -n "$JDK_HOME" && -x "$JDK_HOME/bin/java" ]]; then
   echo "[1/5] JDK 21 已存在：$JDK_HOME"
 else
   echo "[1/5] 下载 Temurin JDK 21（mac/${JDK_ARCH}）..."
+  # v4.2：自愈——清理上次解压到一半的 jdk-21 bundle（缺 Contents/Home/bin/java）
+  for d in "$TOOLS_DIR"/jdk-21*; do [ -e "$d" ] && self_heal_partial "$d" Contents/Home/bin/java; done
   # v4.1：fetch_artifact 1=校验和失败→11，2=下载失败→12（用 || rc=$? 捕获原始码）
   rc=0
   fetch_artifact jdk "$JDK_PKG" "$JDK_API" "$TMP_DIR/jdk21.tar.gz" || rc=$?
@@ -105,6 +109,8 @@ if [[ -x "$GHIDRA_DIR/support/analyzeHeadless" ]]; then
   echo "[3/5] Ghidra $GHIDRA_VERSION 已存在：$GHIDRA_DIR"
 else
   echo "[3/5] 下载 Ghidra $GHIDRA_VERSION ..."
+  # v4.2：自愈——清理上次解压到一半的 Ghidra 目录（缺 analyzeHeadless 标志）
+  self_heal_partial "$GHIDRA_DIR" support/analyzeHeadless
   rc=0
   fetch_artifact ghidra "$(ghidra_zip_name)" "$GHIDRA_URL" "$TMP_DIR/ghidra.zip" || rc=$?
   if [ "$rc" -ne 0 ]; then

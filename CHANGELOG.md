@@ -4,6 +4,22 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [4.2.0] - 2026-10-15（安装锁 + 半成品自愈 + CI 卫生）
+
+引入安装原子互斥锁与中断自愈，杜绝并发安装互相破坏、以及上次中断后半截目录残留。
+
+### Added
+- **安装原子锁（`lib/install-lock.sh`）**：`install.sh` / `install-macos.sh` 解压前用 `mkdir`（POSIX 原子操作）在 `<TOOLS_DIR>/.install.lock` 拿互斥锁，`EXIT` trap 释放。并发安装同一 `TOOLS_DIR` 且持锁进程存活 → 新增 `RC_BUSY=14`（`fatal` 出中文提示 + JSON envelope），提示等它结束或删锁。
+- **死锁自愈**：上次安装被 Ctrl-C / kill -9 残留锁文件时，检测到持锁 PID 已不在，告警后自动接管，不阻塞用户。
+- **半成品自愈（`self_heal_partial`）**：重装 JDK / Ghidra 前，若发现上次解压到一半、缺标志二进制（`bin/java` / `Contents/Home/bin/java` / `support/analyzeHeadless`）的目录，先删除再干净重下。
+- **自检 `scripts/selftest-install-lock.sh`**：覆盖 A 拿锁/释放、B 活锁→14、C 死锁接管、D 半成品清理/完整保留 7 项断言；接入 lint-build。
+- **CI 缓存**：e2e / fixture-multiarch 的 `~/tools` 缓存增加 `restore-keys` 前缀兜底（同版本 key 微调仍能部分命中）。
+
+### Verified
+- shellcheck -x 0 告警、bash -n 全过、bash3.2 非 ASCII 紧邻零匹配。
+- selftest-install-lock 7/7 通过（本机 Linux 实测）。
+- 回归：verify 9/9、run-cases 10 二进制、check-docs-links、mkdocs build --strict 均通过（见本版 CI）。
+
 ## [4.1.0] - 2026-10-15（退出码体系）
 
 引入命名退出码与机器可读错误输出，统一全部 bash 脚本的错误语义，并接入 CI 断言。

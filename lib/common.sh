@@ -55,6 +55,9 @@ warn() { printf '%b[!]%b %s\n' "$C_YELLOW" "$C_RESET" "$*"; }
 # v4.1：die() 改由 lib/exitcodes.sh 提供（= fatal 1，未归类错误，行为兼容）
 # shellcheck source=lib/exitcodes.sh
 . "$LIB_DIR/exitcodes.sh"
+# v4.2：安装原子锁 + 半成品自愈
+# shellcheck source=lib/install-lock.sh
+. "$LIB_DIR/install-lock.sh"
 
 # ---- 版本加载：config/versions.env 为默认，已存在的环境变量不被覆盖 --------
 load_versions() {

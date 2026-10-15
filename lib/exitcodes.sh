@@ -12,6 +12,7 @@
 #       RC_UPSTREAM=12    上游/资源不可用：下载失败、URL 不可达、目标二进制不存在、
 #                          CPU 架构不受支持（环境不匹配）
 #       RC_DISK=13         磁盘空间不足
+#       RC_BUSY=14         另一个安装正在进行（安装锁冲突，见 lib/install-lock.sh）
 #   - fatal <rc> <msg...>：
 #       人类可读的 [ERR] 行照旧打到 stderr（沿用本项目既有日志风格）；
 #       当 stderr 不是 TTY（CI / 管道 / 重定向）时，额外输出一行机器可读 JSON
@@ -29,6 +30,7 @@ RC_DEPENDENCY=10
 RC_CHECKSUM=11
 RC_UPSTREAM=12
 RC_DISK=13
+RC_BUSY=14
 
 # fatal <rc> <msg...>
 #   参数 1 为命名退出码数字；其余参数拼接为错误消息。
@@ -52,6 +54,7 @@ fatal() {
       "$RC_CHECKSUM")   name="RC_CHECKSUM" ;;
       "$RC_UPSTREAM")   name="RC_UPSTREAM" ;;
       "$RC_DISK")       name="RC_DISK" ;;
+      "$RC_BUSY")       name="RC_BUSY" ;;
       *)                name="RC_UNCLASSIFIED" ;;
     esac
     local json

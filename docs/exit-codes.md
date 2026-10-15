@@ -19,9 +19,10 @@
 | `11` | `RC_CHECKSUM` | 校验和校验失败 | 下载物 SHA-256 与上游（或离线清单 `SHA256SUMS.txt`）不一致，文件被删除并中止 |
 | `12` | `RC_UPSTREAM` | 上游 / 资源不可用，或环境不匹配 | 下载失败、URL 不可达、目标二进制不存在、CPU 架构不受支持、在 Linux 上运行 `install-macos.sh`、JDK 解压后未找到 java 二进制（上游包损坏） |
 | `13` | `RC_DISK` | 磁盘空间不足 | `$TOOLS_DIR` 或临时目录可用空间低于安装所需阈值 |
+| `14` | `RC_BUSY` | 另一个安装正在进行（安装锁冲突） | 并发运行 `install.sh` / `install-macos.sh` 操作同一 `TOOLS_DIR`，且持锁进程仍存活。请等它结束，或确认无安装后删除 `<TOOLS_DIR>/.install.lock`（v4.2 起） |
 
 > 设计约定：**用法错误 = 2**；**本机环境缺东西 = 10**；**网络/上游资源问题 = 12**；
-> **磁盘 = 13**；**校验和 = 11**。架构不支持属于环境问题，统一归到 12，不归 2。
+> **磁盘 = 13**；**校验和 = 11**；**并发安装冲突 = 14**。架构不支持属于环境问题，统一归到 12，不归 2。
 
 ## JSON envelope 格式
 
@@ -34,7 +35,7 @@
 字段说明：
 
 - `code`：数字退出码（与进程退出码一致）；
-- `name`：命名常量（`RC_USAGE` / `RC_DEPENDENCY` / `RC_CHECKSUM` / `RC_UPSTREAM` / `RC_DISK`；未归类 1 记为 `RC_UNCLASSIFIED`）；
+- `name`：命名常量（`RC_USAGE` / `RC_DEPENDENCY` / `RC_CHECKSUM` / `RC_UPSTREAM` / `RC_DISK` / `RC_BUSY`；未归类 1 记为 `RC_UNCLASSIFIED`）；
 - `message`：原始错误消息（可含中文/引号/特殊字符，由 `python3 json.dumps` 转义，任意消息安全）；
 - `tool`：出错脚本的 basename（如 `install.sh`）。
 
@@ -80,3 +81,13 @@ PY
 | 11 | 构造一个哈希与 `SHA256SUMS.txt` 不符的离线包后 `OFFLINE_DIR=... bash install.sh`（正常链路由 `scripts/selfcheck-checksums.sh` 守护） |
 | 12 | `bash scripts/ghidra-export.sh /不存在/文件`；在 Linux 上跑 `bash install-macos.sh` |
 | 13 | 真实模拟需填满磁盘；代码路径为 install 前置磁盘检查直接 `fatal "$RC_DISK"` |
+| 14 | 一个终端 `bash install.sh` 持锁时，另一终端立刻 `TOOLS_DIR=<同目录> bash install.sh`（或 `scripts/selftest-install-lock.sh` 内置活锁用例） |
+
+## 安装锁与半成品自愈（v4.2）
+
+`install.sh` / `install-macos.sh` 在解压任何东西之前，先在 `<TOOLS_DIR>/.install.lock`
+用 `mkdir`（POSIX 原子操作）拿互斥锁，`EXIT` 时释放。这样两个安装进程不会交错写同一
+目录。若上次安装被 `Ctrl-C` / `kill -9` 中断残留了锁文件，下次启动检测到持锁 PID 已不在，
+会**告警后自动接管**（不阻塞用户）；残留的半截解压目录（缺 `bin/java` /
+`support/analyzeHeadless` 标志）也会在重装前被自动清理，保证干净重下。逻辑见
+`lib/install-lock.sh`，自检见 `scripts/selftest-install-lock.sh`。

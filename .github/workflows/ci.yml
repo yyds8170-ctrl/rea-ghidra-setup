@@ -117,6 +117,9 @@ jobs:
           [ "$rc" -eq 2 ] || { echo "batch-analyze --jobs 缺值应退出 2，实际 $rc"; exit 1; }
           echo "退出码与 JSON 错误断言通过"
 
+      - name: 安装锁与半成品自愈自检（v4.2）
+        run: bash scripts/selftest-install-lock.sh
+
   # PowerShell 静态检查：每次 push / PR 都跑（ubuntu 上的 pwsh 即可解析 .ps1）
   lint-ps:
     runs-on: ubuntu-latest
@@ -231,11 +234,13 @@ jobs:
         with:
           node-version: '22'
 
-      - name: 缓存 JDK + Ghidra（按平台独立 key）
+      - name: 缓存 JDK + Ghidra（按平台独立 key；restore-keys 兜住同版本 key 微调）
         uses: actions/cache@v4
         with:
           path: ${{ matrix.cache-path }}
           key: ${{ matrix.cache-key }}
+          restore-keys: |
+            ${{ matrix.cache-key }}-
 
       - name: 一键部署（Linux / macOS）
         if: matrix.label != 'windows'

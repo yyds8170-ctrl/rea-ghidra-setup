@@ -481,6 +481,10 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v4.2.0（2026-10-15，安装锁 + 半成品自愈）**
+  - 安装原子互斥锁：`install.sh`/`install-macos.sh` 解压前在 `<TOOLS_DIR>/.install.lock` 用 `mkdir` 拿锁，防止两个安装并发写同一目录互相破坏；活锁冲突→新退出码 14（`RC_BUSY`）。
+  - 中断自愈：上次被 Ctrl-C/kill -9 残留的死锁自动接管不阻塞；解压到一半、缺标志二进制的 JDK/Ghidra 目录重装前自动清理。
+  - 新增 `scripts/selftest-install-lock.sh`（7 项断言，接入 lint-build）；CI `~/tools` 缓存加 `restore-keys` 兜底。
 - **v4.1.0（2026-10-15，退出码体系）**
   - 命名退出码统一（0 成功 / 2 用法错 / 10 缺依赖 / 11 校验失败 / 12 上游或资源不可用 / 13 磁盘不足）：install / install-macos / export / batch / args 全部错误路径迁移；非 TTY 时 stderr 输出一行机器可读 JSON 错误 envelope，CI 与上层脚本可直接解析。
   - batch 7 个取值参数缺值守卫（原来 `set -u` 下 unbound 崩溃）、`--offline-dir` 缺值补退出。
