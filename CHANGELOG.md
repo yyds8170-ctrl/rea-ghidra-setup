@@ -4,6 +4,15 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [4.0.3] - 2026-10-15（最终干净收官）
+
+### Changed（Pages 部署卫生）
+- `.github/workflows/pages.yml`：去掉 tag 触发（tag 与 main 同 commit、重复触发会并发争抢 GitHub Pages 部署锁导致一次失败）；并发组改为固定 `pages-deploy` 并 `cancel-in-progress`，任何重叠部署只保留一次。
+- 结果：main push 只产生一次干净的文档部署，不再出现同 commit 一成功一失败的冗余红运行。
+
+### Verified
+- 前序 v4.0.2 全量 CI 9/9 全绿；本次仅改 pages workflow（已校验 YAML），不影响构建/测试链路。
+
 ## [4.0.2] - 2026-10-15（全平台全绿收官）
 
 ### Fixed（macOS e2e 真实跑通后修复）

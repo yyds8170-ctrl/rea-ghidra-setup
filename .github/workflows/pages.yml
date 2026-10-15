@@ -1,10 +1,10 @@
 name: Deploy docs (GitHub Pages)
 
-# 只在 main 分支、v* tag 发布、手动触发时部署；PR 不部署。
+# 只在 main 分支 push 与手动触发时部署（PR 不部署）。
+# 不在 tag 上触发：tag 与 main 指向同一 commit，重复触发会并发争抢 Pages 部署锁导致其中一次失败。
 on:
   push:
     branches: [main]
-    tags: ['v*']
   workflow_dispatch:
 
 permissions:
@@ -12,9 +12,9 @@ permissions:
   pages: write
   id-token: write
 
-# 同一时间只跑一次部署；新的 push 会取消旧的。
+# 固定并发组：任何重叠的部署（push 与手动）都取消旧的，只保留一次，杜绝部署锁冲突。
 concurrency:
-  group: pages-${{ github.ref }}
+  group: pages-deploy
   cancel-in-progress: true
 
 jobs:
