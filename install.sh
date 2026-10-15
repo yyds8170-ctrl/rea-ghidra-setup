@@ -34,7 +34,8 @@ ARCH="$(normalize_arch)"
 case "$ARCH" in
   x64)     JDK_ARCH=x64 ;;
   aarch64) JDK_ARCH=aarch64 ;;
-  *) echo "不支持的 CPU 架构：${ARCH}（仅支持 x86_64 / aarch64）" >&2; exit 1 ;;
+  # v4.1：架构不受支持属于环境不匹配 → RC_UPSTREAM(12)（详见 docs/exit-codes.md）
+  *) fatal "$RC_UPSTREAM" "不支持的 CPU 架构：${ARCH}（仅支持 x86_64 / aarch64）" ;;
 esac
 GHIDRA_URL="$(ghidra_release_url)"
 JDK_API="$(adoptium_jdk_url linux "$JDK_ARCH")"
@@ -53,10 +54,10 @@ echo " 目录   : $TOOLS_DIR"
 echo " Ghidra : $GHIDRA_VERSION ｜ JDK: $JDK_FEATURE ｜ Node: $REA_NODE_VERSION ｜ REA: $REA_VERSION"
 echo "=========================================================="
 
-# ---- 前置检查 ---------------------------------------------------------------
-command -v curl >/dev/null 2>&1 || { echo "缺少 curl，请先安装" >&2; exit 1; }
-command -v unzip >/dev/null 2>&1 || { echo "缺少 unzip，请先安装（apt install unzip）" >&2; exit 1; }
-command -v tar >/dev/null 2>&1 || { echo "缺少 tar，请先安装" >&2; exit 1; }
+# ---- 前置检查（v4.1：缺本地依赖 → RC_DEPENDENCY 10）--------------------------
+command -v curl >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 curl，请先安装"
+command -v unzip >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 unzip，请先安装（apt install unzip）"
+command -v tar >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 tar，请先安装"
 
 mkdir -p "$TOOLS_DIR"
 TMP_DIR="$(mktemp -d)"
@@ -67,13 +68,11 @@ TOOLS_NEED_KB=2700000   # TOOLS_DIR 约需 2.6GB
 TMP_NEED_KB=800000      # 临时目录约需 0.8GB
 avail_kb="$(df -P "$TOOLS_DIR" | awk 'NR==2{print $4}')"
 if [[ "${avail_kb:-0}" -lt "$TOOLS_NEED_KB" ]]; then
-  echo "$TOOLS_DIR 可用空间不足（需约 2.6GB，当前约 $((avail_kb/1024/1024))GB）" >&2
-  exit 1
+  fatal "$RC_DISK" "$TOOLS_DIR 可用空间不足（需约 2.6GB，当前约 $((avail_kb/1024/1024))GB）"
 fi
 tmp_kb="$(df -P "$TMP_DIR" | awk 'NR==2{print $4}')"
 if [[ "${tmp_kb:-0}" -lt "$TMP_NEED_KB" ]]; then
-  echo "临时目录 $TMP_DIR 可用空间不足（需约 0.8GB）" >&2
-  exit 1
+  fatal "$RC_DISK" "临时目录 $TMP_DIR 可用空间不足（需约 0.8GB）"
 fi
 
 # ---- 1. 安装 JDK 21 ---------------------------------------------------------
@@ -82,7 +81,13 @@ if [[ -n "$JDK_DIR" && -x "$JDK_DIR/bin/java" ]]; then
   echo "[1/5] JDK 21 已存在：$JDK_DIR"
 else
   echo "[1/5] 下载 Temurin JDK 21（${JDK_ARCH}）..."
-  fetch_artifact jdk "$JDK_PKG" "$JDK_API" "$TMP_DIR/jdk21.tar.gz"
+  # v4.1：fetch_artifact 1=校验和失败→11，2=下载失败→12（用 || rc=$? 捕获原始码）
+  rc=0
+  fetch_artifact jdk "$JDK_PKG" "$JDK_API" "$TMP_DIR/jdk21.tar.gz" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "JDK 下载物校验和失败（${JDK_PKG}）"
+    fatal "$RC_UPSTREAM" "JDK 下载失败（${JDK_API}）"
+  fi
   tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
   JDK_DIR="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' | head -1)"
   echo "      已安装：$JDK_DIR"
@@ -108,7 +113,12 @@ if [[ -x "$GHIDRA_DIR/support/analyzeHeadless" ]]; then
   echo "[3/5] Ghidra $GHIDRA_VERSION 已存在：$GHIDRA_DIR"
 else
   echo "[3/5] 下载 Ghidra $GHIDRA_VERSION ..."
-  fetch_artifact ghidra "$(ghidra_zip_name)" "$GHIDRA_URL" "$TMP_DIR/ghidra.zip"
+  rc=0
+  fetch_artifact ghidra "$(ghidra_zip_name)" "$GHIDRA_URL" "$TMP_DIR/ghidra.zip" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "Ghidra 下载物校验和失败（$(ghidra_zip_name)）"
+    fatal "$RC_UPSTREAM" "Ghidra 下载失败（${GHIDRA_URL}）"
+  fi
   unzip -q -o "$TMP_DIR/ghidra.zip" -d "$TOOLS_DIR"
   echo "      已安装：$GHIDRA_DIR"
 fi

@@ -4,6 +4,26 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [4.1.0] - 2026-10-15（退出码体系）
+
+引入命名退出码与机器可读错误输出，统一全部 bash 脚本的错误语义，并接入 CI 断言。
+
+### Added
+- **命名退出码（`lib/exitcodes.sh`）**：`RC_OK=0 / RC_USAGE=2 / RC_DEPENDENCY=10 / RC_CHECKSUM=11 / RC_UPSTREAM=12 / RC_DISK=13`。设计约定：用法错误=2；本机缺依赖=10；网络/上游资源问题=12；磁盘=13；校验和=11。`fatal <rc> <msg>` 输出人类可读 `[ERR]` 行 + 非 TTY 时一行机器可读 JSON envelope（`{"error":{"code","name","message","tool"}}`，python3 `json.dumps` 转义）；`die()` 保留为 `fatal 1` 兼容别名（未归类错误）。
+- **错误路径迁移**：install.sh / install-macos.sh（缺 curl/unzip/tar→10、架构不支持→12、磁盘不足→13、`fetch_artifact` 校验失败→11 / 下载失败→12、JDK 解压后无 java→12）、scripts/ghidra-export.sh（二进制不存在→12、未找到 Ghidra/JDK21→10）、scripts/batch-analyze.sh（未收集到目标→2，7 个取值参数 `--dir/--pattern/--out/--kind/--jobs/--retries/--snapshot` 缺值守卫→2）、lib/args.sh（全部取值参数缺值/非法→`fatal RC_USAGE`）、lib/common.sh（缺版本文件→10、`install_node_portable` 下载/校验映射 12/11）。
+- **文档**：`docs/exit-codes.md`（退出码表 + JSON 格式 + 消费指引）、文档站新页 `docs-site/exit-codes.md` + `.en.md`（mkdocs nav 加「退出码」）、`docs/README.md` 索引。
+- **CI 断言**：lint-build 新增「退出码与 JSON 错误断言」步（未知参数→2 + JSON envelope 解析、ghidra-export 无目标→2、缺 Ghidra/JDK→10、batch `--snapshot`/`--jobs` 缺值→2）。
+
+### Fixed
+- `batch-analyze.sh` 取值参数缺值原本在 `set -u` 下 `$2: unbound variable` 崩溃退出 1，现统一为 RC_USAGE=2 + 中文提示。
+- `lib/args.sh` `--offline-dir` 缺值原无退出（会带错值继续执行），现 `fatal 2`。
+
+### Verified
+- 静态：shellcheck 0 告警 / bash -n 全过 / bash3.2 兼容零匹配。
+- 退出码实测：未知参数→2、dry-run→0、无目标/双目标/`--out` 缺值→2、缺 Ghidra/JDK→10、二进制不存在→12、缺 curl→10、校验和失败→11（tampered 离线清单）、下载失败→12、batch 7 参数缺值→2；非 TTY 出 JSON（code/name/tool 断言通过），TTY 无 JSON 行。
+- 成功路径回归：verify.sh 9/9、selftest-batch 4/4（worker 语义不变）、selftest-export、run-cases 5 案例 10 二进制、selfcheck-checksums、check-versions、check-docs-links（294 链接 0 死链）、make examples、两个 --help、mkdocs build --strict 本地通过。
+- 说明：RC_DISK=13 未真实填盘模拟（走通 fatal 公共路径）；架构不支持仅经 install-macos.sh Linux 守卫验证；真实网下大文件破坏未做（以 tampered 离线包单测验证映射逻辑）；doctor.sh 诊断退出码语义保持不变。
+
 ## [4.0.5] - 2026-10-15（路径健壮性修复版）
 
 基于上一轮实测定位的 D1–D4 路径健壮性缺陷逐项修复，重点解决含空格/中文路径与文件名。

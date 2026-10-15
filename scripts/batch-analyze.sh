@@ -18,6 +18,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# v4.1：命名退出码（RC_USAGE 等）；本脚本不引入 common.sh，只 source 退出码模块
+# shellcheck source=lib/exitcodes.sh
+. "$SCRIPT_DIR/../lib/exitcodes.sh"
 EXPORT_SCHEMA_VERSION=1   # v2.7 导出脚本/schema 变化时 bump，自动使旧缓存失效
 
 # ---- sha256 兼容（GNU sha256sum / macOS shasum）---------------------------
@@ -108,17 +111,17 @@ OUT_DIR="./batch-out"; KIND="all"; JOBS=""; RETRIES=1; SNAP=""; CONTINUE=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --help|-h) sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \?//; /^END USAGE$/d'; exit 0 ;;
-    --dir) DIR="$2"; shift 2 ;;
+    --dir) [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：--dir 需要一个目标目录"; DIR="$2"; shift 2 ;;
     --recurse) RECURSE=1; shift ;;
-    --pattern) PATTERN="$2"; shift 2 ;;
-    --out) OUT_DIR="$2"; shift 2 ;;
-    --kind) KIND="$2"; shift 2 ;;
-    --jobs) JOBS="$2"; shift 2 ;;
-    --retries) RETRIES="$2"; shift 2 ;;
-    --snapshot) SNAP="$2"; shift 2 ;;
+    --pattern) [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：--pattern 需要一个 glob 模式（如 '*.elf'）"; PATTERN="$2"; shift 2 ;;
+    --out) [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：--out 需要一个输出目录"; OUT_DIR="$2"; shift 2 ;;
+    --kind) [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：--kind 需要 functions|strings|symbols|calls|decompiled|all"; KIND="$2"; shift 2 ;;
+    --jobs) [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：--jobs 需要一个正整数"; JOBS="$2"; shift 2 ;;
+    --retries) [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：--retries 需要一个非负整数"; RETRIES="$2"; shift 2 ;;
+    --snapshot) [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：--snapshot 需要一个快照目录"; SNAP="$2"; shift 2 ;;
     --continue) CONTINUE=1; shift ;;
     --) shift; while [ $# -gt 0 ]; do BIN_ARGS+=("$1"); shift; done ;;
-    -*) echo "未知参数：$1（见 --help）" >&2; exit 2 ;;
+    -*) fatal "$RC_USAGE" "未知参数：$1（见 --help）" ;;
     *) BIN_ARGS+=("$1"); shift ;;
   esac
 done
@@ -149,7 +152,8 @@ EOF
   fi
 fi
 # 目标数 N 已在 add_target 内主 shell 累加（替代旧的 GNU 扩展 `grep -zc` 统计）
-[ "$N" -gt 0 ] || { echo "未收集到任何目标文件" >&2; exit 2; }
+# v4.1：未收集到目标 = 用法问题（参数/目录无匹配文件）→ RC_USAGE(2)
+[ "$N" -gt 0 ] || fatal "$RC_USAGE" "未收集到任何目标文件"
 
 mkdir -p "$OUT_DIR/targets" "$OUT_DIR/.results"
 [ -n "$SNAP" ] && mkdir -p "$SNAP"

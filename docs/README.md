@@ -39,6 +39,7 @@
 
 ### 运维
 - [troubleshooting.md](troubleshooting.md)：跨平台常见问题（JDK 版本、Node 门禁、Gatekeeper、native 构建、Windows PATH/路径、Docker 等）。
+- [exit-codes.md](exit-codes.md)：命名退出码表（0/1/2/10/11/12/13）与非 TTY 时的 JSON 错误 envelope，供 CI / 上层脚本消费。
 - [platform-support-matrix.md](platform-support-matrix.md)：4 系统 × 5 运行环境（物理机 / 虚拟机 / WSL / Docker / 云电脑 VDI）支持矩阵，逐项标注「支持 / 部分 / 受限 / 不支持」及原因。
 
 ## 版本

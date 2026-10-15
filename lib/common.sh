@@ -52,12 +52,15 @@ fi
 log()  { printf '%b[*]%b %s\n' "$C_BLUE" "$C_RESET" "$*"; }
 ok()   { printf '%b[OK]%b %s\n' "$C_GREEN" "$C_RESET" "$*"; }
 warn() { printf '%b[!]%b %s\n' "$C_YELLOW" "$C_RESET" "$*"; }
-die()  { printf '%b[ERR]%b %s\n' "$C_RED" "$C_RESET" "$*" >&2; exit 1; }
+# v4.1：die() 改由 lib/exitcodes.sh 提供（= fatal 1，未归类错误，行为兼容）
+# shellcheck source=lib/exitcodes.sh
+. "$LIB_DIR/exitcodes.sh"
 
 # ---- 版本加载：config/versions.env 为默认，已存在的环境变量不被覆盖 --------
 load_versions() {
   local vfile="$REPO_ROOT/config/versions.env"
-  [ -f "$vfile" ] || die "找不到版本文件 $vfile"
+  # v4.1：缺版本文件 = 本地安装包/仓库不完整 → RC_DEPENDENCY(10)
+  [ -f "$vfile" ] || fatal "$RC_DEPENDENCY" "找不到版本文件 ${vfile}（安装包/仓库不完整）"
   local key val
   while IFS='=' read -r key val || [ -n "$key" ]; do
     key="${key//[[:space:]]/}"
@@ -176,9 +179,17 @@ install_node_portable() {
   tmp="$(mktemp -d)"
   name="$(node_tarball_dir "$os" "$arch").tar.gz"
   if type -t fetch_artifact >/dev/null 2>&1; then
-    fetch_artifact node "$name" "$(node_tarball_url "$os" "$arch")" "$tmp/$name"
+    # v4.1：fetch_artifact 返回 1=校验和不匹配(→RC_CHECKSUM 11)，2=下载失败(→RC_UPSTREAM 12)。
+    # 注意：必须用 `|| rc=$?` 捕获原始退出码（`if ! cmd; then rc=$?` 拿到的是取反后的 0）。
+    rc=0
+    fetch_artifact node "$name" "$(node_tarball_url "$os" "$arch")" "$tmp/$name" || rc=$?
+    if [ "$rc" -ne 0 ]; then
+      [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "便携 Node 下载物校验和失败（${name}）"
+      fatal "$RC_UPSTREAM" "便携 Node 下载失败（${name}）"
+    fi
   else
-    download "$tmp/$name" "$(node_tarball_url "$os" "$arch")"
+    download "$tmp/$name" "$(node_tarball_url "$os" "$arch")" \
+      || fatal "$RC_UPSTREAM" "便携 Node 下载失败（${name}）"
   fi
   tar -xzf "$tmp/$name" -C "$tools_dir"
   rm -rf "$tmp"

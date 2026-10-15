@@ -29,20 +29,21 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --help|-h)
       sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \?//; /^END USAGE$/d'; exit 0 ;;
-    --out)  [ $# -ge 2 ] || { echo "--out 需要目录" >&2; exit 2; }; OUT_DIR="$2"; shift 2 ;;
-    --kind) [ $# -ge 2 ] || { echo "--kind 需要类型" >&2; exit 2; }; KIND="$2"; shift 2 ;;
+    --out)  [ $# -ge 2 ] || fatal "$RC_USAGE" "--out 需要目录"; OUT_DIR="$2"; shift 2 ;;
+    --kind) [ $# -ge 2 ] || fatal "$RC_USAGE" "--kind 需要类型"; KIND="$2"; shift 2 ;;
     --) shift; while [ $# -gt 0 ]; do BIN_ARGS+=("$1"); shift; done ;;
-    -*) echo "未知参数：$1（见 --help）" >&2; exit 2 ;;
+    -*) fatal "$RC_USAGE" "未知参数：$1（见 --help）" ;;
     *)  BIN_ARGS+=("$1"); shift ;;
   esac
 done
 if [ "${#BIN_ARGS[@]}" -eq 0 ]; then
-  echo "缺少目标二进制（见 --help）" >&2; exit 2
+  fatal "$RC_USAGE" "缺少目标二进制（见 --help）"
 elif [ "${#BIN_ARGS[@]}" -gt 1 ]; then
-  echo "仅支持单个目标二进制（当前传入 ${#BIN_ARGS[@]} 个：${BIN_ARGS[*]}）" >&2; exit 2
+  fatal "$RC_USAGE" "仅支持单个目标二进制（当前传入 ${#BIN_ARGS[@]} 个：${BIN_ARGS[*]}）"
 fi
 BIN="${BIN_ARGS[0]}"
-[ -f "$BIN" ] || { echo "二进制不存在：$BIN" >&2; exit 2; }
+# v4.1：目标二进制不存在 = 资源不可用 → RC_UPSTREAM(12)
+[ -f "$BIN" ] || fatal "$RC_UPSTREAM" "二进制不存在：$BIN"
 
 case "$KIND" in
   functions)   SCRIPT="ExportFunctions.java" ;;
@@ -51,14 +52,14 @@ case "$KIND" in
   calls)       SCRIPT="ExportCalls.java" ;;
   decompiled)  SCRIPT="ExportDecompiled.java" ;;
   all)         SCRIPT="ExportAll.java" ;;
-  *) echo "--kind 仅接受 functions|strings|symbols|calls|decompiled|all" >&2; exit 2 ;;
+  *) fatal "$RC_USAGE" "--kind 仅接受 functions|strings|symbols|calls|decompiled|all" ;;
 esac
 
 # ---- 定位 Ghidra / JDK（v3.0 集中发现：显式 env ＞ current 软链 ＞ 枚举）----
 TOOLS_DIR="${TOOLS_DIR:-$HOME/tools}"
 GHIDRA_INSTALL_DIR="$(resolve_ghidra_dir || true)"
 if [ -z "${GHIDRA_INSTALL_DIR:-}" ] || [ ! -x "$GHIDRA_INSTALL_DIR/support/analyzeHeadless" ]; then
-  die "未找到 Ghidra（设 GHIDRA_INSTALL_DIR 或先跑 install.sh）"
+  fatal "$RC_DEPENDENCY" "未找到 Ghidra（设 GHIDRA_INSTALL_DIR 或先跑 install.sh）"
 fi
 
 # 取某个 JAVA_HOME 的 major 版本（写 stdout；取不出输出 0）。Ghidra 12.1.4 要求 JDK21。
@@ -78,7 +79,7 @@ jdk_major() {
 # CI runner 可能注入 JAVA_HOME=JDK17；集中发现：显式 env(major>=21) ＞ current-jdk ＞ 枚举
 JH="$(resolve_jdk_home || true)"
 if [ -z "$JH" ] || [ "$(jdk_major "$JH")" -lt 21 ]; then
-  die "未找到 JDK21（要求 major>=21）。当前 JAVA_HOME=${JAVA_HOME:-（空）}；请先跑 install.sh 或设置 JAVA_HOME 指向 JDK21。"
+  fatal "$RC_DEPENDENCY" "未找到 JDK21（要求 major>=21）。当前 JAVA_HOME=${JAVA_HOME:-（空）}；请先跑 install.sh 或设置 JAVA_HOME 指向 JDK21。"
 fi
 export JAVA_HOME="$JH"
 export PATH="$JH/bin:$PATH"

@@ -481,6 +481,10 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v4.1.0（2026-10-15，退出码体系）**
+  - 命名退出码统一（0 成功 / 2 用法错 / 10 缺依赖 / 11 校验失败 / 12 上游或资源不可用 / 13 磁盘不足）：install / install-macos / export / batch / args 全部错误路径迁移；非 TTY 时 stderr 输出一行机器可读 JSON 错误 envelope，CI 与上层脚本可直接解析。
+  - batch 7 个取值参数缺值守卫（原来 `set -u` 下 unbound 崩溃）、`--offline-dir` 缺值补退出。
+  - 新增 `docs/exit-codes.md` 与文档站「退出码」页（中英）；lint-build 新增退出码 + JSON 错误断言。
 - **v4.0.5（2026-10-15，路径健壮性修复版）**
   - D1：`install.sh`/`install-macos.sh` 写入 rc 的 `JAVA_HOME`/`GHIDRA_INSTALL_DIR`/`PATH` 统一加双引号——`TOOLS_DIR` 含空格/中文不再被分词（`\$PATH` 转义保持原样）。
   - D2：`ghidra-export.sh` 目标改为 bash 数组按 argv 原样累加（严格单目标），并绕行 Ghidra `checkValidFilename` 对非 ASCII 叶子名的拒绝（暂存为 ASCII 临时名后导入）——含空格/中文路径与中文文件名均可导出。

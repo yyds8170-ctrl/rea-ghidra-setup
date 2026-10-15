@@ -25,7 +25,8 @@ if [ "$ARG_HELP" = "1" ]; then install_usage "$INSTALLER_NAME"; exit 0; fi
 load_versions
 print_dry_run_if_requested "macOS"   # dry-run/--help 在任意机器都提前退出，不触碰 Darwin 专属命令
 
-[ "$(uname -s)" = "Darwin" ] || { echo "本脚本仅用于 macOS（Linux 请用 install.sh）" >&2; exit 1; }
+# v4.1：平台/架构环境不匹配 → RC_UPSTREAM(12)（环境问题，非参数错误）
+[ "$(uname -s)" = "Darwin" ] || fatal "$RC_UPSTREAM" "本脚本仅用于 macOS（Linux 请用 install.sh）"
 
 # ---- 可调参数（命令行/环境变量已在 args.sh 设好，这里补默认值）---------------
 TOOLS_DIR="${TOOLS_DIR:-$HOME/tools}"
@@ -35,7 +36,7 @@ ARCH="$(normalize_arch)"
 case "$ARCH" in
   x64)     JDK_ARCH=x64 ;;
   aarch64) JDK_ARCH=aarch64 ;;
-  *) echo "不支持的 CPU 架构：$ARCH" >&2; exit 1 ;;
+  *) fatal "$RC_UPSTREAM" "不支持的 CPU 架构：$ARCH" ;;
 esac
 JDK_API="$(adoptium_jdk_url mac "$JDK_ARCH")"
 JDK_PKG="jdk21-mac-${JDK_ARCH}.tar.gz"
@@ -49,9 +50,9 @@ echo " 目录   : $TOOLS_DIR"
 echo " Ghidra : $GHIDRA_VERSION ｜ JDK: $JDK_FEATURE ｜ Node: $REA_NODE_VERSION ｜ REA: $REA_VERSION"
 echo "=========================================================="
 
-# ---- 前置检查 ---------------------------------------------------------------
-command -v curl >/dev/null 2>&1 || { echo "缺少 curl" >&2; exit 1; }
-command -v unzip >/dev/null 2>&1 || { echo "缺少 unzip" >&2; exit 1; }
+# ---- 前置检查（v4.1：缺本地依赖 → RC_DEPENDENCY 10）--------------------------
+command -v curl >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 curl"
+command -v unzip >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 unzip"
 mkdir -p "$TOOLS_DIR"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
@@ -60,8 +61,7 @@ trap 'rm -rf "$TMP_DIR"' EXIT
 TOOLS_NEED_KB=3000000
 avail_kb="$(df -Pk "$TOOLS_DIR" | awk 'NR==2{print $4}')"
 if [[ "${avail_kb:-0}" -lt "$TOOLS_NEED_KB" ]]; then
-  echo "$TOOLS_DIR 可用空间不足（需约 3GB，当前约 $((avail_kb/1024/1024))GB）" >&2
-  exit 1
+  fatal "$RC_DISK" "$TOOLS_DIR 可用空间不足（需约 3GB，当前约 $((avail_kb/1024/1024))GB）"
 fi
 
 # ---- 1. 安装 JDK 21（macOS tar.gz 解包后为 <bundle>/Contents/Home）----------
@@ -70,11 +70,18 @@ if [[ -n "$JDK_HOME" && -x "$JDK_HOME/bin/java" ]]; then
   echo "[1/5] JDK 21 已存在：$JDK_HOME"
 else
   echo "[1/5] 下载 Temurin JDK 21（mac/${JDK_ARCH}）..."
-  fetch_artifact jdk "$JDK_PKG" "$JDK_API" "$TMP_DIR/jdk21.tar.gz"
+  # v4.1：fetch_artifact 1=校验和失败→11，2=下载失败→12（用 || rc=$? 捕获原始码）
+  rc=0
+  fetch_artifact jdk "$JDK_PKG" "$JDK_API" "$TMP_DIR/jdk21.tar.gz" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "JDK 下载物校验和失败（${JDK_PKG}）"
+    fatal "$RC_UPSTREAM" "JDK 下载失败（${JDK_API}）"
+  fi
   tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
   JDK_BUNDLE="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' -type d | head -1)"
   JDK_HOME="$JDK_BUNDLE/Contents/Home"
-  [ -x "$JDK_HOME/bin/java" ] || { echo "JDK 解压后未找到 $JDK_HOME/bin/java" >&2; exit 1; }
+  # 解压后仍无 java 二进制 = 上游资源损坏/不完整 → RC_UPSTREAM(12)
+  [ -x "$JDK_HOME/bin/java" ] || fatal "$RC_UPSTREAM" "JDK 解压后未找到 $JDK_HOME/bin/java（上游资源可能损坏）"
   ln -sfn "$JDK_HOME" "$TOOLS_DIR/jdk21"
   echo "      已安装：$JDK_HOME"
 fi
@@ -98,7 +105,12 @@ if [[ -x "$GHIDRA_DIR/support/analyzeHeadless" ]]; then
   echo "[3/5] Ghidra $GHIDRA_VERSION 已存在：$GHIDRA_DIR"
 else
   echo "[3/5] 下载 Ghidra $GHIDRA_VERSION ..."
-  fetch_artifact ghidra "$(ghidra_zip_name)" "$GHIDRA_URL" "$TMP_DIR/ghidra.zip"
+  rc=0
+  fetch_artifact ghidra "$(ghidra_zip_name)" "$GHIDRA_URL" "$TMP_DIR/ghidra.zip" || rc=$?
+  if [ "$rc" -ne 0 ]; then
+    [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "Ghidra 下载物校验和失败（$(ghidra_zip_name)）"
+    fatal "$RC_UPSTREAM" "Ghidra 下载失败（${GHIDRA_URL}）"
+  fi
   unzip -q -o "$TMP_DIR/ghidra.zip" -d "$TOOLS_DIR"
   echo "      已安装：$GHIDRA_DIR"
 fi

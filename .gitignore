@@ -24,3 +24,6 @@ examples/fixtures/
 
 # v3.4 端到端案例库编译产物（源码在 examples/cases/，运行 run-cases 生成）
 examples/cases/build/
+
+# mkdocs 构建产物（pages.yml 现构建现部署，不入库）
+site/

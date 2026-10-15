@@ -93,6 +93,7 @@ nav:
   - 使用:
       - usage.md
       - 报告生成器: report.md
+      - 退出码: exit-codes.md
   - 案例与报告:
       - cases.md
   - FAQ: faq.md

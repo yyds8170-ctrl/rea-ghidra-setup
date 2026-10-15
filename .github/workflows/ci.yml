@@ -83,6 +83,40 @@ jobs:
       - name: 编译端到端案例库（5 案例，含 strip 版构建）
         run: make -C examples/cases all
 
+      - name: 退出码与 JSON 错误断言
+        run: |
+          set -e
+          # 未知参数 → RC_USAGE=2，且 stderr 含机器可读 JSON envelope。
+          # 注意 set -e 下须用 `|| rc=$?` 捕获预期失败的退出码（`cmd; rc=$?` 会被 set -e 直接中止）。
+          rc=0
+          bash install.sh --no-such-flag >/dev/null 2>/tmp/e1.txt || rc=$?
+          [ "$rc" -eq 2 ] || { echo "未知参数应退出 2，实际 $rc"; exit 1; }
+          python3 - /tmp/e1.txt <<'PY'
+          import json, sys
+          lines = [l for l in open(sys.argv[1], encoding='utf-8') if l.strip().startswith('{')]
+          assert lines, 'stderr 缺少 JSON envelope 行'
+          env = json.loads(lines[-1])
+          e = env['error']
+          assert e['code'] == 2 and e['name'] == 'RC_USAGE', e
+          print('JSON envelope OK:', e)
+          PY
+          # ghidra-export 无目标 → 2
+          rc=0
+          bash scripts/ghidra-export.sh >/dev/null 2>&1 || rc=$?
+          [ "$rc" -eq 2 ] || { echo "ghidra-export 无目标应退出 2，实际 $rc"; exit 1; }
+          # 缺 Ghidra/JDK → 10（runner 若注入 JAVA_HOME=JDK17，jdk_major 17<21 仍走未找到 JDK21）
+          rc=0
+          TOOLS_DIR=/nonexistent GHIDRA_INSTALL_DIR= JAVA_HOME= bash scripts/ghidra-export.sh examples/demo >/dev/null 2>/tmp/e3.txt || rc=$?
+          [ "$rc" -eq 10 ] || { echo "缺 Ghidra/JDK 应退出 10，实际 $rc"; exit 1; }
+          # batch-analyze 取值参数缺值 → RC_USAGE=2（v4.1 守卫补齐）
+          rc=0
+          bash scripts/batch-analyze.sh --snapshot >/dev/null 2>&1 || rc=$?
+          [ "$rc" -eq 2 ] || { echo "batch-analyze --snapshot 缺值应退出 2，实际 $rc"; exit 1; }
+          rc=0
+          bash scripts/batch-analyze.sh --jobs >/dev/null 2>&1 || rc=$?
+          [ "$rc" -eq 2 ] || { echo "batch-analyze --jobs 缺值应退出 2，实际 $rc"; exit 1; }
+          echo "退出码与 JSON 错误断言通过"
+
   # PowerShell 静态检查：每次 push / PR 都跑（ubuntu 上的 pwsh 即可解析 .ps1）
   lint-ps:
     runs-on: ubuntu-latest

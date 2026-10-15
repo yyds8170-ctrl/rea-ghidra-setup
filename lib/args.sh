@@ -66,32 +66,31 @@ parse_install_args() {
       --dry-run) ARG_DRY_RUN=1; shift ;;
       -y|--yes|--non-interactive) ARG_YES=1; shift ;;
       --prefix|--tools-dir)
-        [ $# -ge 2 ] || { echo "错误：$1 需要一个目录参数" >&2; install_usage "$INSTALLER_NAME" >&2; exit 2; }
+        [ $# -ge 2 ] || { install_usage "$INSTALLER_NAME" >&2; fatal "$RC_USAGE" "错误：$1 需要一个目录参数"; }
         TOOLS_DIR="$2"; shift 2 ;;
       --mirror)
-        [ $# -ge 2 ] || { echo "错误：$1 需要 auto|cn|global" >&2; exit 2; }
-        case "$2" in auto|cn|global) export REA_MIRROR="$2"; shift 2 ;; *) echo "错误：--mirror 仅接受 auto|cn|global" >&2; exit 2 ;; esac ;;
+        [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：$1 需要 auto|cn|global"
+        case "$2" in auto|cn|global) export REA_MIRROR="$2"; shift 2 ;; *) fatal "$RC_USAGE" "错误：--mirror 仅接受 auto|cn|global" ;; esac ;;
       --skip-node) SKIP_NODE=1; shift ;;
       --no-native) SKIP_NATIVE=1; shift ;;
       --provider)
-        [ $# -ge 2 ] || { echo "错误：$1 需要一个名字" >&2; exit 2; }
+        [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：$1 需要一个名字"
         REA_ANALYSIS_PROVIDER="$2"; export REA_ANALYSIS_PROVIDER; shift 2 ;;
       --offline-dir)
-        [ $# -ge 2 ] || { echo "错误：$1 需要一个目录" >&2; }
+        [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：$1 需要一个目录"
         OFFLINE_DIR="$2"; export OFFLINE_DIR; shift 2 ;;
       --ghidra-version)
-        [ $# -ge 2 ] || { echo "错误：$1 需要一个版本号" >&2; exit 2; }
+        [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：$1 需要一个版本号"
         export GHIDRA_VERSION="$2"; shift 2 ;;
       --node-version)
-        [ $# -ge 2 ] || { echo "错误：$1 需要一个版本号" >&2; exit 2; }
+        [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：$1 需要一个版本号"
         export REA_NODE_VERSION="$2"; shift 2 ;;
       --rea-version)
-        [ $# -ge 2 ] || { echo "错误：$1 需要一个版本号" >&2; exit 2; }
+        [ $# -ge 2 ] || fatal "$RC_USAGE" "错误：$1 需要一个版本号"
         export REA_VERSION="$2"; shift 2 ;;
       *)
-        echo "错误：未知参数：$1" >&2
         install_usage "$INSTALLER_NAME" >&2
-        exit 2 ;;
+        fatal "$RC_USAGE" "错误：未知参数：$1" ;;
     esac
   done
 }
