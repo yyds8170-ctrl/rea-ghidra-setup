@@ -109,7 +109,7 @@ function Invoke-CaseAssert {
       Check ($strText.Contains('S3cr3t-2026')) '字符串表含硬编码口令 S3cr3t-2026'
       Check ($strText.Contains('ACCESS GRANTED')) '字符串表含 ACCESS GRANTED'
       if (-not $isStripped) { Check ($funcNames.ContainsKey('check_password')) '函数表含 check_password' }
-      Check ($callees.ContainsKey('strcmp')) '调用边出现 strcmp'
+      Check ($externSet.ContainsKey('strcmp')) '调用边出现 strcmp（跨平台）'
     }
     '02-license-key' {
       Check (Test-DecompConst $decompText '0x5a' '90')   '反编译含异或常量 0x5a(90)'

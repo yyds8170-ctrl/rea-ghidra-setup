@@ -6,14 +6,14 @@
 #   路径:  Formula/rea-ghidra.rb
 #
 # 发版时务必把 url 的 tag 与 sha256 更新为真实值：
-#   curl -sL https://github.com/yyds8170-ctrl/rea-ghidra-setup/archive/refs/tags/v4.0.1.tar.gz | shasum -a 256
+#   curl -sL https://github.com/yyds8170-ctrl/rea-ghidra-setup/archive/refs/tags/v4.0.2.tar.gz | shasum -a 256
 #
 # 用户安装：
 #   brew tap yyds8170-ctrl/rea-ghidra && brew install rea-ghidra
 class ReaGhidra < Formula
   desc "Cross-platform installer/orchestrator for Ghidra + rea-agents (noncommercial)"
   homepage "https://github.com/yyds8170-ctrl/rea-ghidra-setup"
-  url "https://github.com/yyds8170-ctrl/rea-ghidra-setup/archive/refs/tags/v4.0.1.tar.gz"
+  url "https://github.com/yyds8170-ctrl/rea-ghidra-setup/archive/refs/tags/v4.0.2.tar.gz"
   sha256 "REPLACE_WITH_REAL_SHA256_OF_TARBALL"
   license "PolyForm-Noncommercial-1.0.0"
   head "https://github.com/yyds8170-ctrl/rea-ghidra-setup.git", branch: "main"

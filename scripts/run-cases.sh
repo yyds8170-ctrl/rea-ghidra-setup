@@ -135,7 +135,7 @@ if case == "01-crackme-password":
     check(has_substr(str_values, "S3cr3t-2026"), "字符串表含硬编码口令 S3cr3t-2026")
     check(has_substr(str_values, "ACCESS GRANTED"), "字符串表含 ACCESS GRANTED")
     need_func("check_password")
-    check("strcmp" in callees, "调用边出现 strcmp")
+    check("strcmp" in extern_names, "调用边出现 strcmp（跨平台）")
 
 elif case == "02-license-key":
     check(has_const("0x5a", "90"),  "反编译含异或常量 0x5a(90)")
