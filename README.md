@@ -481,6 +481,10 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v4.3.0（2026-10-15，路径/编码/供应链加固）**
+  - 批量分析目标收集改 NUL 安全（`find -print0` + `read -d ''`），文件名含换行/特殊字符不再被错拆。
+  - WSL 下把安装目录指到 `/mnt/*` 时主动告警（跨盘 IO 慢），建议装 `~/tools`。
+  - `check-versions.sh` 补上游漂移巡检：便携 Node vs LTS、CI 固定的 GHA action 清单与最新 major 比对；只报告不盲目升级。
 - **v4.2.0（2026-10-15，安装锁 + 半成品自愈）**
   - 安装原子互斥锁：`install.sh`/`install-macos.sh` 解压前在 `<TOOLS_DIR>/.install.lock` 用 `mkdir` 拿锁，防止两个安装并发写同一目录互相破坏；活锁冲突→新退出码 14（`RC_BUSY`）。
   - 中断自愈：上次被 Ctrl-C/kill -9 残留的死锁自动接管不阻塞；解压到一半、缺标志二进制的 JDK/Ghidra 目录重装前自动清理。

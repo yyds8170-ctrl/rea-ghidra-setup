@@ -60,6 +60,8 @@ command -v unzip >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 unzip，请�
 command -v tar >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 tar，请先安装"
 
 mkdir -p "$TOOLS_DIR"
+# v4.3：WSL 下 /mnt/* 安装目录性能提示
+warn_if_wsl_mnt "$TOOLS_DIR"
 # v4.2：安装原子锁——防止两个 install 并发写同一 TOOLS_DIR；死锁（上次崩溃残留）自动接管
 acquire_install_lock "$TOOLS_DIR"
 TMP_DIR="$(mktemp -d)"

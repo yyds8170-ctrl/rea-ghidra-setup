@@ -246,6 +246,19 @@ env_label() {
   esac
 }
 
+# v4.3：WSL 下若把 TOOLS_DIR 指到 /mnt/*（Windows 盘挂载点），Ghidra/JDK/Node
+# 走 9p/drvfs 跨文件系统会慢一个数量级，且大量小文件 IO 易卡顿。给一条明确提示。
+warn_if_wsl_mnt() {
+  local dir="$1"
+  is_wsl || return 0
+  case "$dir" in
+    /mnt/*)
+      warn "检测到 WSL 且安装目录在 Windows 盘挂载点（${dir}）。Ghidra/JDK 大量小文件走 /mnt 的跨文件系统 IO 会明显变慢，"
+      warn "建议改装到 WSL 原生 Linux 文件系统（如 ~/tools，即 /home/<你>/tools）。若坚持装在 /mnt，请耐心等待并接受较慢的启动/分析速度。"
+      ;;
+  esac
+}
+
 # ---- v3.0 集中化发现：current 软链优先，回退枚举（bash3.2 兼容）-------------
 # 打印某 JDK 目录的 major 版本（取不出打印 0）
 jdk_major_of() {

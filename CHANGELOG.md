@@ -4,6 +4,26 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [4.3.0] - 2026-10-15（路径/编码/供应链加固）
+
+针对特殊字符路径、WSL 性能陷阱、上游版本漂移三类风险做加固与巡检，不盲目升级上游。
+
+### Changed
+- **NUL 安全收集（`scripts/batch-analyze.sh`）**：递归收集目标从 `$(find)`（按换行分词）改为 `find -print0 | while IFS= read -r -d ''`（进程替换 `< <(...)` 保持主 shell 计数器不丢）。文件名内嵌换行/特殊字符不再被错误拆成多个目标。本机实测含换行文件名正确计为 1 个目标。
+- **WSL `/mnt` 提示（`lib/common.sh` `warn_if_wsl_mnt`）**：WSL 下把 `TOOLS_DIR` 指到 `/mnt/*`（Windows 盘挂载点）时，安装器主动告警——Ghidra/JDK/Node 走 9p/drvfs 跨文件系统 IO 会慢一个数量级，建议改装 `~/tools`。troubleshooting 同步说明。
+
+### Added
+- **上游漂移巡检（`scripts/check-versions.sh` 第 4 节）**：新增便携 Node 与 nodejs.org 当前 LTS 比对、CI 中固定的 GHA actions 清单、核心 action（checkout/setup-node/cache/build-push-action）本地 pin vs 上游最新 major 的 best-effort 比对。发现新版本只 WARN/报告，不自动升级（升级需全链路验证门禁 `^22.19||^24.11||>=26`）。本版实测：Ghidra 12.1.4 / rea-agents 6.5.0 / Node 24.22.0 均与上游持平；GHA action 本地 pin（checkout@v4 等）落后上游 major，已列报告待人工评估，未盲目 bump。
+
+### Evaluated（不改动）
+- `install.ps1` 已全程 `Join-Path` + `-LiteralPath`，空格/中文路径健壮；Windows 长路径（260 限制）需 OS 级 `LongPathsEnabled`（管理员），不在脚本内强改。
+- Dockerfile 构建由 CI `docker`/`docker-arm64` 作业实测（build 后容器内跑 verify.sh）；本机无 docker，不重复。
+
+### Verified
+- shellcheck -x 0 告警、bash3.2 非 ASCII 紧邻零匹配。
+- selftest-batch 4/4（NUL 收集改动后回归：首次/缓存命中/失败隔离/空产物隔离）。
+- check-versions 通过；NUL 收集单测含换行文件名计 1 目标。
+
 ## [4.2.0] - 2026-10-15（安装锁 + 半成品自愈 + CI 卫生）
 
 引入安装原子互斥锁与中断自愈，杜绝并发安装互相破坏、以及上次中断后半截目录残留。

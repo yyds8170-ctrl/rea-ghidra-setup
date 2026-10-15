@@ -116,6 +116,7 @@ bash scripts/build-ghidra-native.sh
 ### 15. WSL2 / Crostini 特有问题
 
 - WSL2 中建议把待分析文件放在 `\\wsl$` 的 Linux 文件系统内（放 NTFS 挂载盘 IO 慢且有重解析点问题）。
+- 同样建议把**安装目录**也放在 WSL 原生文件系统（默认 `~/tools`，即 `/home/<你>/tools`）。若把 `TOOLS_DIR` 指到 `/mnt/c/...`，Ghidra/JDK/Node 大量小文件走 9p/drvfs 跨文件系统会慢一个数量级；v4.3 起安装器在 WSL 下检测到 `/mnt/*` 安装目录会主动打印这条提示。
 - ChromeOS 只能用 Crostini（Linux 开发环境）；ARM Chromebook 需构建 `linux_arm_64`，磁盘建议 15–20GB，
   登出即停。详见 [platform-chromeos.md](platform-chromeos.md)。
 

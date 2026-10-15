@@ -141,12 +141,12 @@ if [ -n "$DIR" ]; then
     case "$1" in $2) return 0 ;; *) return 1 ;; esac
   }
   if [ "$RECURSE" = "1" ]; then
-    # bash3.2 兼容：用 heredoc 命令替换（主 shell 内读取，避免子进程丢数组；无 mapfile/进程替换）
-    while IFS= read -r f; do
+    # v4.3：NUL 安全收集——find -print0 + read -d ''，彻底规避文件名含换行/特殊字符。
+    # 用进程替换 < <(...) 而非管道：while 仍在主 shell 执行，add_target 的计数器 N 不会丢。
+    # （process substitution 在 macOS bash 3.2 可用；find -print0 保证每条记录以 NUL 结尾。）
+    while IFS= read -r -d '' f; do
       [ -f "$f" ] && match "$f" "$PATTERN" && add_target "$f"
-    done <<EOF
-$(find "$DIR" -type f)
-EOF
+    done < <(find "$DIR" -type f -print0)
   else
     for f in "$DIR"/*; do [ -f "$f" ] && match "$f" "$PATTERN" && add_target "$f"; done
   fi
