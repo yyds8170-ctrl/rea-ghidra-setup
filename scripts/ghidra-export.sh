@@ -19,7 +19,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 . "$SCRIPT_DIR/../lib/common.sh"
 
-BIN=""
+# v4.0.5（D2）：目标用 bash 数组按 argv 原样累加（本工具语义为“单目标”，恰好允许
+# 1 个二进制）。旧实现 BIN="${BIN} $1" 后 `echo "$BIN" | xargs` 会对路径重新分词、
+# 折叠多空格——路径含空格/引号时静默损坏；数组按参数原样保留，零分词风险。
+BIN_ARGS=()
 OUT_DIR="./ghidra-export"
 KIND="all"
 while [ $# -gt 0 ]; do
@@ -28,13 +31,17 @@ while [ $# -gt 0 ]; do
       sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \?//; /^END USAGE$/d'; exit 0 ;;
     --out)  [ $# -ge 2 ] || { echo "--out 需要目录" >&2; exit 2; }; OUT_DIR="$2"; shift 2 ;;
     --kind) [ $# -ge 2 ] || { echo "--kind 需要类型" >&2; exit 2; }; KIND="$2"; shift 2 ;;
-    --) shift; while [ $# -gt 0 ]; do BIN="${BIN} $1"; shift; done ;;
+    --) shift; while [ $# -gt 0 ]; do BIN_ARGS+=("$1"); shift; done ;;
     -*) echo "未知参数：$1（见 --help）" >&2; exit 2 ;;
-    *)  BIN="${BIN} $1"; shift ;;
+    *)  BIN_ARGS+=("$1"); shift ;;
   esac
 done
-BIN="$(echo "$BIN" | xargs)"
-[ -n "$BIN" ] || { echo "缺少目标二进制（见 --help）" >&2; exit 2; }
+if [ "${#BIN_ARGS[@]}" -eq 0 ]; then
+  echo "缺少目标二进制（见 --help）" >&2; exit 2
+elif [ "${#BIN_ARGS[@]}" -gt 1 ]; then
+  echo "仅支持单个目标二进制（当前传入 ${#BIN_ARGS[@]} 个：${BIN_ARGS[*]}）" >&2; exit 2
+fi
+BIN="${BIN_ARGS[0]}"
 [ -f "$BIN" ] || { echo "二进制不存在：$BIN" >&2; exit 2; }
 
 case "$KIND" in
@@ -81,6 +88,20 @@ OUT_DIR="$(cd "$OUT_DIR" && pwd)"
 PROJ_DIR="$(mktemp -d)"
 trap 'rm -rf "$PROJ_DIR"' EXIT
 
+# v4.0.5（D2）：Ghidra analyzeHeadless 的 checkValidFilename 只放行 ASCII 白名单
+# （A-Za-z0-9._-）作为“被导入文件的叶子名”，中文/空格/引号叶子名会抛
+# InvalidInputException（目录段含中文/空格不受影响，实测可正常遍历）。这里把叶子名
+# 不合法的目标逐字节复制到 ASCII 临时名再导入；批量缓存按原始文件 sha256，不受影响。
+STAGE_BIN=""
+trap 'rm -rf "$PROJ_DIR" ${STAGE_BIN:+"$STAGE_BIN"}' EXIT
+BN="$(basename "$BIN")"
+if ! printf '%s' "$BN" | LC_ALL=C grep -q '^[A-Za-z0-9._-]*$'; then
+  STAGE_BIN="$(mktemp "${TMPDIR:-/tmp}/rea_import_XXXXXX")"
+  cp "$BIN" "$STAGE_BIN"
+  echo "  注意：叶子名含非 ASCII/特殊字符，已暂存为 ASCII 临时文件后导入"
+fi
+BIN_TO_IMPORT="$BIN"; [ -n "$STAGE_BIN" ] && BIN_TO_IMPORT="$STAGE_BIN"
+
 # 跨平台超时：优先 timeout（GNU），其次 gtimeout（macOS coreutils），都没有则不套
 run_headless() {
   local to="${REA_EXPORT_TIMEOUT:-1800}"
@@ -98,7 +119,7 @@ echo "  Ghidra=$GHIDRA_INSTALL_DIR  JAVA_HOME=${JAVA_HOME:-}(默认)  kind=$KIND
 echo "  产物目录：$OUT_DIR"
 
 run_headless "$PROJ_DIR" Proj \
-  -import "$BIN" \
+  -import "$BIN_TO_IMPORT" \
   -scriptPath "$SCRIPT_DIR/ghidra" \
   -postScript "$SCRIPT" "$OUT_DIR" \
   -deleteProject

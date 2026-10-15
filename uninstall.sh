@@ -57,9 +57,20 @@ else
   echo "[1/3] $RC_FILE 中无环境块，跳过"
 fi
 
+# v4.0.5（D4）：旧实现 `echo "$X" | xargs -r rm -rf` 对含空格路径会按空白分词，
+# 且 -r 是 GNU xargs 扩展（macOS BSD xargs 无此选项）。改为逐行 read 安全删除：
+# 每行一个目标，空格/中文原样保留，rm -- 结束选项解析防路径以 - 开头。
+# set -uo pipefail（无 -e）：while 走管道子进程，本处删完即弃，无需回传变量。
+delete_targets() { # $1=find 输出（换行分隔）
+  [ -n "$1" ] || return 0
+  printf '%s\n' "$1" | while IFS= read -r d; do
+    [ -n "$d" ] && rm -rf -- "$d"
+  done
+}
+
 # 2. 删除 Ghidra
 if [ -n "$GHIDRA_TARGETS" ]; then
-  echo "$GHIDRA_TARGETS" | xargs -r rm -rf
+  delete_targets "$GHIDRA_TARGETS"
   echo "[2/3] 已删除 Ghidra"
 else
   echo "[2/3] 未发现 Ghidra，跳过"
@@ -67,7 +78,7 @@ fi
 
 # 3. 删除 JDK
 if [ -n "$JDK_TARGETS" ]; then
-  echo "$JDK_TARGETS" | xargs -r rm -rf
+  delete_targets "$JDK_TARGETS"
   echo "[3/3] 已删除 JDK 21"
 else
   echo "[3/3] 未发现 JDK 21，跳过"

@@ -144,11 +144,12 @@ echo "      current 软链已指向：$(basename "$GHIDRA_DIR") / $(basename "$J
 BLOCK_START="# >>> REA + Ghidra env >>>"
 BLOCK_END="# <<< REA + Ghidra env <<<"
 EXTRA_PATH=""; [ -n "$NODE_HOME" ] && EXTRA_PATH=":$NODE_HOME/bin"
+# v4.0.5（D1）：与 install.sh 同款缺陷——路径加引号，\$PATH 转义保持原样。
 ENV_BLOCK="$(cat <<EOF
 $BLOCK_START
-export JAVA_HOME=$JDK_HOME
-export GHIDRA_INSTALL_DIR=$GHIDRA_DIR
-export PATH=$JDK_HOME/bin:$GHIDRA_DIR/support${EXTRA_PATH}:\$PATH
+export JAVA_HOME="$JDK_HOME"
+export GHIDRA_INSTALL_DIR="$GHIDRA_DIR"
+export PATH="$JDK_HOME/bin:$GHIDRA_DIR/support${EXTRA_PATH}:\$PATH"
 $BLOCK_END
 EOF
 )"

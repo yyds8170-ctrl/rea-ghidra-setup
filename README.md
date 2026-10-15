@@ -481,6 +481,11 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v4.0.5（2026-10-15，路径健壮性修复版）**
+  - D1：`install.sh`/`install-macos.sh` 写入 rc 的 `JAVA_HOME`/`GHIDRA_INSTALL_DIR`/`PATH` 统一加双引号——`TOOLS_DIR` 含空格/中文不再被分词（`\$PATH` 转义保持原样）。
+  - D2：`ghidra-export.sh` 目标改为 bash 数组按 argv 原样累加（严格单目标），并绕行 Ghidra `checkValidFilename` 对非 ASCII 叶子名的拒绝（暂存为 ASCII 临时名后导入）——含空格/中文路径与中文文件名均可导出。
+  - D3：`batch-analyze.sh` 目标数统计去掉 GNU `grep -z` 扩展、改主 shell 计数器——含空格+中文批量目录全流程（并行/快照缓存/断点续跑/垃圾隔离）实测通过。
+  - D4：`uninstall.sh` 改为逐行安全删除——含空格安装前缀可正确卸载。
 - **v4.0.4（2026-10-15，体检修复版）**
   - 体检修复（依据 46 项 bash 测试 + 10 项 Ghidra 回归实测证据）：
   - 便携 Node 下载进度/校验日志原打 stdout，被命令替换捕获后污染 `~/.bashrc` 环境块、损坏 PATH——统一改打 stderr，rc 环境块恢复为纯 `export PATH=...` 行。

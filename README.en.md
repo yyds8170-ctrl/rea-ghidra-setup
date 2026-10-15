@@ -206,6 +206,7 @@ See the Chinese README [`README.md`](README.md#目录树) for the full annotated
 
 ## Version history
 
+- **v4.0.5 (2026-10-15, path-robustness fixes)**: D1 — installers now quote `JAVA_HOME`/`GHIDRA_INSTALL_DIR`/`PATH` in rc env blocks, so a spaced/Unicode `TOOLS_DIR` no longer word-splits; D2 — `ghidra-export.sh` takes targets as an argv-exact array (strictly single target) and works around Ghidra's ASCII-only `checkValidFilename` leaf-name rejection by staging to an ASCII temp name; D3 — `batch-analyze.sh` replaces GNU-only `grep -z` counting with a main-shell counter, making spaced/Chinese batch directories work (parallel, snapshot cache, `--continue`, garbage isolation all verified); D4 — `uninstall.sh` deletes targets line-by-line so spaced install prefixes uninstall cleanly. Verified: shellcheck 0 warnings, all `bash -n` green, verify 9/9, selftests, 5-case regression, checksums, 294 links 0 dead.
 - **v4.0.4 (2026-10-15, health-check fixes)**: fixes driven by 46 bash tests + 10 Ghidra regression runs.
   - Portable Node download/progress logs went to stdout and were captured by command substitution, polluting the `~/.bashrc` env block and breaking PATH — progress/checksum logs now go to stderr; the rc block is again clean `export PATH=...` lines.
   - batch-analyze previously trusted only the exit code; a garbage/unknown binary exits 0 with no output yet was marked success — it now requires the per-kind result file to exist and be non-empty, else `failed` (no snapshot); added a random-garbage regression case.

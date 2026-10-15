@@ -140,11 +140,14 @@ echo "      current 软链已指向：$(basename "$GHIDRA_DIR") / $(basename "$J
 BLOCK_START="# >>> REA + Ghidra env >>>"
 BLOCK_END="# <<< REA + Ghidra env <<<"
 EXTRA_PATH=""; [ -n "$NODE_HOME" ] && EXTRA_PATH=":$NODE_HOME/bin"
+# v4.0.5（D1）：路径必须用引号包裹——TOOLS_DIR 含空格/中文时，未加引号的
+# JAVA_HOME 等写法写入 .bashrc 后会被分词，PATH 也会在空格处断开。
+# heredoc 里末尾 PATH 前的反斜杠转义保持原样，输出为字面量，不展开当前 shell 变量。
 ENV_BLOCK="$(cat <<EOF
 $BLOCK_START
-export JAVA_HOME=$JDK_DIR
-export GHIDRA_INSTALL_DIR=$GHIDRA_DIR
-export PATH=$JDK_DIR/bin:$GHIDRA_DIR/support${EXTRA_PATH}:\$PATH
+export JAVA_HOME="$JDK_DIR"
+export GHIDRA_INSTALL_DIR="$GHIDRA_DIR"
+export PATH="$JDK_DIR/bin:$GHIDRA_DIR/support${EXTRA_PATH}:\$PATH"
 $BLOCK_END
 EOF
 )"

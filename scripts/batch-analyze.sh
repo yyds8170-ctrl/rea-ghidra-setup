@@ -123,9 +123,13 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# 收集目标清单（NUL 分隔，防空格路径）
+# 收集目标清单（NUL 分隔，防空格/中文路径）
 LIST="$(mktemp)"; trap 'rm -f "$LIST"' EXIT
-add_target() { [ -f "$1" ] && printf '%s\0' "$1" >> "$LIST"; }
+# v4.0.5（D3）：目标数 N 在主 shell 内随 add_target 累加。旧实现 `grep -zc ''` 依赖
+# GNU grep 的 -z（NUL 记录）扩展，macOS BSD grep 不支持 -z 会恒判“无目标”。
+# add_target 均在主 shell 调用（for/while 均非管道子进程），计数器不会丢。
+N=0
+add_target() { [ -f "$1" ] && { printf '%s\0' "$1" >> "$LIST"; N=$((N+1)); }; }
 for b in "${BIN_ARGS[@]:-}"; do [ -n "$b" ] && add_target "$b"; done
 if [ -n "$DIR" ]; then
   match() { # $1=path, $2=pattern
@@ -144,7 +148,7 @@ EOF
     for f in "$DIR"/*; do [ -f "$f" ] && match "$f" "$PATTERN" && add_target "$f"; done
   fi
 fi
-N="$(grep -zc '' "$LIST" 2>/dev/null || true)"
+# 目标数 N 已在 add_target 内主 shell 累加（替代旧的 GNU 扩展 `grep -zc` 统计）
 [ "$N" -gt 0 ] || { echo "未收集到任何目标文件" >&2; exit 2; }
 
 mkdir -p "$OUT_DIR/targets" "$OUT_DIR/.results"

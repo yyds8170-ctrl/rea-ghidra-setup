@@ -4,6 +4,22 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [4.0.5] - 2026-10-15（路径健壮性修复版）
+
+基于上一轮实测定位的 D1–D4 路径健壮性缺陷逐项修复，重点解决含空格/中文路径与文件名。
+
+### Fixed
+- **D1 安装器环境块未加引号**：`install.sh` / `install-macos.sh` 写入 rc 文件的 `export JAVA_HOME=` / `GHIDRA_INSTALL_DIR=` / `PATH=` 未加引号，`TOOLS_DIR` 含空格/中文时会被 shell 分词、PATH 在空格处断开。已统一加双引号（`\$PATH` 转义保持原样），并在含空格+中文前缀下实测渲染正确。
+- **D2 导出脚本拒绝含空格/中文路径**：`scripts/ghidra-export.sh` 参数原用字符串拼接后 `echo|xargs` 重新分词，含空格路径静默损坏。改为 bash 数组按 argv 原样累加、语义严格单目标（0/多个目标均 exit 2 中文提示）。同时定位并绕行真正的拦路者：Ghidra `analyzeHeadless` 的 `checkValidFilename` 只放行 ASCII 白名单叶子名，中文叶子名会抛 `InvalidInputException`——叶子名不合规时逐字节暂存为 ASCII 临时文件再导入、EXIT trap 清理；目录段含空格/中文不受影响（实测可正常遍历）。
+- **D3 批量在含空格/中文目录崩溃**：`scripts/batch-analyze.sh` 目标数统计原用 GNU grep `-z`（NUL 记录）扩展，macOS BSD grep 不支持会恒判“无目标”；改为主 shell 计数器随 `add_target()` 累加，消除平台差异。`xargs -0` 传输本身经实测完好。含空格+中文批量目录下：首次批量 / 快照缓存 / 断点续跑 / 垃圾隔离四场景全部通过。
+- **D4 卸载对含空格路径分词**：`uninstall.sh` 原 `echo | xargs -r rm -rf` 按空白分词（`-r` 还是 GNU xargs 扩展，macOS BSD 无）。改为 `delete_targets()` 逐行 `IFS= read -r` 安全删除（`rm --` 防选项注入）；隔离 HOME + 含空格 TOOLS_DIR 实测删除与 rc 块清理正确。
+
+### Verified
+- 静态门禁：shellcheck 全量 0 告警；全部 .sh `bash -n` 通过；bash3.2 非 ASCII 紧邻检查零匹配（与 CI lint-build 一致）。
+- 功能实测（本机 Linux x86_64，真实 Ghidra 12.1.4 + JDK21）：含空格+中文目录下 `--dry-run` 环境块引号正确；中文叶子名二进制导出成功（functions.json 2262B）；批量 3 目标首次全 success、二次全命中快照 0.2s、`--continue` 续跑正确、混入垃圾文件 failed 且不写快照；卸载隔离测试通过。
+- 回归：`verify.sh` 9/9；selftest-batch 4/4；selftest-export（functions=21 strings=83 symbols=102 calls=14 decompiled=18）；run-cases 5 案例 × 带符号/strip 共 10 二进制全过；selfcheck-checksums 三上游校验和通过；check-versions / check-docs-links（294 链接 0 死链）/ make examples 全通过。
+- 说明：`install-macos.sh` 的引号修复仅做 shell 层渲染验证，未在真 macOS 跑通（由 CI e2e macos 覆盖）；Windows `.ps1` 不在本次 bash 修复范围；真实全量安装到含空格+中文全新 TOOLS_DIR 未执行（改用现有 `~/tools` 跑通 verify 9/9 与全部回归）。
+
 ## [4.0.4] - 2026-10-15（体检修复版）
 
 对 46 项 bash 测试 + 10 项 Ghidra 回归实测后，按真实证据逐项修复安装/批量/离线/入口链路的缺陷。
