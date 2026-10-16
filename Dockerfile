@@ -14,7 +14,7 @@
 # linux/arm64（os/linux_arm_64）必须在镜像内用源码 make ghidra_opt 构建。
 # QEMU 模拟下 arm64 编译很慢，CI 推荐用原生 arm64 runner（见 .github/workflows/ci.yml）。
 # =============================================================================
-FROM ubuntu:24.04
+FROM ubuntu:26.04
 
 # buildx 自动注入 TARGETARCH（amd64 / arm64）
 ARG TARGETARCH
