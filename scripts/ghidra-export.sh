@@ -96,7 +96,7 @@ clean_tmpdir() {
     case "$seg" in .|..|.*) bad=1; break ;; esac
   done
   if [ "$bad" = 1 ]; then
-    echo "  注意：TMPDIR 含点路径元素（$t），Ghidra 会拒绝该目录，已改用 /tmp 兜底" >&2
+    echo "  注意：TMPDIR 含点路径元素（${t}），Ghidra 会拒绝该目录，已改用 /tmp 兜底" >&2
     printf '%s' /tmp
   else
     printf '%s' "$t"
