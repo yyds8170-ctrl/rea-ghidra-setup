@@ -4,6 +4,22 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [5.0.1] - 2026-10-16（四则外部审查修复）
+
+响应外部技术审查的 4 项反馈（逐条核验后修复；其中 Ghidra 镜像一项为误报——项目已有代理池机制）。
+
+### Fixed
+- **TMPDIR 点前缀崩溃（实测复现，审查属实）**：`ghidra-export.sh` 的项目目录用 `mktemp -d` 继承 `$TMPDIR`，当 TMPDIR 指向含 `.`/`..`/点开头元素的目录（如 `~/xxx/.tmp`）时，Ghidra `ProjectLocator`/`NamingUtilities` 拒绝该路径，导出 10/10 FAIL。新增 `clean_tmpdir()` 检测点路径元素并改用无点目录（默认 `/tmp`）兜底；`PROJ_DIR`/`STAGE_BIN` 均走该兜底。
+- **frida 可选依赖擦（受限网络）**：`rea-agents` 的 frida（可选依赖）prebuild 下载失败会触发 meson 源码编译（极慢）。Dockerfile 的全局安装与三平台安装器提示统一改为 `npm install --global --omit=optional`，并注明需要动态插桩的用户可自行全量安装。
+- **skill 静态快照漂移风险（审查属实，方案按本项目定位）**：`skill/SKILL.md` 是豆包 Agent 的静态快照（走 CLI，非 REA 官方 skill）。顶部新增「快照基线」说明：标注验证基线（rea-agents 6.5.0 + Ghidra 12.1.4）、快照会随上游过期、升级后以官方 `rea setup` 与文档为准。不删除快照（豆包场景需要）。
+
+### Docs
+- README 镜像章节补准 Ghidra 网络说明：`REA_MIRROR` 只作用于 Node/JDK/npm；Ghidra 走内置「官方直连 + `REA_GITHUB_PROXIES` 代理池」（默认 gh-proxy.com，仍过官方 digest 校验）；另有重试/断点续传与 `--offline-dir` 离线包兜底。审查称“无镜像候选”不准确，但 README 此前未明示，已补文档。
+
+### 验证
+- TMPDIR=含点元素目录导出修复后通过（对照修复前 FAIL）；正常 TMPDIR 回归通过。
+- shellcheck 全 clean、bash -n 通过；`verify.sh` 9/9 回归通过。
+
 ## [5.0.0] - 2026-10-15（收官里程碑）
 
 完成 v4.1→v4.3 迭代周期的收官：全量文档同步、新增里程碑状态页、最终体检。无新功能破坏，为该周期的稳定基线。

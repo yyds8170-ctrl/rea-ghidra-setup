@@ -69,8 +69,11 @@ RUN set -eux; \
     fi
 
 # 全局安装 REA（容器内直接可用，不必每次 npx 下载）
+# --omit=optional：跳过 frida 等可选依赖（静态反编译用不到；受限网络下其
+# prebuild 下载失败会触发极慢的源码编译）。需要运行时插桩/动态分析的
+# 用户可自行 `npm i -g rea-agents` 全量安装。
 RUN set -eux; . /opt/versions.env; \
-    npm install --global "rea-agents@${REA_VERSION}"
+    npm install --global --omit=optional "rea-agents@${REA_VERSION}"
 
 # 项目技能 / 脚本 / 示例
 COPY . /opt/rea-ghidra-setup

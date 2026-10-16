@@ -216,7 +216,8 @@ if command -v npx >/dev/null 2>&1 || [ -n "$NODE_HOME" ]; then
   echo "REA 就绪检查："
   if [ "$(rea_mode)" = "cn" ]; then export npm_config_registry="https://registry.npmmirror.com"; fi
   ( [ -n "$NODE_HOME" ] && export PATH="$NODE_HOME/bin:$PATH"; npx -y "rea-agents@${REA_VERSION}" doctor --provider ghidra 2>/dev/null) || true
-  echo "如需全局安装：npm install --global rea-agents"
+  echo "如需全局安装：npm install --global --omit=optional rea-agents"
+  echo "  （--omit=optional 跳过 frida 等可选依赖：静态反编译用不到，受限网络下可避免其 prebuild 失败触发极慢源码编译；需要动态插桩再自行全量安装）"
 fi
 
 echo

@@ -5,6 +5,12 @@ description: 当需要在没有源码的情况下分析一个已编译/已打包
 
 # Reverse Engineering（基于 REA 的证据驱动逆向）
 
+> **快照基线**：本技能是面向豆包 Agent 环境的**静态快照**，基于 `rea-agents@6.5.0` + Ghidra `12.1.4` 验证。
+> 上游 REA 会持续演进（官方 skill 也有自己的版本号），本快照可能随升级过期——升级 REA 后若发现
+> 命令、参数或输出格式不匹配，请以官方为准：运行 `rea setup`（或 `npx rea-agents@<新版本> setup`）
+> 按官方流程安装/更新 skill，并对照官方文档（github.com/morluto/rea）修正用法。本快照仅保证
+> 在其标注的版本基线上可用。
+
 ## 概述
 
 把"没有源码也能看懂软件"这件事交给标准化流程。本技能桥接开源项目 **REA（Reverse Engineer Anything，github.com/morluto/rea）**：它把 Ghidra / Hopper / IDA / JADX / 浏览器等专业工具封装成统一工作流，所有分析在**本机**执行，每个结论都附带**证据（Evidence）和局限**。

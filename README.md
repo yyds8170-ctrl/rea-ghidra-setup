@@ -137,6 +137,10 @@ source ~/.bashrc    # zsh 用户：source ~/.zshrc
 > ```bash
 > REA_MIRROR=cn bash install.sh     # Windows: $env:REA_MIRROR='cn'; .\install.ps1
 > ```
+> ⚠️ **注意**：Ghidra zip（约 570MB）不走 Node/JDK 那些国内镜像（`REA_MIRROR` 只作用于 Node/JDK/npm），
+> 而是走内置的「官方直连 + GitHub 代理池」（`REA_GITHUB_PROXIES`，默认 `gh-proxy.com`，v2.3 起内置，仍过官方 digest 校验）。
+> 国内网络如仍遇 `release-assets.githubusercontent.com` 超时：安装器内置指数退避重试 + 断点续传（`curl -fL -C -`），
+> 还不行就用**离线包**（`--offline-dir`，见 [docs/offline.md](docs/offline.md)）或设置 `https_proxy` 代理。
 > 详见 [docs/mirrors.md](docs/mirrors.md)。默认 `auto` 会自动探测，海外/CI 不受影响。
 
 ### 非交互 / 参数化安装（自动化、CI）
@@ -481,6 +485,11 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v5.0.1（2026-10-16，四则外部审查修复）**
+  - `ghidra-export.sh` 新增 TMPDIR 点前缀兜底：TMPDIR 指向含 `.`/`..`/点开头元素的目录（如 `~/xxx/.tmp`）时，Ghidra `ProjectLocator` 会拒绝项目目录导致导出 FAIL（实测复现），现自动检测并改用无点目录（默认 `/tmp`）兜底，不影响正常 TMPDIR。
+  - Dockerfile 与三平台安装器提示统一加 `--omit=optional` 安装 rea-agents：跳过 frida 等可选依赖（静态反编译用不到；受限网络下其 prebuild 下载失败会触发极慢的源码编译），需要动态插桩的用户可自行全量安装。
+  - `skill/SKILL.md` 顶部新增「快照基线」说明：标注基于 rea-agents 6.5.0 + Ghidra 12.1.4 验证、静态快照会随上游过期、升级后以官方 `rea setup` 与文档为准。
+  - README 镜像章节补准 Ghidra 网络说明：`REA_MIRROR` 只作用于 Node/JDK/npm，Ghidra 走内置「官方直连 + `REA_GITHUB_PROXIES` 代理池」（默认 gh-proxy.com，仍过官方 digest 校验），另有重试/断点续传与离线包兜底。
 - **v5.0.0（2026-10-15，收官里程碑）**
   - 完成 v4.1→v4.3 周期收官：全量文档同步，新增文档站「里程碑」状态页（记录各版 tag/commit/CI/Release 资产/验证摘要与风险清单），最终体检全绿（见 docs-site/milestones.md）。
 - **v4.3.0（2026-10-15，路径/编码/供应链加固）**

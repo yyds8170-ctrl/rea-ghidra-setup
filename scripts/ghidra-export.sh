@@ -84,9 +84,28 @@ fi
 export JAVA_HOME="$JH"
 export PATH="$JH/bin:$PATH"
 
+# v5.0.1（TMPDIR 点前缀兜底）：Ghidra 的 NamingUtilities/ProjectLocator 拒绝路径段中
+# 含 "." / ".." / 以点开头的元素；当 TMPDIR 指向 ~/xxx/.tmp 之类目录时，mktemp -d 继承
+# 该路径，项目目录创建会直接抛 InvalidInputException（实测 FAIL）。这里检测并用
+# 无点目录兜底（默认 /tmp），确保导出不受用户 TMPDIR 影响。
+clean_tmpdir() {
+  local t="${TMPDIR:-/tmp}" seg bad=0
+  case "$t" in ""|.) t=/tmp ;; esac
+  local IFS=/
+  for seg in $t; do
+    case "$seg" in .|..|.*) bad=1; break ;; esac
+  done
+  if [ "$bad" = 1 ]; then
+    echo "  注意：TMPDIR 含点路径元素（$t），Ghidra 会拒绝该目录，已改用 /tmp 兜底" >&2
+    printf '%s' /tmp
+  else
+    printf '%s' "$t"
+  fi
+}
+TMP_BASE="$(clean_tmpdir)"
 mkdir -p "$OUT_DIR"
 OUT_DIR="$(cd "$OUT_DIR" && pwd)"
-PROJ_DIR="$(mktemp -d)"
+PROJ_DIR="$(mktemp -d "${TMP_BASE}/rea_proj_XXXXXX")"
 trap 'rm -rf "$PROJ_DIR"' EXIT
 
 # v4.0.5（D2）：Ghidra analyzeHeadless 的 checkValidFilename 只放行 ASCII 白名单
@@ -97,7 +116,7 @@ STAGE_BIN=""
 trap 'rm -rf "$PROJ_DIR" ${STAGE_BIN:+"$STAGE_BIN"}' EXIT
 BN="$(basename "$BIN")"
 if ! printf '%s' "$BN" | LC_ALL=C grep -q '^[A-Za-z0-9._-]*$'; then
-  STAGE_BIN="$(mktemp "${TMPDIR:-/tmp}/rea_import_XXXXXX")"
+  STAGE_BIN="$(mktemp "${TMP_BASE}/rea_import_XXXXXX")"
   cp "$BIN" "$STAGE_BIN"
   echo "  注意：叶子名含非 ASCII/特殊字符，已暂存为 ASCII 临时文件后导入"
 fi
