@@ -4,6 +4,21 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [5.1.0] - 2026-10-18（网站/URL 分析一键化）
+
+把 REA 原生的 CDP 网页观察能力封装成一键脚本与文档，补齐"给一个链接怎么分析"的缺口。
+
+### Added
+- **`scripts/web-analyze.sh`**：一键 URL/网站逆向观察。`--doctor` 环境检查；`--cdp http://127.0.0.1:9222` attach 已开目标页的 Chrome 做 inspect-web-page（`--deep` 加 DOM 文字/console/JSON body shape/WebSocket/脚本源码/存储键）；`--bundle` 静态解析 JS bundle（不执行代码）；`--screenshot` 视口截图；`--har 文件.har` 离线复盘抓包。产物统一落盘为 Evidence JSON。
+- **`docs/web-analysis.md`**：三种模式（实时浏览器观察 / bundle 静态 / HAR 离线）、调试端口起浏览器方法、可拿到的数据清单、webcrack 深度反混淆增强、合规边界。
+- **`examples/web-demo/`**：带外部脚本 + fetch + localStorage 键的本地示例页（index.html/app.js/api.json），供端到端验证。
+- README 能力覆盖后新增「给一个链接/网站做逆向」入口；skill/SKILL.md 补「拿到一个网址怎么分析」流程，并纠正 REA 网页命令不直接吃 URL、需先起调试端口浏览器的认知。
+
+### 验证（本机实测）
+- 本机 Chrome/CDP（127.0.0.1:9222）→ `rea list-browser-targets` 成功返回 Evidence；本地 demo 页端到端跑通：inspect.json 捕获 1 frame + 2 scripts，bundle.json 产出 capture/inferences 结构。
+- shellcheck 全 clean、bash -n 通过。
+
+
 ## [5.0.1] - 2026-10-16（四则外部审查修复）
 
 响应外部技术审查的 4 项反馈（逐条核验后修复；其中 Ghidra 镜像一项为误报——项目已有代理池机制）。

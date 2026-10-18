@@ -365,6 +365,21 @@ bash uninstall.sh --yes  # 跳过确认
 | JavaScript / Electron 应用、.NET 程序集 | 开箱即用（静态分析） |
 | 网站实测、HAR/SAZ 抓包、固件、WASM、EVM、SQLite、pcap | 各专项工具，按需配置 |
 
+### 给一个链接/网站做逆向（CDP 被动观察）
+
+不止本地二进制——**给一个 URL 也能分析**。REA 通过 CDP attach 你自己开着目标页的
+Chrome，产出 DOM 结构、脚本/资源清单、网络/console/WebSocket 观察、JS bundle 静态解析、
+视口截图。一键入口：
+
+```bash
+scripts/web-analyze.sh --doctor                                     # 先查环境
+scripts/web-analyze.sh --cdp http://127.0.0.1:9222 --deep --bundle --out /tmp/web-out
+scripts/web-analyze.sh --har ./抓包.har                            # HAR 离线复盘
+```
+
+详见 [docs/web-analysis.md](docs/web-analysis.md)。前置：用调试端口起一个专用 Chrome  profile
+（`--remote-debugging-port=9222 --user-data-dir=/tmp/rea-browser-profile`）并手动打开目标页。
+
 ## 能力边界（请理性看待）
 
 - **服务端逻辑拿不到**：能拆本机客户端，拆不到对方机房；推荐/风控/计价等核心通常在服务端
@@ -485,6 +500,9 @@ bash uninstall.sh --yes  # 跳过确认
 
 ## 版本历史
 
+- **v5.1.0（2026-10-18，网站/URL 分析一键化）**
+  - 新增 `scripts/web-analyze.sh`：给一个网址也能分析——attach 已开目标页的 Chrome（CDP），一键产出 DOM/脚本/网络/console/WebSocket 观察 + JS bundle 静态解析 + 视口截图，HAR 抓包可离线复盘。
+  - 新增 `docs/web-analysis.md`（三种模式/前置/边界）与 `examples/web-demo/` 本地示例；README 与 skill 同步补入口。本机 CDP 端到端实测通过。
 - **v5.0.1（2026-10-16，四则外部审查修复）**
   - `ghidra-export.sh` 新增 TMPDIR 点前缀兜底：TMPDIR 指向含 `.`/`..`/点开头元素的目录（如 `~/xxx/.tmp`）时，Ghidra `ProjectLocator` 会拒绝项目目录导致导出 FAIL（实测复现），现自动检测并改用无点目录（默认 `/tmp`）兜底，不影响正常 TMPDIR。
   - Dockerfile 与三平台安装器提示统一加 `--omit=optional` 安装 rea-agents：跳过 frida 等可选依赖（静态反编译用不到；受限网络下其 prebuild 下载失败会触发极慢的源码编译），需要动态插桩的用户可自行全量安装。

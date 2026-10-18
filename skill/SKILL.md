@@ -96,6 +96,18 @@ npx -y rea-agents@latest doctor --json
 
 > 完整命令清单：`npx -y rea-agents@latest --help`；某个命令的参数：`rea <命令> --help`、机器可读契约 `rea <命令> --schema`。
 
+### 拿到一个网址怎么分析（一键 URL 流程）
+
+注意：REA 的网页命令**不直接吃 URL**——它被动 attach 一个已经打开该页的 Chrome（CDP），
+所以不能 `inspect-web-page https://...` 一把梭。标准流程：
+
+1. 用调试端口起一个专用 Chrome profile，并手动打开目标 URL：
+   `google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/rea-browser-profile "https://目标"`
+2. 跑本仓库封装好的一键脚本（自动 list-targets → inspect → bundle → 截图，产物落盘）：
+   `scripts/web-analyze.sh --cdp http://127.0.0.1:9222 --deep --bundle --out /tmp/web-out`
+3. 已经有 HAR 抓包就直接 `scripts/web-analyze.sh --har 文件.har`。
+   不确定环境先 `scripts/web-analyze.sh --doctor`。
+
 ## 标准工作流（务必遵守）
 
 1. **先路由，再取证**：用户只说"我的 App"而没给名字/路径时，先问清楚，绝不替用户选一个示例目标。
