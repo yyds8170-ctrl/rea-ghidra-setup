@@ -500,6 +500,8 @@ scripts/web-analyze.sh --har ./抓包.har                            # HAR 离�
 
 ## 版本历史
 
+- **v5.1.1（2026-10-18，v5.1.0 体检修复）**
+  - 全面体检后补齐文档缺口：skill 路由表残留错误命令修正、补 `docs/web-analysis.en.md` 英文版、`README.en.md` 补网站入口。web-analyze.sh 错误路径退出码与端到端复测通过。
 - **v5.1.0（2026-10-18，网站/URL 分析一键化）**
   - 新增 `scripts/web-analyze.sh`：给一个网址也能分析——attach 已开目标页的 Chrome（CDP），一键产出 DOM/脚本/网络/console/WebSocket 观察 + JS bundle 静态解析 + 视口截图，HAR 抓包可离线复盘。
   - 新增 `docs/web-analysis.md`（三种模式/前置/边界）与 `examples/web-demo/` 本地示例；README 与 skill 同步补入口。本机 CDP 端到端实测通过。

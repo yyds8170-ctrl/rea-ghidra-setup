@@ -4,6 +4,18 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [5.1.1] - 2026-10-18（v5.1.0 体检修复）
+
+全面体检 web-analyze.sh 后补齐文档缺口，无功能改动。
+
+### Fixed
+- `skill/SKILL.md` 路由表残留错误命令（`inspect-web-page <URL>`，实际 REA 网页命令需先起调试端口浏览器），改为指向 `web-analyze.sh` 一键流程。
+- 补 `docs/web-analysis.en.md`（英文文档此前缺失）；`README.en.md` Capabilities 段补网站分析入口。
+
+### 验证
+- web-analyze.sh 五类错误路径退出码实测正确（2/10/12）；CDP attach、inspect deep、bundle、截图端到端复测通过；shellcheck clean。
+
+
 ## [5.1.0] - 2026-10-18（网站/URL 分析一键化）
 
 把 REA 原生的 CDP 网页观察能力封装成一键脚本与文档，补齐"给一个链接怎么分析"的缺口。

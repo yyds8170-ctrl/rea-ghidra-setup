@@ -83,7 +83,7 @@ npx -y rea-agents@latest doctor --json
 | APK 中某个类 | `npx -y rea-agents@latest inspect-android-class <路径> --json` |
 | APK 中某个方法 | `npx -y rea-agents@latest inspect-android-method <路径> --json` |
 | .NET 程序集 | `npx -y rea-agents@latest inspect-managed-artifact <路径> --json` |
-| 网站页面（结构/脚本/截图） | `npx -y rea-agents@latest inspect-web-page <URL> --json` |
+| 网站页面（结构/脚本/截图） | 先用调试端口起 Chrome 打开目标页，再 `scripts/web-analyze.sh --cdp http://127.0.0.1:9222 --deep` |
 | 网站实测（点击/输入/导航） | `npx -y rea-agents@latest capture-browser-scenario ... --json` |
 | HAR / SAZ 抓包 | `npx -y rea-agents@latest inspect-web-network-capture <路径> --json` |
 | 固件镜像 | `npx -y rea-agents@latest inspect-firmware-regions <路径> --json` |

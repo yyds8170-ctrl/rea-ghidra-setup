@@ -179,6 +179,8 @@ JDK version, Node gate, Gatekeeper, native build, Windows PATH/network drives, D
 
 End-to-end REA + Ghidra deploy on Linux/macOS/Windows/ChromeOS/Docker; user-level (no admin) install; official checksum verification for JDK/Node/Ghidra; China mirrors; offline/air-gapped install; MCP wiring for Claude Desktop/Cursor/VS Code/Claude Code; static JSON/C export; parallel batch with content cache; multi-arch fixture CI; self-update with checksums and current/rollback.
 
+**Analyze a website from a URL too** — `scripts/web-analyze.sh --cdp http://127.0.0.1:9222 --deep --bundle` attaches to your own debug-port Chrome and yields DOM/scripts/network/console/WebSocket observation, static JS-bundle parsing, screenshots, and HAR offline replay. See [docs/web-analysis.md](docs/web-analysis.md).
+
 ## Limitations
 
 - Windows P0 supports only fixed local NTFS (no UNC/network/reparse); Windows on ARM64 unsupported (no upstream native).
