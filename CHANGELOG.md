@@ -4,6 +4,23 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.0.4] - 2026-11-05（端到端能力真实跑通 + 虚拟化文件系统删除加固）
+
+把此前只做静态/脚本级验证的几条核心链路全部真实端到端跑通，并修复一个构建健壮性问题。
+
+### Fixed
+- **run-cases 构建健壮性**：在 hpvs_fs/overlay 虚拟化文件系统上，`rm -rf` 递归删除偶发 "Directory not empty"（目录项元数据同步延迟），一次失败即中断整个流程。新增带重试的 `safe_rm_rf`（最多 3 次、退避 1s），替换 make clean 与导出目录清空；shellcheck 干净。
+
+### 端到端实测（本环境真实跑通，非静态验证）
+- **CDP 网站分析**：真实启动 headless Chromium 146 + 9222 调试端口，attach 本地 web-demo，`inspect/bundle/screenshot` 三个 Evidence JSON 全部落盘，截图解出后确认真实页面渲染、中文正常。
+- **run-cases**：10 个二进制（5 案例 × 带符号/strip）全部断言通过。
+- **ghidra-report**：单个二进制产出 md + 自包含 html + 10 类 JSON 共 12 产物，内容真实。
+- **batch-analyze**：3 目标 jobs=2 并行首次 3/3 成功（71s），第二次全量快照缓存命中（0.3s）。
+
+### 验证
+- verify 9/9 不回退；shellcheck、死链 0。
+
+
 ## [6.0.3] - 2026-11-05（巡检脚本兼容两段版本号 + Ghidra 12.2 边界文档化）
 
 针对 weekly-audit 上游核对发现的真实缺陷修复，核心功能不回退。

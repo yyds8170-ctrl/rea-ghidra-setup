@@ -35,6 +35,19 @@ usage() {
   sed -n '2,/^# END USAGE/p' "$0" | sed 's/^# \{0,1\}//; /^END USAGE$/d'
 }
 
+# 虚拟化/overlay 文件系统（hpvs_fs 等）上，rm -rf 递归删除偶发 "Directory not empty"
+# （目录项元数据同步延迟），一次失败会中断整个流程。带重试的安全删除加固。
+safe_rm_rf() {
+  local target="$1" tries=0
+  while [ "$tries" -lt 3 ]; do
+    rm -rf "$target" 2>/dev/null || true
+    [ ! -e "$target" ] && return 0
+    tries=$((tries + 1))
+    sleep 1
+  done
+  rm -rf "$target"   # 最后一次不吞错误，真实失败要暴露
+}
+
 if [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
   usage
   exit 0
@@ -47,11 +60,11 @@ command -v python3 >/dev/null 2>&1 || { echo "[FATAL] 缺少 python3" >&2; exit 
 [ -x "${EXPORT_SH}" ] || { echo "[FATAL] 缺少导出脚本 ${EXPORT_SH}" >&2; exit 2; }
 
 echo "==> [1/3] 编译全部案例（输出到 ${BUILD_DIR}）"
-make -C "${CASES_DIR}" clean >/dev/null
+safe_rm_rf "${BUILD_DIR}"
 make -C "${CASES_DIR}" all
 
 echo "==> [2/3] 准备导出目录（幂等清空 ${OUT_ROOT}）"
-rm -rf "${OUT_ROOT}"
+safe_rm_rf "${OUT_ROOT}"
 mkdir -p "${OUT_ROOT}"
 
 # 累计失败计数（通过 env 传给 python；bash 侧只看退出码）
