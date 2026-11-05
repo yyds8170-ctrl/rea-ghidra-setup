@@ -305,7 +305,28 @@ elif [ "$ELF_OK" -ne 1 ]; then
   skip "debug-with-rizin" "缺少 ELF fixture"
 else
   run_rea execute-rizin-command "execute-rizin-command" "$ELF" "ij"
-  run_rea debug-with-rizin "debug-with-rizin" "$ELF" "dr"
+  # debug-with-rizin 与 gdb 同源，flags 含 --inferior-tty；但 rizin 会 realpath 校验
+  # 该 tty 在调用时仍存活——`script -qec 'tty'` 打印完即退出、pts 随即销毁，会报
+  # ENOENT。故用 python3 pty.openpty() 常驻持有 master，把 tty 名写进临时文件。
+  RIZIN_PTY_FILE="$WORK/rizin.pty"
+  RIZIN_HOLDER=""
+  python3 -c '
+import pty, os, sys, time
+m, s = pty.openpty()
+open(sys.argv[1], "w").write(os.ttyname(s))
+time.sleep(600)
+' "$RIZIN_PTY_FILE" >/dev/null 2>&1 &
+  RIZIN_HOLDER=$!
+  PTY=""
+  for _ in $(seq 1 30); do [ -s "$RIZIN_PTY_FILE" ] && break; sleep 0.1; done
+  [ -s "$RIZIN_PTY_FILE" ] && PTY="$(tr -d '\r\n' < "$RIZIN_PTY_FILE")"
+  case "$PTY" in /dev/pts/*) ;; *) PTY="" ;; esac
+  if [ -z "$PTY" ]; then
+    fail "debug-with-rizin" "无法分配存活 pty 作为 --inferior-tty"
+  else
+    run_rea debug-with-rizin "debug-with-rizin" "$ELF" "dr" --inferior-tty "$PTY"
+  fi
+  if [ -n "$RIZIN_HOLDER" ]; then kill "$RIZIN_HOLDER" 2>/dev/null || true; fi
 fi
 
 # ---- Evidence/工程化与平台自检（纯内置，Linux 可断言）------------------------
