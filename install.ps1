@@ -210,9 +210,28 @@ if (Test-Path -LiteralPath $Decompiler) {
 Remove-Item -LiteralPath $dlDir -Recurse -Force -ErrorAction SilentlyContinue
 
 # v3.0：current junction（目录联接，免管理员；非 Windows 自动跳过）
-New-ToolJunction -LinkName (Join-Path $ToolsDir 'current-ghidra') -Target $GhidraDir
-New-ToolJunction -LinkName (Join-Path $ToolsDir 'current-jdk')    -Target $JdkHome
-Write-Ok "current junction 已指向：$(Split-Path $GhidraDir -Leaf) / $(Split-Path $JdkHome -Leaf)"
+# v5.2.0：幂等检查必须同时校验【链接类型】——actions/cache 命中恢复可能把 junction 还原成
+# 文件型符号链接（PowerShell Test-Path 仍能穿透读目标，造成"已指向"假象）；只要链接缺失或
+# 类型错误（或目标不一致），就用健壮函数删除重建为目录 Junction。
+$junctionPlan = @(
+  @{ Name = 'current-ghidra'; Target = $GhidraDir; Marker = 'Ghidra\application.properties' },
+  @{ Name = 'current-jdk';    Target = $JdkHome;    Marker = 'bin\java.exe' }
+)
+foreach ($j in $junctionPlan) {
+  $link = Join-Path $ToolsDir $j.Name
+  $needRebuild = $true
+  if (Test-ToolJunction -LinkPath $link -Marker $j.Marker) {
+    # .Target 可能带 \\?\ 前缀或相对形式，取末段目录名宽松比对；取不到目标则重建
+    $curTarget = (Get-Item -LiteralPath $link -Force).Target
+    if ($curTarget -and ((Split-Path $curTarget -Leaf) -ieq (Split-Path $j.Target -Leaf))) { $needRebuild = $false }
+  }
+  if ($needRebuild) {
+    New-ToolJunction -LinkName $link -Target $j.Target -Marker $j.Marker
+    Write-Ok "$($j.Name) 已重建为目录 junction → $(Split-Path $j.Target -Leaf)"
+  } else {
+    Write-Ok "$($j.Name) 已是正确的目录 junction（指向 $(Split-Path $j.Target -Leaf)，跳过重建）"
+  }
+}
 
 # ---------------------------------------------------------------------------
 # 5. 写入用户级环境变量（免管理员，幂等）并即时同步当前进程

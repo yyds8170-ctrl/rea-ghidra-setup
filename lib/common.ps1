@@ -340,38 +340,102 @@ function Get-ToolsDir {
   return (Join-Path ([Environment]::GetFolderPath('UserProfile')) 'tools')
 }
 
-# 创建/刷新目录联接（junction 不需管理员）；非 Windows 无 mklink 时优雅跳过
-function New-ToolJunction {
-  param([string]$LinkName, [string]$Target)
+# v5.2.0：检测链接是否为【目录型】重解析点（junction / 目录符号链接）且目标 marker 存在。
+# 背景：actions/cache 命中恢复时会把 current-ghidra / current-jdk 这两个本应是目录
+# Junction 的重解析点还原成【文件型符号链接】（dir 显示 <SYMLINK> 而非 <SYMLINKD>）。
+# PowerShell Test-Path 会穿透坏链接解析到目标（读得到 application.properties），但
+# cmd 的 if exist "link\Ghidra" 判否、Ghidra launch.bat 因此失败。必须用 PSIsContainer
+# 区分链接类型：文件型符号链接此处为 $false。
+function Test-ToolJunction {
+  param([string]$LinkPath, [string]$Marker)
+  if ([string]::IsNullOrWhiteSpace($LinkPath)) { return $false }
+  $item = Get-Item -LiteralPath $LinkPath -Force -ErrorAction SilentlyContinue
+  if (-not $item) { return $false }
+  # 目录型重解析点 / 真实目录：PSIsContainer=$true；坏缓存还原的文件型符号链接为 $false
+  if (-not $item.PSIsContainer) { return $false }
+  if (-not [string]::IsNullOrWhiteSpace($Marker)) {
+    if (-not (Test-Path -LiteralPath (Join-Path $LinkPath $Marker))) { return $false }
+  }
+  return $true
+}
+
+# v5.2.0：删除重解析点本身（文件符号链接 / 目录符号链接 / junction 三类型兼容），
+# 绝不触碰目标目录。禁止再用 cmd /c rmdir 一刀切——它对文件型符号链接报
+# "The directory name is invalid"，旧逻辑因此删不掉坏链接、mklink 又失败，坏链接残留。
+function Remove-ToolReparsePoint {
+  param([string]$LinkPath)
+  if ([string]::IsNullOrWhiteSpace($LinkPath)) { return }
+  if (-not (Test-Path -LiteralPath $LinkPath)) { return }
   try {
-    if (Test-Path -LiteralPath $LinkName) { cmd /c rmdir "$LinkName" 2>$null | Out-Null }
+    # 优先：.Delete() 只删重解析点本身（junction 删除不递归目标内容）
+    (Get-Item -LiteralPath $LinkPath -Force -ErrorAction Stop).Delete()
+    return
+  } catch {
+    Write-Verbose "Remove-ToolReparsePoint: Get-Item.Delete() 失败，按类型兜底：$($_.Exception.Message)"
+  }
+  # 兜底：文件型链接用 del，目录型（junction/目录符号链接）用 rmdir
+  $item = Get-Item -LiteralPath $LinkPath -Force -ErrorAction SilentlyContinue
+  if ($item -and -not $item.PSIsContainer) {
+    cmd /c del "$LinkPath" 2>$null | Out-Null
+  } else {
+    cmd /c rmdir "$LinkPath" 2>$null | Out-Null
+  }
+}
+
+# 创建/刷新目录联接（junction 不需管理员）；非 Windows 无 mklink 时优雅跳过。
+# v5.2.0 修复：删除阶段改走 Remove-ToolReparsePoint（兼容文件型符号链接），
+# 重建后断言 PSIsContainer=$true 且 marker 存在。
+function New-ToolJunction {
+  param(
+    [string]$LinkName,
+    [string]$Target,
+    [string]$Marker = ''   # 可选：目标内 marker 相对路径（Ghidra: 'Ghidra\application.properties'；JDK: 'bin\java.exe'）
+  )
+  try {
+    Remove-ToolReparsePoint -LinkPath $LinkName
     cmd /c mklink /J "$LinkName" "$Target" | Out-Null
+    if ($LASTEXITCODE -ne 0) { Write-Warning "mklink /J 失败：$LinkName -> $Target" }
+    if (Test-ToolJunction -LinkPath $LinkName -Marker $Marker) {
+      Write-Verbose "junction 就绪：$LinkName -> $Target"
+    } else {
+      Write-Warning "junction 重建后校验失败（应为目录型重解析点且 marker 存在）：$LinkName"
+    }
   } catch {
     Write-Verbose "mklink 不可用（非 Windows），跳过 junction：$LinkName"
   }
 }
 
-# 解析 JDK：显式 env(major>=21) ＞ current-jdk junction ＞ 枚举 jdk-21*
+# 解析 JDK：显式 env(major>=21) ＞ current-jdk junction（须为目录型）＞ 枚举 jdk-21*
 # 注意：CI runner 可能注入 JAVA_HOME=JDK17（java.exe 存在但 major<21），必须跳过再回退。
+# v5.2.0：采纳 current-jdk 前除 Test-Path 外必须确认链接是目录型（PSIsContainer）；
+# 坏缓存还原成的文件型链接一律跳过，回退真实 jdk-21* 目录并顺带修复链接。
 function Resolve-JdkHome {
   param()
   if ($env:JAVA_HOME -and (Test-Path -LiteralPath (Join-Path $env:JAVA_HOME 'bin\java.exe')) -and ((Get-JdkMajor -JavaHome $env:JAVA_HOME) -ge 21)) { return $env:JAVA_HOME }
   $tools = Get-ToolsDir
   $cur = Join-Path $tools 'current-jdk'
-  if ((Test-Path -LiteralPath (Join-Path $cur 'bin\java.exe')) -and ((Get-JdkMajor -JavaHome $cur) -ge 21)) { return $cur }
+  if ((Test-ToolJunction -LinkPath $cur -Marker 'bin\java.exe') -and ((Get-JdkMajor -JavaHome $cur) -ge 21)) { return $cur }
   $found = Get-ChildItem -LiteralPath $tools -Directory -Filter 'jdk-21*' -ErrorAction SilentlyContinue | Where-Object { (Get-JdkMajor -JavaHome $_.FullName) -ge 21 } | Select-Object -First 1
-  if ($found) { return $found.FullName }
+  if ($found) {
+    # 顺带修复坏/缺失链接（best-effort；只读体检场景失败不阻断）
+    try { New-ToolJunction -LinkName $cur -Target $found.FullName -Marker 'bin\java.exe' } catch { Write-Verbose "current-jdk 修复失败（忽略，返回真实目录）：$($_.Exception.Message)" }
+    return $found.FullName
+  }
   return $null
 }
 
-# 解析 Ghidra：显式 env(含 analyzeHeadless.bat) ＞ current-ghidra junction ＞ 枚举 ghidra_*_PUBLIC
+# 解析 Ghidra：显式 env(含 analyzeHeadless.bat) ＞ current-ghidra junction（须为目录型）＞ 枚举 ghidra_*_PUBLIC
+# v5.2.0：同上，拒绝坏缓存还原的文件型链接，回退真实 ghidra_*_PUBLIC 目录并顺带修复。
 function Resolve-GhidraDir {
   param()
   if ($env:GHIDRA_INSTALL_DIR -and (Test-Path -LiteralPath (Join-Path $env:GHIDRA_INSTALL_DIR 'support\analyzeHeadless.bat'))) { return $env:GHIDRA_INSTALL_DIR }
   $tools = Get-ToolsDir
   $cur = Join-Path $tools 'current-ghidra'
-  if (Test-Path -LiteralPath (Join-Path $cur 'support\analyzeHeadless.bat')) { return $cur }
+  if (Test-ToolJunction -LinkPath $cur -Marker 'Ghidra\application.properties') { return $cur }
   $found = Get-ChildItem -LiteralPath $tools -Directory -Filter 'ghidra_*_PUBLIC' -ErrorAction SilentlyContinue | Select-Object -First 1
-  if ($found) { return $found.FullName }
+  if ($found) {
+    try { New-ToolJunction -LinkName $cur -Target $found.FullName -Marker 'Ghidra\application.properties' } catch { Write-Verbose "current-ghidra 修复失败（忽略，返回真实目录）：$($_.Exception.Message)" }
+    return $found.FullName
+  }
   return $null
 }

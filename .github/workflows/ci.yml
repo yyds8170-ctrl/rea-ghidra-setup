@@ -225,7 +225,9 @@ jobs:
             install: .\install.ps1
             verify: .\verify.ps1
             cache-path: C:\Users\runneradmin\tools
-            cache-key: Windows-ghidra-12.1.4-jdk21-v1
+            # v5.2.0：v1 缓存会把 current-* junction 还原成文件型符号链接（坏缓存），
+            # 升 v2 使其整体失效；install.ps1 现会按链接类型修复/重建。
+            cache-key: Windows-ghidra-12.1.4-jdk21-v2
     steps:
       - uses: actions/checkout@v4
 
