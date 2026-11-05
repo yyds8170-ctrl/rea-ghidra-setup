@@ -33,3 +33,16 @@ examples/domain-fixtures/
 
 # mkdocs 构建产物（pages.yml 现构建现部署，不入库）
 site/
+
+# 编辑器/系统/语言运行时通用垃圾
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.tmp
+*.bak
+__pycache__/
+*.pyc
+.idea/
+.vscode/
