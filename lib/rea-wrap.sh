@@ -128,7 +128,7 @@ rea_wrap_exec() {
   [ -n "$cmd" ] || { echo "rea-wrap: 缺少命令名（用 run <命令>）" >&2; return 2; }
   local rec dom
   if ! rec="$(rea_tsv_lookup "$cmd")"; then
-    echo "rea-wrap: 未知命令：$cmd（不在 rea-agents ${REA_VERSION} 基线的 175 个命令内）" >&2
+    echo "rea-wrap: 未知命令：${cmd}（不在 rea-agents ${REA_VERSION} 基线的 175 个命令内）" >&2
     return 2
   fi
   IFS=$'\t' read -r dom _ <<<"$rec"
@@ -184,7 +184,7 @@ rea_wrap_exec() {
   if [ "$rc" -eq 0 ]; then
     return 0
   else
-    echo "rea-wrap: REA 执行 '$cmd' 返回非 0（rc=$rc）" >&2
+    echo "rea-wrap: REA 执行 '${cmd}' 返回非 0（rc=${rc}）" >&2
     return 4
   fi
 }
@@ -200,7 +200,7 @@ rea_domain_dispatch() {
 
   local rec dom
   if ! rec="$(rea_tsv_lookup "$cmd")"; then
-    echo "rea-wrap: 未知命令：$cmd（不在 rea-agents ${REA_VERSION} 基线的 175 个命令内）" >&2
+    echo "rea-wrap: 未知命令：${cmd}（不在 rea-agents ${REA_VERSION} 基线的 175 个命令内）" >&2
     return 2
   fi
   IFS=$'\t' read -r dom _ <<<"$rec"
