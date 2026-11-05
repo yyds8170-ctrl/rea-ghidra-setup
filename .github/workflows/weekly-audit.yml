@@ -83,7 +83,7 @@ jobs:
           npx -y rea-agents@latest --help > /tmp/help-new.txt 2>/tmp/help.err || true
           if [ -s /tmp/help-new.txt ]; then
             grep -E '^  [a-z][a-z0-9-]+ ' /tmp/help-new.txt \
-              | sed -E 's/^  ([a-z0-9-]+).*/\1/' | sort -u > /tmp/cmds-new.txt || true
+              | sed -E 's/^  ([a-z0-9-]+).*/\1/' | sort -u > cmds-new.txt || true
           fi
           python3 scripts/audit_collect_drift.py \
             --versions config/versions.env \
@@ -112,7 +112,7 @@ jobs:
           name: weekly-audit-drift
           path: |
             drift.json
-            /tmp/cmds-new.txt
+            cmds-new.txt
           retention-days: 7
 
   # ---------------------------------------------------------------------------
