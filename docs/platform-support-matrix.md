@@ -21,6 +21,13 @@
 - 新增（v3.4–v4.0）：**结构化报告生成器**（`scripts/ghidra-report.sh`，Markdown+自包含 HTML+10 类 JSON，见 [../README.md](../README.md)）；**端到端真实案例库**（`examples/cases/`，5 案例、带符号/strip 共 10 二进制，CI 自动断言）；**性能基准**（`scripts/benchmark.sh`，min/median/max）；容器**非 root + HEALTHCHECK + OCI 标签**；非 ASCII 文件名自愈；**双语文档站**（mkdocs，见 [mkdocs.yml](../mkdocs.yml)）；**Homebrew / Scoop 分发资产**（[packaging/README.md](../packaging/README.md)，个人 tap/bucket）。
 - 发现逻辑：显式 env（`JAVA_HOME`/`GHIDRA_INSTALL_DIR`）＞ `~/tools/current-*` 软链 ＞ 版本化目录枚举（旧行为兜底）。
 
+### 上游版本边界：Ghidra 12.2 暂不可用（2026-11-05 实测）
+
+- Ghidra 上游已于 2026-10-22 发布 **12.2**，但它**最低要求 JDK 25**（12.1.x 用 JDK 21），属带前置变更的 minor 升级。
+- 本项目已在隔离环境真实下载 JDK 25.0.5 + Ghidra 12.2 验证：Ghidra 12.2 headless 本身可正常反编译（产出 16 个函数 .c），但 **REA 6.8.0 明确拒绝该版本**——doctor 报 `unsupported_version, 12.2; accepted releases are 12.1.x (verified build 12.1.4)`，存在版本白名单。
+- 因此本仓库**默认保持 Ghidra 12.1.4 + JDK 21**，不升级到 12.2（升级会导致 REA 无法工作，属效果回退）。weekly-audit 把 12.1.4→12.2 判为 **minor，hold 人审、不自动合并**；待 REA 官方发布支持 Ghidra 12.2 的版本后，再联动升级 JDK 25 + Ghidra 12.2。
+- 若需单独使用 Ghidra 12.2（不经 REA），可自行安装，但不要把 `GHIDRA_INSTALL_DIR` 指向它后再跑 REA。
+
 ## 一、系统 × 运行环境总表
 
 | 操作系统 | 物理本机 | 虚拟机 | WSL | Docker 容器 | 云电脑 VDI |

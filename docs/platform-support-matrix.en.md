@@ -18,6 +18,13 @@
 - Capabilities: one-command MCP wiring, static export, parallel batch + snapshot cache, multi-arch fixture CI (`fixture-multiarch`: ELF32/AArch64/PE32), self-update ff-only / checksums verification, `current-ghidra`·`current-jdk` symlinks with rollback, Docker amd64+arm64, Release ships `checksums.txt` + SBOM.
 - Discovery: explicit env (`JAVA_HOME`/`GHIDRA_INSTALL_DIR`) > `~/tools/current-*` symlinks > versioned-directory enumeration (legacy fallback).
 
+### Upstream boundary: Ghidra 12.2 not usable yet (verified 2026-11-05)
+
+- Upstream released **Ghidra 12.2** on 2026-10-22, but it **requires JDK 25 at minimum** (12.1.x uses JDK 21), a minor upgrade with a prerequisite change.
+- In an isolated environment we downloaded JDK 25.0.5 + Ghidra 12.2 and verified that Ghidra 12.2 headless itself decompiles correctly (16 functions emitted), but **REA 6.8.0 explicitly rejects it** — doctor reports `unsupported_version, 12.2; accepted releases are 12.1.x (verified build 12.1.4)` due to a version allow-list.
+- The repo therefore **keeps Ghidra 12.1.4 + JDK 21 by default** and does not move to 12.2 (doing so would break REA, a regression). weekly-audit classifies 12.1.4→12.2 as **minor, held for human review, never auto-merged**; once an REA release supports Ghidra 12.2, we will upgrade JDK 25 + Ghidra 12.2 together.
+- Standalone Ghidra 12.2 (without REA) is fine to install, but do not point `GHIDRA_INSTALL_DIR` at it when running REA.
+
 ## 1. OS × runtime table
 
 | OS | Bare metal | VM | WSL | Docker | Cloud VDI |

@@ -156,12 +156,13 @@ def probe_ghidra(token):
     if err or not data:
         return {"upstream": None, "build": None, "date": None,
                 "note": "GitHub releases 探测失败（匿名限流 403？未带 GITHUB_TOKEN）：%s" % err}
-    tag = data.get("tag_name", "")            # e.g. Ghidra_12.1.4_build
-    m = re.search(r"Ghidra_(\d+\.\d+\.\d+)_build", tag)
+    tag = data.get("tag_name", "")            # e.g. Ghidra_12.1.4_build（三段）或 Ghidra_12.2_build（两段）
+    # 版本号兼容两段（12.2）与三段（12.1.4）；旧正则写死三段会漏提取 12.2。
+    m = re.search(r"Ghidra_(\d+\.\d+(?:\.\d+)?)_build", tag)
     ver = m.group(1) if m else None
     date = None
     for asset in data.get("assets", []) or []:
-        am = re.search(r"ghidra_\d+\.\d+\.\d+_PUBLIC_(\d+)\.zip", asset.get("name", ""))
+        am = re.search(r"ghidra_\d+\.\d+(?:\.\d+)?_PUBLIC_(\d+)\.zip", asset.get("name", ""))
         if am:
             date = am.group(1)
             break
@@ -247,9 +248,20 @@ def main():
 
     # --- Ghidra（GitHub releases）---
     g = probe_ghidra(token)
+    rea_ver = versions["REA_VERSION"]
     if g["upstream"]:
         lvl = semver_level(versions["GHIDRA_VERSION"], g["upstream"])
         note = "releases/latest；需人工核对 GHIDRA_BUILD/DATE"
+        # REA 版本白名单约束（2026-11-05 doctor 实测）：REA 6.8.0 仅接受 Ghidra 12.1.x；
+        # 越线版本（如 12.2，且需 JDK 25）即使 semver 是 minor 也会被 REA 判 unsupported_version，
+        # 不能自动升级，需等 REA 官方更新支持后再联动升级。
+        if rea_ver == "6.8.0":
+            up = g["upstream"].split(".")
+            if not (len(up) >= 2 and up[0] == "12" and up[1] == "1"):
+                note += ("；REA %s 仅支持 Ghidra 12.1.x（doctor 实测 unsupported_version），"
+                         "上游 %s 被 REA 白名单阻断，需等 REA 更新，不自动升级"
+                         % (rea_ver, g["upstream"]))
+                lvl = "blocked"
     else:
         lvl = "unknown"
         note = g["note"]

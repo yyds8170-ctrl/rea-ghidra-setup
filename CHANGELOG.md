@@ -4,6 +4,21 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.0.3] - 2026-11-05（巡检脚本兼容两段版本号 + Ghidra 12.2 边界文档化）
+
+针对 weekly-audit 上游核对发现的真实缺陷修复，核心功能不回退。
+
+### Fixed
+- **漂移脚本正则 bug**：`audit_collect_drift.py` 假设 Ghidra 版本号一定三段（x.y.z），但上游 12.2 的 tag/资产名是两段（`Ghidra_12.2_build`、`ghidra_12.2_PUBLIC_*.zip`），导致版本/日期提取为 None。正则改为兼容两段与三段。
+- **REA 白名单约束**：新增检测——REA 6.8.0 仅接受 Ghidra 12.1.x，越线版本（12.2）标 `level=blocked` 并在 note 写明根因，bump 脚本不会自动处理，避免误升级导致 REA 失效。
+
+### Docs
+- 中英 `platform-support-matrix` 新增「Ghidra 12.2 暂不可用」边界：实测 Ghidra 12.2 需 JDK 25 且 REA 6.8.0 报 unsupported_version；默认保持 12.1.4+JDK21，待 REA 支持后联动升级。
+
+### 验证
+- 带 token 真实跑漂移采集：正确提取 12.2、标 blocked；verify 9/9、shellcheck、mkdocs strict、死链 0 全过。
+
+
 ## [6.0.2] - 2026-11-05（修复 version --raw 开关绑定，Windows e2e 回归）
 
 v6.0.1 全量 CI 的 e2e windows 失败，定位为 PowerShell 参数绑定问题并修复。
