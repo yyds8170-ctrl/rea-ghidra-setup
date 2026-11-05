@@ -1,0 +1,85 @@
+name: DIAG Windows
+# 临时诊断工作流：仅手动触发，用于定位 Windows Ghidra headless 回归。定位后删除。
+on:
+  workflow_dispatch:
+
+jobs:
+  diag:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 恢复与 e2e 相同的工具缓存
+        uses: actions/cache@v4
+        with:
+          path: C:\Users\runneradmin\tools
+          key: Windows-ghidra-12.1.4-jdk21-v1
+          restore-keys: |
+            Windows-ghidra-12.1.4-jdk21-v1-
+
+      - name: 一键部署（幂等，复用缓存）
+        shell: pwsh
+        run: .\install.ps1
+
+      - name: 环境与镜像信息
+        shell: pwsh
+        run: |
+          Write-Output "=== whoami / os ==="
+          $PSVersionTable | Format-Table
+          Get-ChildItem Env: | Where-Object { $_.Name -match 'JAVA|JDK|NODE|NPM|TEMP|TMP|ComSpec|PATH' } |
+            ForEach-Object { Write-Output ("{0}={1}" -f $_.Name, $_.Value) }
+          Write-Output "=== tools dir ==="
+          Get-ChildItem C:\Users\runneradmin\tools | Select-Object Name, LinkType, Target
+          Write-Output "=== preinstalled JDKs ==="
+          Get-ChildItem 'C:\Program Files\Java' -ErrorAction SilentlyContinue | Select-Object Name
+          Get-ChildItem 'C:\Program Files\Eclipse Adoptium' -ErrorAction SilentlyContinue | Select-Object Name
+          Write-Output "=== image version ==="
+          Get-Content C:\images\windows\windows2026-Readme.md -TotalCount 5 -ErrorAction SilentlyContinue
+          Get-Content C:\.setupImage -ErrorAction SilentlyContinue
+
+      - name: doctor（完整输出）
+        shell: pwsh
+        run: .\scripts\doctor.ps1
+
+      - name: 直接运行 analyzeHeadless（完整 stdout/stderr + ghidra.log）
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Continue'
+          . .\lib\common.ps1
+          $GhidraDir = (Resolve-GhidraDir)
+          $JdkHome   = (Resolve-JdkHome)
+          Write-Output "GHIDRA=$GhidraDir"
+          Write-Output "JDK=$JdkHome"
+          & (Join-Path $JdkHome 'bin\java.exe') -version
+          $work = Join-Path $env:TEMP ('diag-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Force -Path $work | Out-Null
+          $proj = Join-Path $work 'proj'
+          $fixture = Join-Path $work 'demo.exe'
+          Copy-Item .\examples\bin\windows-x64\demo.exe $fixture -Force
+          $headless = Join-Path $GhidraDir 'support\analyzeHeadless.bat'
+          $log = Join-Path $work 'ghidra'
+          Write-Output "=== HEADLESS START ==="
+          & $headless $proj p -import $fixture -log $log
+          Write-Output "=== HEADLESS EXIT=$LASTEXITCODE ==="
+          Write-Output "=== ghidra.log (tail 80) ==="
+          if (Test-Path "$log.log") { Get-Content "$log.log" -Tail 80 }
+          Write-Output "=== application.properties ==="
+          Get-Content (Join-Path $GhidraDir 'Ghidra\application.properties') -ErrorAction SilentlyContinue
+
+      - name: rea 带详细诊断跑 analyze
+        shell: pwsh
+        run: |
+          . .\lib\common.ps1
+          $env:DEBUG = 'rea:*'
+          $work = Join-Path $env:TEMP ('rea-' + [guid]::NewGuid().ToString('N'))
+          New-Item -ItemType Directory -Force -Path $work | Out-Null
+          $fixture = Join-Path $work 'demo.exe'
+          Copy-Item .\examples\bin\windows-x64\demo.exe $fixture -Force
+          npx -y rea-agents@6.8.0 analyze $fixture --provider ghidra --format json
+          Write-Output "rea exit=$LASTEXITCODE"
