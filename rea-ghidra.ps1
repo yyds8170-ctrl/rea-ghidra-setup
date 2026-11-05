@@ -227,7 +227,12 @@ function Invoke-SelfUpdate {
 }
 
 $sub = ''
-if ($args.Count -gt 0) { $sub = $args[0]; $rest = @($args[1..($args.Count-1)]) } else { $rest = @() }
+if ($args.Count -gt 0) {
+  $sub = $args[0]
+  # 注意：Count=1 时不能写 $args[1..0]——PowerShell 反向范围会返回 @(1,0) 两个索引，
+  # 把子命令名错误透传成目标脚本的位置参数；必须显式判空。
+  $rest = if ($args.Count -gt 1) { @($args[1..($args.Count - 1)]) } else { @() }
+} else { $rest = @() }
 
 switch -Wildcard ($sub) {
   ''          { Usage; exit 0 }

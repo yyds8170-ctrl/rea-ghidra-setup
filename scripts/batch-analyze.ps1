@@ -47,7 +47,10 @@ if ($Dir -ne "") {
     if ($Pattern -eq "" -or $f.Name -like $Pattern) { $targets.Add($f.FullName) }
   }
 }
-if ($targets.Count -eq 0) { throw "未收集到任何目标文件" }
+if ($targets.Count -eq 0) {
+  [Console]::Error.WriteLine('未收集到任何目标文件：请用 -Bin <路径> 或 -Dir <目录> 指定；-Help 查看用法')
+  exit 2
+}
 
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $targetsRoot = Join-Path $Out "targets"

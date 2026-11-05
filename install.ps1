@@ -102,6 +102,12 @@ if ($DryRun) {
   exit 0
 }
 
+# 平台守卫：真实安装路径依赖 Windows 可执行文件（node.exe/.bat）；DryRun 已在上面提前返回，可跨平台
+if (-not $IsWindows) {
+  Write-Output 'install.ps1 真实安装仅支持 Windows；当前平台请使用 bash 安装脚本：install.sh'
+  exit 0
+}
+
 $ToolsDir = $ToolsDirResolved
 
 Write-Output '=========================================================='

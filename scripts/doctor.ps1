@@ -12,6 +12,12 @@
 # =============================================================================
 . (Join-Path $PSScriptRoot '..\lib\common.ps1')
 
+# 平台守卫：本脚本依赖 Windows 专用 API（CIM/注册表），非 Windows 直接友好提示，避免环境变量 null 崩溃
+if (-not $IsWindows) {
+  Write-Output 'doctor.ps1 仅支持 Windows；当前平台请使用 bash 自检脚本：scripts/doctor.sh'
+  exit 0
+}
+
 $cfg = Import-VersionConfig
 $script:PassCount = 0; $script:WarnCount = 0; $script:FailCount = 0
 function Add-Pass { param([string]$m) Write-Output "[PASS] $m"; $script:PassCount++ }

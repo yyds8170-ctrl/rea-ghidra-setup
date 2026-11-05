@@ -24,7 +24,10 @@ if ($Help -or $Bin -eq "") {
   if ($Bin -eq "" -and -not $Help) { exit 2 } else { exit 0 }
 }
 
-if (-not (Test-Path $Bin)) { throw "二进制不存在：$Bin" }
+if (-not (Test-Path $Bin)) {
+  [Console]::Error.WriteLine("二进制不存在：$Bin（请检查 -Bin 路径；-Help 查看用法）")
+  exit 2
+}
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $scriptPathDir = Join-Path $scriptDir "ghidra"

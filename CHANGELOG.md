@@ -4,6 +4,20 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.0.1] - 2026-11-05（PowerShell 跨平台健壮性修复）
+
+在 Linux pwsh 上对全部 13 个 ps1 做真实运行测试（此前只做语法解析）发现并修复 4 个问题，bash 侧无改动。
+
+### Fixed
+- **主入口参数解析真 bug**：`rea-ghidra.ps1` 只传一个子命令时，`$args[1..0]` 触发 PowerShell 反向范围，返回两个索引而非空数组，把子命令名错误透传成目标脚本的位置参数（如 `export` 被当成 `-Bin export`）。已显式判空修复。
+- **平台守卫**：`doctor.ps1`/`verify.ps1`/`uninstall.ps1` 在非 Windows 平台因 `$env:USERPROFILE` 为 null 直接崩溃（CIM/注册表等 Windows API 不可用）；`install.ps1` 真实安装路径同理。四个脚本开头加平台守卫，非 Windows 友好提示改用对应 .sh 脚本（退出码 0）；`install.ps1 -DryRun` 保留跨平台可用。
+- **错误呈现**：`batch-analyze.ps1` 无目标、`ghidra-export.ps1` 路径不存在时由红堆栈 `throw` 改为干净的 stderr 提示 + 退出码 2，与 bash 侧用法错误码对齐。
+
+### 验证
+- Linux pwsh 7.4.6：13 个 ps1 语法解析 0 错误；守卫/无参/真实参数透传全部复测通过；主入口 run/domains 正常。
+- 175 命令基线与 6.8.0 实际 `--help` 逐条对账无缺无多（completions/mcp 两个集成入口如设计单列）；verify 9/9 不回退、死链 0。
+
+
 ## [6.0.0] - 2026-11-05（收官：最终发布验证报告，为 Release 做准备）
 
 v5.2.0→v5.6.0 能力与自动化全部就位后的**收官版本**：新增双语最终发布验证报告，

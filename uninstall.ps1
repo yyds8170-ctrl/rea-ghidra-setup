@@ -26,6 +26,12 @@ if ($Help) {
   exit 0
 }
 
+# 平台守卫：本脚本卸载 Windows 用户级安装，非 Windows 请用 uninstall.sh
+if (-not $IsWindows) {
+  Write-Output 'uninstall.ps1 仅支持 Windows；当前平台请使用 bash 卸载脚本：uninstall.sh'
+  exit 0
+}
+
 $Cfg = Import-VersionConfig
 if ($ToolsDir) {
   $ToolsDirResolved = $ToolsDir

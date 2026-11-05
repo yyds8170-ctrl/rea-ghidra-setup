@@ -19,6 +19,12 @@
 #>
 . (Join-Path $PSScriptRoot 'lib/common.ps1')
 
+# 平台守卫：本脚本验证 Windows PE fixture + analyzeHeadless.bat，非 Windows 请用 verify.sh
+if (-not $IsWindows) {
+  Write-Output 'verify.ps1 仅支持 Windows；当前平台请使用 bash 验证脚本：verify.sh'
+  exit 0
+}
+
 $Cfg = Import-VersionConfig
 $ToolsDir = if ($env:TOOLS_DIR) { $env:TOOLS_DIR } else { Join-Path $env:USERPROFILE 'tools' }
 
