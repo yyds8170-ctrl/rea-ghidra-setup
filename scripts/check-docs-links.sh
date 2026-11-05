@@ -15,8 +15,9 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# 收集 md 文件（根 + docs/，不进 offline/、.git/）
-md_files="$(find "$REPO_DIR" -maxdepth 2 -name '*.md' \! -path '*/offline/*' \! -path '*/.git/*' | sort)"
+# 收集 md 文件（全目录递归，不进 research/、offline/、.git/）
+# v5.3.0：原 -maxdepth 2 扫不到 docs/capability-map/ 等 depth≥3 的文件，改为全递归
+md_files="$(find "$REPO_DIR" -name '*.md' \! -path '*/research/*' \! -path '*/offline/*' \! -path '*/.git/*' | sort)"
 total_links=0; dead=0
 n_md="$(printf '%s\n' "$md_files" | grep -c .)"
 

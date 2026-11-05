@@ -4,6 +4,19 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [5.3.0] - 2026-11-05（175 命令全量能力地图，中英双语）
+
+新增覆盖 rea-agents 6.8.0 全部 **175 个命令**的能力地图（中文为主、逐条中英双语），并把命令清单基线入库以支持每周演进 diff。
+
+### Added
+- 新增 `docs/capability-map/`：总索引 `README.md`、10 个领域文件（`domain-1-core` … `domain-10-jeb-platform`）、175 行 `coverage-matrix.md`、集成入口附录 `integrations.md`。175 个命令 100% 有条目，每条固定 7 字段（用途/前置/关键参数/Evidence 产出/示例/可测性/来源），命令名与计数和 `research/B_commands_176.json` 逐条对账一致。
+- 新增入库命令基线 `config/command-baseline/rea-6.8.0.txt`（175 行、字典序、无表头），供每周巡检 `comm -13/-23` 或 `git diff` 识别新增/移除命令。
+- 可测性按 5 类逐条标注并汇总：✅ 本机可实测 78、🔧 需工具 35、📱 需设备 50、🍎 需 macOS 8、💼 需 JEB 4；凡本环境未跑通的条目均保留"未实测/需 XX 前置"，未写成已实现。
+- `completions`、`mcp` 两个集成入口（不计入 175）单列于 `integrations.md`。
+
+### Changed
+- `scripts/check-docs-links.sh` 的文件收集从 `-maxdepth 2` 改为全目录递归（并排除 `research/`），使 depth≥3 的 `docs/capability-map/` 纳入死链检查；现覆盖 76 个 md、502 个相对链接，死链 0。
+
 ## [5.2.0] - 2026-11-05（REA 6.5.0 → 6.8.0 上游适配）
 
 把锁定的 rea-agents 从 6.5.0 升级到 6.8.0（2026-10-25 发布的破坏性版本），现有 analyze/decompile/search 能力零回退。
