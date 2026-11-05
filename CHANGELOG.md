@@ -4,6 +4,36 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [5.2.0] - 2026-11-05（REA 6.5.0 → 6.8.0 上游适配）
+
+把锁定的 rea-agents 从 6.5.0 升级到 6.8.0（2026-10-25 发布的破坏性版本），现有 analyze/decompile/search 能力零回退。
+
+### Changed
+- 上游 **REA 锁定 6.5.0 → 6.8.0**；便携 Node 锁 24.22.0 → **24.22.2**。6.8 engines 抬高为 `^22.23.4 || ^24.22.1 || >=26.12.1`，不再支持 Node 23/25，且安装器不会替用户升级 Node。
+- Node 版本门禁（`lib/common.sh` 的 `node_satisfies_rea` / `node_bin_satisfies_rea`、`lib/common.ps1` 的 `Test-NodeVersion`）从 major.minor 判断**收紧到 patch 段**：22.23.2 / 24.22.0 / 26.0.0 这类在旧门槛下被误判通过的版本现在如实拒绝。12 组边界用假 node shim 单测全过（22.23.4 起收、22.23.2 拒；24.22.1 起收、24.22.0 拒；26.12.1 起收、26.12.0 拒；23/25 拒）。
+- 全仓库同步 Node 门槛文案到新 engines：README(.en).md、docs/configuration(.en).md、docs/mcp(.en).md、platform-support-matrix(.en).md、platform-linux/macos/windows/chromeos、troubleshooting(.en).md、install.sh / install-macos.sh / install.ps1、doctor(.sh/.ps1)、check-versions.sh、verify.sh / verify-macos.sh、skill/SKILL.md、Dockerfile 注释、ci.yml 注释、mcp-setup(.sh/.ps1) 头部。`scripts/web-analyze.sh` 兜底默认 6.5.0 → 6.8.0。历史条目与 README「版本历史」段中的旧版本号一律保持原样，不改写历史。
+- `.gitignore` 新增 `research/`（本地调研工作目录，不入库）。
+
+### 兼容性说明（重要）
+- 核心 `analyze` / `decompile` / `search --provider ghidra --format json --snapshot` 命令参数与输出信封实测与 6.5.0 一致：信封仅末尾多一个可选键 `caller_input_path`，`normalized_result` 逐键 diff 无变化（procs=28 / strings=83 / segments=39 两版本相同）。
+- 6.8 新增的 environment-serve/build/export/compare 有状态服务是**独立 opt-in 子命令**，本仓库不启用、不调用，现有无状态工作流零影响。
+- **旧快照不兼容**：6.6 起 Evidence 快照身份承诺强制含 `relationship_coverage` digest，旧 6.5 生成的 `*.snap` 不迁移、不补默认值。**升级后请删除历史 `*.snap` 重新生成**；本仓库 verify.sh 用 mktemp 临时快照、每次自动重建，不受影响。
+- 6.8 MCP 工具输入 schema 默认 compact（如需完整嵌套约束可设 `REA_MCP_INPUT_SCHEMA_PROFILE=full`）；`--format jsonl` 帧格式已变，本仓库全程用 `--format json`，不受影响。
+
+### 验证（本机实测）
+- `shellcheck -x *.sh lib/*.sh scripts/*.sh` clean；bash3.2 非 ASCII 紧邻检查通过；`check-docs-links.sh`：59 个 md / 304 个相对链接死链 0。
+- `check-versions.sh` 通过：**rea-agents 最新=6.8.0 与锁定一致**（Ghidra 12.2、Node LTS 26.13、GHA action pin 落后为既有 INFO/WARN，不阻断）。
+- CLI 自检：install.sh / install-macos.sh `--help` / `--dry-run` / 未知参数（=2）/ `--prefix` / `--mirror` / `--rea-version` 覆盖生效全过；`rea-ghidra version` = 5.2.0；`mcp-setup.sh --list` / `--dry-run --client claude-desktop` 渲染正确（args 已为 rea-agents@6.8.0）。
+- **`bash verify.sh` 9/9 通过**（npx rea-agents@6.8.0 + JDK21 + Ghidra 12.1.4）：analyze 识别 ELF / x86_64 / procs=28 / strings=83；decompile `secret_check` 含 0x539、`calc_discount` 含 0x32 均 confidence=observed；stripped 版 procedures=28。
+- MCP stdio 原生握手 `bash scripts/mcp-setup.sh --check` 通过：initialize 返回 `server=rea 6.8.0`，`doctor --provider ghidra --format json` 报 available / providerVersion=12.1.4。
+- `doctor.sh`：6 通过 / 2 警告 / 1 失败——唯一失败是本机系统 Node v22.23.2 未达 6.8 engines（差一个 patch 至 22.23.4），属收紧后预期行为；npx 仅打 EBADENGINE 警告、命令照常运行。
+
+### 未实测 / 风险项
+- Windows（install.ps1 / verify.ps1 / doctor.ps1 / mcp-setup.ps1）与 macOS（install-macos.sh / verify-macos.sh）专有机理无法在本机 Linux 复现，靠 CI runner 回归；本版仅同步其文案与 PowerShell 门禁逻辑。
+- 便携 Node 24.22.2 的 npmmirror / 华为云镜像可达性未单独复测（目录命名规则与 24.22.0 一致，按镜像惯例应已同步）。
+- `offline/` 内预置 tgz 仍为旧版，按约束本版不重打（后续由 prepare-offline.sh 流程单独刷新）。
+
+
 ## [5.1.1] - 2026-10-18（v5.1.0 体检修复）
 
 全面体检 web-analyze.sh 后补齐文档缺口，无功能改动。

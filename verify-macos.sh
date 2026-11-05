@@ -75,7 +75,7 @@ echo "  JAVA_HOME          = ${JAVA_HOME:-（未设置）}"
 echo "  GHIDRA_INSTALL_DIR = ${GHIDRA_INSTALL_DIR:-（未设置）}"
 echo "  REA 调用           = ${REA[*]}"
 java -version 2>&1 | head -1 | sed 's/^/  /'
-command -v node >/dev/null 2>&1 || { echo "缺少 node（REA 要求 Node 22.19+/24.11+/26+）" >&2; exit 1; }
+command -v node >/dev/null 2>&1 || { echo "缺少 node（REA 要求 Node 22.23.4+/24.22.1+/26.12.1+）" >&2; exit 1; }
 
 # ---- 1. 前置检查 ------------------------------------------------------------
 echo "== 1. 前置检查 =="

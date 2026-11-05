@@ -11,7 +11,7 @@
 # 断言逻辑统一走 scripts/verify-check.js（与 verify-macos.sh / verify.ps1 一致）。
 # 全部通过退出码 0；任一失败退出码 1。可作为 CI 的一个步骤。
 # 用法：bash verify.sh
-#   可覆盖：REA_VERSION=6.5.0 GHIDRA_INSTALL_DIR=... JAVA_HOME=... ./verify.sh
+#   可覆盖：REA_VERSION=6.8.0 GHIDRA_INSTALL_DIR=... JAVA_HOME=... ./verify.sh
 # =============================================================================
 set -uo pipefail
 
@@ -30,7 +30,7 @@ verify.sh — Linux 端到端自检（ELF）
   bash verify.sh --help          （本帮助，不做任何验证）
 
 可覆盖：
-  REA_VERSION=6.5.0 GHIDRA_INSTALL_DIR=... JAVA_HOME=... bash verify.sh
+  REA_VERSION=6.8.0 GHIDRA_INSTALL_DIR=... JAVA_HOME=... bash verify.sh
 EOF
     exit 0
     ;;
@@ -95,7 +95,7 @@ echo "  JAVA_HOME          = ${JAVA_HOME:-（未设置，依赖 PATH）}"
 echo "  GHIDRA_INSTALL_DIR = ${GHIDRA_INSTALL_DIR:-（未设置）}"
 echo "  REA 调用           = ${REA[*]}"
 java -version 2>&1 | head -1 | sed 's/^/  /'
-command -v node >/dev/null 2>&1 || { echo "缺少 node（REA 要求 Node 22.19+/24.11+/26+）" >&2; exit 1; }
+command -v node >/dev/null 2>&1 || { echo "缺少 node（REA 要求 Node 22.23.4+/24.22.1+/26.12.1+）" >&2; exit 1; }
 
 # ---- 1. 前置检查 ------------------------------------------------------------
 echo "== 1. 前置检查 =="

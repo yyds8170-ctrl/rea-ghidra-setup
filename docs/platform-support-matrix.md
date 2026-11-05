@@ -15,7 +15,7 @@
 
 ## 零、锁定版本与统一能力（v3.x）
 
-- 锁定版本（`config/versions.env`）：**Ghidra 12.1.4 / JDK 21 / 便携 Node 24.22.0 / REA 6.5.0**。
+- 锁定版本（`config/versions.env`）：**Ghidra 12.1.4 / JDK 21 / 便携 Node 24.22.2 / REA 6.8.0**。
 - 统一入口：`./rea-ghidra install|verify|doctor|mcp|export|batch|current|rollback|self-update`（Windows `.\rea-ghidra.ps1`）。
 - 能力：MCP 一键对接（[mcp.md](mcp.md)）、静态导出（[export.md](export.md)）、批量并行 + 快照缓存（[batch.md](batch.md)）、多架构 fixture CI（`fixture-multiarch`，ELF32/AArch64/PE32）、自更新 ff-only / checksums 校验、`current-ghidra`·`current-jdk` 软链与回滚、Docker amd64+arm64、Release 附带 `checksums.txt` + SBOM。
 - 新增（v3.4–v4.0）：**结构化报告生成器**（`scripts/ghidra-report.sh`，Markdown+自包含 HTML+10 类 JSON，见 [../README.md](../README.md)）；**端到端真实案例库**（`examples/cases/`，5 案例、带符号/strip 共 10 二进制，CI 自动断言）；**性能基准**（`scripts/benchmark.sh`，min/median/max）；容器**非 root + HEALTHCHECK + OCI 标签**；非 ASCII 文件名自愈；**双语文档站**（mkdocs，见 [mkdocs.yml](../mkdocs.yml)）；**Homebrew / Scoop 分发资产**（[packaging/README.md](../packaging/README.md)，个人 tap/bucket）。

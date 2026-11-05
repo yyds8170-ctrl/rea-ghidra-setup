@@ -52,12 +52,12 @@ hr
 if command -v node >/dev/null 2>&1; then
   NV="$(node --version 2>/dev/null)"
   if node_satisfies_rea; then
-    p "Node ${NV} 满足 REA 要求（^22.19 || ^24.11 || >=26）"
+    p "Node ${NV} 满足 REA 要求（^22.23.4 || ^24.22.1 || >=26.12.1）"
   else
-    f "Node ${NV} 不满足要求：需 Node 22.19+ / 24.11+ / 26+（运行安装脚本或 fnm/nvm 切换）"
+    f "Node ${NV} 不满足要求：需 Node 22.23.4+ / 24.22.1+ / 26.12.1+（运行安装脚本或 fnm/nvm 切换）"
   fi
 else
-  f "未找到 node：REA 要求 Node 22.19+ / 24.11+ / 26+（运行安装脚本会装便携 Node 24.22.0）"
+  f "未找到 node：REA 要求 Node 22.23.4+ / 24.22.1+ / 26.12.1+（运行安装脚本会装便携 Node 24.22.2）"
 fi
 
 # ---- 2. JDK 21 -------------------------------------------------------------

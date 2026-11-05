@@ -97,7 +97,7 @@ for r in json.load(sys.stdin):
     if [ "$NODE_LTS" = "$REA_NODE_VERSION" ]; then
       echo "  [OK] 便携 Node 锁定=${REA_NODE_VERSION}（与当前 LTS ${NODE_LTS} 一致）"
     else
-      printf '  \033[33m[WARN]\033[0m 便携 Node 锁定=%s，当前 Node LTS=%s（升级前需全链路验证门禁 ^22.19||^24.11||>=26）\n' \
+      printf '  \033[33m[WARN]\033[0m 便携 Node 锁定=%s，当前 Node LTS=%s（升级前需全链路验证门禁 ^22.23.4||^24.22.1||>=26.12.1）\n' \
         "$REA_NODE_VERSION" "$NODE_LTS"
     fi
   else

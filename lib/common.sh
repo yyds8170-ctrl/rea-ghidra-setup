@@ -117,42 +117,69 @@ normalize_arch() {
   esac
 }
 
-# Node 解压后的目录名（tar.gz 包），如 node-v24.22.0-linux-x64
+# Node 解压后的目录名（tar.gz 包），如 node-v24.22.2-linux-x64
 node_tarball_dir() {
   local os="$1" arch="$2" narch="$2"
   [ "$arch" = "aarch64" ] && narch="arm64"
   printf 'node-v%s-%s-%s' "$REA_NODE_VERSION" "$os" "$narch"
 }
 
-# REA 要求 Node ^22.19 || ^24.11 || >=26；检查当前 PATH 上的 node 是否满足
-# 返回 0 满足、1 不满足（或没有 node）。
+# REA 6.8.0 engines：^22.23.4 || ^24.22.1 || >=26.12.1（Node 23/25 一律拒绝）。
+# 检查当前 PATH 上的 node 是否满足。返回 0 满足、1 不满足（或没有 node）。
+# 注意必须比较到 patch 段：22.23.2 / 24.22.0 / 26.0.0 均不满足 6.8。
 node_satisfies_rea() {
   command -v node >/dev/null 2>&1 || return 1
-  local v major minor
+  local v rest major minor patch
   v="$(node --version 2>/dev/null | sed 's/^v//; s/-.*//')"
   major="${v%%.*}"
-  minor="${v#*.}"; minor="${minor%%.*}"
+  rest="${v#*.}"
+  minor="${rest%%.*}"
+  patch="${rest#*.}"
+  [ "$patch" = "$rest" ] && patch=0   # 无 patch 段时按 0 处理
   case "$major" in ''|*[!0-9]*) return 1 ;; esac
-  [ "$major" -ge 26 ] && return 0
-  [ "$major" -eq 24 ] && [ "${minor:-0}" -ge 11 ] && return 0
-  [ "$major" -eq 22 ] && [ "${minor:-0}" -ge 19 ] && return 0
+  [ "$major" -ge 27 ] && return 0
+  if [ "$major" -eq 26 ]; then
+    [ "${minor:-0}" -gt 12 ] && return 0
+    [ "${minor:-0}" -eq 12 ] && [ "${patch:-0}" -ge 1 ] && return 0
+  fi
+  if [ "$major" -eq 24 ]; then
+    [ "${minor:-0}" -gt 22 ] && return 0
+    [ "${minor:-0}" -eq 22 ] && [ "${patch:-0}" -ge 1 ] && return 0
+  fi
+  if [ "$major" -eq 22 ]; then
+    [ "${minor:-0}" -gt 23 ] && return 0
+    [ "${minor:-0}" -eq 23 ] && [ "${patch:-0}" -ge 4 ] && return 0
+  fi
   return 1
 }
 
-# 判断【指定路径】的 node 可执行文件是否满足 REA 的 Node 版本要求
-#（^22.19 || ^24.11 || >=26）。参数：$1 = node 可执行文件路径。
+# 判断【指定路径】的 node 可执行文件是否满足 REA 6.8 的 Node 版本要求
+#（^22.23.4 || ^24.22.1 || >=26.12.1）。参数：$1 = node 可执行文件路径。
 # 返回 0 满足、1 不满足/不可执行。供 install_node_portable 幂等复用既有 Node。
 node_bin_satisfies_rea() {
   local bin="$1"
   [ -x "$bin" ] || return 1
-  local v major minor
+  local v rest major minor patch
   v="$("$bin" --version 2>/dev/null | sed 's/^v//; s/-.*//')"
   major="${v%%.*}"
-  minor="${v#*.}"; minor="${minor%%.*}"
+  rest="${v#*.}"
+  minor="${rest%%.*}"
+  patch="${rest#*.}"
+  [ "$patch" = "$rest" ] && patch=0
   case "$major" in ''|*[!0-9]*) return 1 ;; esac
-  [ "$major" -ge 26 ] && return 0
-  [ "$major" -eq 24 ] && [ "${minor:-0}" -ge 11 ] && return 0
-  [ "$major" -eq 22 ] && [ "${minor:-0}" -ge 19 ] && return 0
+  [ "$major" -ge 27 ] && return 0
+  if [ "$major" -eq 26 ]; then
+    [ "${minor:-0}" -gt 12 ] && return 0
+    [ "${minor:-0}" -eq 12 ] && [ "${patch:-0}" -ge 1 ] && return 0
+  fi
+  if [ "$major" -eq 24 ]; then
+    [ "${minor:-0}" -gt 22 ] && return 0
+    [ "${minor:-0}" -eq 22 ] && [ "${patch:-0}" -ge 1 ] && return 0
+  fi
+  if [ "$major" -eq 22 ]; then
+    [ "${minor:-0}" -gt 23 ] && return 0
+    [ "${minor:-0}" -eq 23 ] && [ "${patch:-0}" -ge 4 ] && return 0
+  fi
   return 1
 }
 

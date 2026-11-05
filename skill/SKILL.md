@@ -5,7 +5,7 @@ description: 当需要在没有源码的情况下分析一个已编译/已打包
 
 # Reverse Engineering（基于 REA 的证据驱动逆向）
 
-> **快照基线**：本技能是面向豆包 Agent 环境的**静态快照**，基于 `rea-agents@6.5.0` + Ghidra `12.1.4` 验证。
+> **快照基线**：本技能是面向豆包 Agent 环境的**静态快照**，基于 `rea-agents@6.8.0` + Ghidra `12.1.4` 验证。
 > 上游 REA 会持续演进（官方 skill 也有自己的版本号），本快照可能随升级过期——升级 REA 后若发现
 > 命令、参数或输出格式不匹配，请以官方为准：运行 `rea setup`（或 `npx rea-agents@<新版本> setup`）
 > 按官方流程安装/更新 skill，并对照官方文档（github.com/morluto/rea）修正用法。本快照仅保证
@@ -54,13 +54,13 @@ description: 当需要在没有源码的情况下分析一个已编译/已打包
 | macOS（Intel / Apple Silicon） | `bash install-macos.sh` | `bash verify-macos.sh` |
 | Docker（任意宿主，amd64/arm64） | `docker build -t rea-ghidra .` 或 `docker compose build` | 容器内 `verify.sh` |
 
-安装脚本会自动装 JDK 21 + Node 24.22.0（满足 REA 版本门禁）、下载 Ghidra 并在 arm64/macOS 上源码构建
+安装脚本会自动装 JDK 21 + Node 24.22.2（满足 REA 版本门禁）、下载 Ghidra 并在 arm64/macOS 上源码构建
 缺失的 native decompiler。安装后/排障前先跑只读诊断：`bash scripts/doctor.sh`（Windows 用 `.\scripts\doctor.ps1`），
 它检查 Node 版本、JDK 21、`analyzeHeadless`、native decompiler 是否就位；再跑 `rea doctor` 验证 provider 连接。
 
 ## 第一步：就绪检查
 
-Node 要求：22.x（≥22.19）、24.x（≥24.11）或 26+。先体检（只读、不改配置）：
+Node 要求：22.x（≥22.23.4）、24.x（≥24.22.1）或 ≥26.12.1（不支持 23/25）。先体检（只读、不改配置）：
 
 ```bash
 npx -y rea-agents@latest doctor --json

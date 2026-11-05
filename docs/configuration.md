@@ -88,7 +88,7 @@ Windows 在 `%APPDATA%\Claude\`），加入：
   "mcpServers": {
     "rea": {
       "command": "npx",
-      "args": ["-y", "rea-agents@6.5.0", "--mcp"]
+      "args": ["-y", "rea-agents@6.8.0", "--mcp"]
     }
   }
 }

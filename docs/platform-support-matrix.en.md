@@ -13,7 +13,7 @@
 
 ## 0. Locked versions and unified capability (v3.x)
 
-- Locked versions (`config/versions.env`): **Ghidra 12.1.4 / JDK 21 / portable Node 24.22.0 / REA 6.5.0**.
+- Locked versions (`config/versions.env`): **Ghidra 12.1.4 / JDK 21 / portable Node 24.22.2 / REA 6.8.0**.
 - Unified entrypoint: `./rea-ghidra install|verify|doctor|mcp|export|batch|current|rollback|self-update` (Windows `.\rea-ghidra.ps1`).
 - Capabilities: one-command MCP wiring, static export, parallel batch + snapshot cache, multi-arch fixture CI (`fixture-multiarch`: ELF32/AArch64/PE32), self-update ff-only / checksums verification, `current-ghidra`·`current-jdk` symlinks with rollback, Docker amd64+arm64, Release ships `checksums.txt` + SBOM.
 - Discovery: explicit env (`JAVA_HOME`/`GHIDRA_INSTALL_DIR`) > `~/tools/current-*` symlinks > versioned-directory enumeration (legacy fallback).

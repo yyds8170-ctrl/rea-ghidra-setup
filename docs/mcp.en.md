@@ -47,7 +47,7 @@ The registered server is named `rea`; a standard stdio entry looks like:
 ```json
 {
   "command": "/opt/nodejs/22/bin/npx",
-  "args": ["-y", "rea-agents@6.5.0", "--mcp"],
+  "args": ["-y", "rea-agents@6.8.0", "--mcp"],
   "env": {
     "JAVA_HOME": "/home/user/tools/jdk-21.0.12.1+1",
     "GHIDRA_INSTALL_DIR": "/home/user/tools/ghidra_12.1.4_PUBLIC"

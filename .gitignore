@@ -19,6 +19,9 @@ decompiled/
 
 offline/
 
+# v5.2.0 起的本地研究/调研工作目录（含解包 tarball、实跑产物，不入库）
+research/
+
 # v2.9 多架构 fixture 编译产物（源码在 examples/fixtures_src/）
 examples/fixtures/
 

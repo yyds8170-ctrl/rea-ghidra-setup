@@ -46,7 +46,7 @@ usage() {
   sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'
 }
 
-REA_BIN="${REA_BIN:-npx -y rea-agents@${REA_VERSION:-6.5.0}}"
+REA_BIN="${REA_BIN:-npx -y rea-agents@${REA_VERSION:-6.8.0}}"
 
 CDP=""
 ORIGIN=""

@@ -2,7 +2,7 @@
 # =============================================================================
 # REA + Ghidra 一键部署脚本（macOS：Intel x86_64 / Apple Silicon arm64）
 #
-# 作用：安装 Temurin JDK 21 + Ghidra +（可选）便携 Node 24.22.0，解除 Gatekeeper
+# 作用：安装 Temurin JDK 21 + Ghidra +（可选）便携 Node 24.22.2，解除 Gatekeeper
 #       隔离，并在官方未预编译时从源码构建 native decompiler。
 # 适用环境：Mac 物理机、Apple Silicon 虚拟机（仅 arm64 guest）、云 Mac（CI）。
 # 特点：无需 root、无需 Homebrew（tar.gz 解压到 ~/tools）、幂等。
@@ -95,7 +95,7 @@ NODE_HOME=""
 if node_satisfies_rea; then
   echo "[2/5] Node 已满足 REA 要求：$(node --version)"
 elif [ "$SKIP_NODE" = "1" ]; then
-  echo "[2/5] SKIP_NODE=1，跳过便携 Node 安装（请自行确保 Node 22.19+/24.11+/26+）"
+  echo "[2/5] SKIP_NODE=1，跳过便携 Node 安装（请自行确保 Node 22.23.4+/24.22.1+/26.12.1+，不支持 23/25）"
 else
   # v4.0.4：文案不写死“下载”——install_node_portable 优先复用 TOOLS_DIR 下已有便携 Node（FIX-5）。
   echo "[2/5] 准备便携 Node ${REA_NODE_VERSION}（darwin/${ARCH}；已存在则复用，不重复下载）..."

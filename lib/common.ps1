@@ -58,7 +58,7 @@ function Get-GhidraDirName { param($Cfg) "ghidra_$($Cfg.GHIDRA_VERSION)_PUBLIC" 
 # Adoptium Temurin JDK 21 Windows x64 zip（用户态免安装，302 重定向到具体文件）
 function Get-JdkUrl { param($Cfg) "https://api.adoptium.net/v3/binary/latest/$($Cfg.JDK_FEATURE)/ga/windows/x64/jdk/hotspot/normal/eclipse" }
 
-# Node 官方 Windows x64 zip（解压即用；REA 要求 ^22.19 || ^24.11 || >=26）
+# Node 官方 Windows x64 zip（解压即用；REA 要求 ^22.23.4 || ^24.22.1 || >=26.12.1，不支持 23/25）
 function Get-NodeZipUrl  { param($Cfg) "https://nodejs.org/dist/v$($Cfg.REA_NODE_VERSION)/node-v$($Cfg.REA_NODE_VERSION)-win-x64.zip" }
 function Get-NodeDirName { param($Cfg) "node-v$($Cfg.REA_NODE_VERSION)-win-x64" }
 
@@ -80,7 +80,8 @@ function Get-WindowsArch {
   } catch { return 'x64' }
 }
 
-# ---- Node 版本门禁：满足 ^22.19 || ^24.11 || >=26 ---------------------------
+# ---- Node 版本门禁：满足 ^22.23.4 || ^24.22.1 || >=26.12.1（不支持 23/25）----
+# 注意比较到 patch 段：22.23.2 / 24.22.0 / 26.0.0 均不满足 REA 6.8
 function Test-NodeVersion {
   param([string]$VersionString)
   if ($null -eq $VersionString) { return $false }
@@ -88,9 +89,20 @@ function Test-NodeVersion {
   if (-not $m.Success) { return $false }
   $major = [int]$m.Groups[1].Value
   $minor = [int]$m.Groups[2].Value
-  if ($major -ge 26) { return $true }
-  if ($major -eq 24 -and $minor -ge 11) { return $true }
-  if ($major -eq 22 -and $minor -ge 19) { return $true }
+  $patch = [int]$m.Groups[3].Value
+  if ($major -ge 27) { return $true }
+  if ($major -eq 26) {
+    if ($minor -gt 12) { return $true }
+    if ($minor -eq 12 -and $patch -ge 1) { return $true }
+  }
+  if ($major -eq 24) {
+    if ($minor -gt 22) { return $true }
+    if ($minor -eq 22 -and $patch -ge 1) { return $true }
+  }
+  if ($major -eq 22) {
+    if ($minor -gt 23) { return $true }
+    if ($minor -eq 23 -and $patch -ge 4) { return $true }
+  }
   return $false
 }
 

@@ -2,7 +2,7 @@
 # =============================================================================
 # REA + Ghidra 一键部署脚本（Linux：x86_64 完整支持 / arm64 需自建 native）
 #
-# 作用：在本机安装 Temurin JDK 21 + Ghidra +（可选）便携 Node 24.22.0，并配置 REA
+# 作用：在本机安装 Temurin JDK 21 + Ghidra +（可选）便携 Node 24.22.2，并配置 REA
 #       环境变量；arm64 上自动从源码构建 Ghidra native decompiler。
 # 适用环境：物理本机、虚拟机、WSL2、ChromeOS Crostini、云电脑（VDI）——同一套
 #           Linux 流程，仅在启动时打印检测到的环境。
@@ -104,7 +104,7 @@ NODE_HOME=""
 if node_satisfies_rea; then
   echo "[2/5] Node 已满足 REA 要求：$(node --version)"
 elif [ "$SKIP_NODE" = "1" ]; then
-  echo "[2/5] SKIP_NODE=1，跳过便携 Node 安装（请自行确保 Node 22.19+/24.11+/26+）"
+  echo "[2/5] SKIP_NODE=1，跳过便携 Node 安装（请自行确保 Node 22.23.4+/24.22.1+/26.12.1+，不支持 23/25）"
 else
   # v4.0.4：文案不写死“下载”——install_node_portable 内部会优先复用 TOOLS_DIR 下
   # 已满足 REA 的便携 Node（FIX-5 幂等），实际下载/复用由它打 stderr 日志说明。

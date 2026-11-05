@@ -13,10 +13,10 @@ Ghidra 12.x requires **exactly JDK 21**; the common error is system/CI default J
 - **CI/managed environments inject `JAVA_HOME=JDK17` per step** (overriding user values); `doctor.ps1`/`verify.ps1` now prefer `tools\jdk-21*` and rewrite `$env:JAVA_HOME`.
 - Too-new JDK (e.g. 25) may also be unsupported; use Temurin 21.
 
-### 2. Node version not satisfied (^22.19 || ^24.11 || >=26)
-- REA rejects Node 23/25 and older 22/24. The installer ships portable Node 24.22.0; with `SKIP_NODE=1` switch yourself.
+### 2. Node version not satisfied (^22.23.4 || ^24.22.1 || >=26.12.1)
+- REA 6.8 rejects Node 23/25 and older 22/24 (incl. 22.23.2 / 24.22.0). The installer ships portable Node 24.22.2; with `SKIP_NODE=1` switch yourself.
 - With fnm/nvm, watch the injected `NODE_VERSION`; this project names its var `REA_NODE_VERSION`.
-- Verify: `node --version` must be ≥ v24.11 (or v22.19 / v26+).
+- Verify: `node --version` must be ≥ v22.23.4 (or v24.22.1 / v26.12.1+).
 
 ### 3. Slow analysis / timeout / out-of-memory
 - Raise startup timeout: `REA_GHIDRA_STARTUP_TIMEOUT_MS=600000` (default 330000).

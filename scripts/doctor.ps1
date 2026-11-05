@@ -40,12 +40,12 @@ $node = Get-Command node -ErrorAction SilentlyContinue
 if ($node) {
   $nv = (& node --version 2>&1 | Out-String).Trim()
   if (Test-NodeVersion $nv) {
-    Add-Pass "Node $nv 满足 REA 要求（^22.19 || ^24.11 || >=26）"
+    Add-Pass "Node $nv 满足 REA 要求（^22.23.4 || ^24.22.1 || >=26.12.1）"
   } else {
-    Add-Fail "Node $nv 不满足要求：需 Node 22.19+ / 24.11+ / 26+（运行 install.ps1 会装便携 Node）"
+    Add-Fail "Node $nv 不满足要求：需 Node 22.23.4+ / 24.22.1+ / 26.12.1+（运行 install.ps1 会装便携 Node）"
   }
 } else {
-  Add-Fail "未找到 node：REA 要求 Node 22.19+ / 24.11+ / 26+（运行 install.ps1 会装便携 Node）"
+  Add-Fail "未找到 node：REA 要求 Node 22.23.4+ / 24.22.1+ / 26.12.1+（运行 install.ps1 会装便携 Node）"
 }
 
 # ---- 3. JDK 21 ------------------------------------------------------------

@@ -61,7 +61,7 @@ Edit `claude_desktop_config.json` (macOS `~/Library/Application Support/Claude/`
   "mcpServers": {
     "rea": {
       "command": "npx",
-      "args": ["-y", "rea-agents@6.5.0", "--mcp"]
+      "args": ["-y", "rea-agents@6.8.0", "--mcp"]
     }
   }
 }

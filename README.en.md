@@ -8,8 +8,8 @@ English | [简体中文](README.md)
 [![platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#which-one-should-i-use-quick-pick)
 [![ghidra](https://img.shields.io/badge/Ghidra-12.1.4-4b4a9b.svg)](#version-history)
 [![jdk](https://img.shields.io/badge/JDK-21-orange.svg)](#version-history)
-[![rea](https://img.shields.io/badge/rea-6.5.0-green.svg)](#version-history)
-[![node](https://img.shields.io/badge/Node-24.22.0-blue.svg)](#version-history)
+[![rea](https://img.shields.io/badge/rea-6.8.0-green.svg)](#version-history)
+[![node](https://img.shields.io/badge/Node-24.22.2-blue.svg)](#version-history)
 
 One-click deploy **REA (Reverse Engineer Anything) + Ghidra** on a cloud desktop / Linux server, so AI agents can analyze binaries, apps and captures and produce evidence-backed conclusions without source.
 
@@ -62,7 +62,7 @@ irm https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/instal
 
 Package-manager (Homebrew / Scoop) assets and steps: see [packaging/README.md](packaging/README.md). No npm wrapper by design (rationale there).
 
-You get JDK21 + Ghidra 12.1.4 + portable Node 24.22.0, automatically passing 9 end-to-end checks. Subcommands and self-update/rollback: see [docs/entry.en.md](docs/entry.en.md).
+You get JDK21 + Ghidra 12.1.4 + portable Node 24.22.2, automatically passing 9 end-to-end checks. Subcommands and self-update/rollback: see [docs/entry.en.md](docs/entry.en.md).
 
 ## Which one should I use? (quick pick)
 
@@ -112,14 +112,14 @@ int secret_check(int code)
 }
 ```
 
-Measured numbers (Ubuntu 22.04 x86_64): `verify` 9/9; `doctor` 7 pass / 2 warn / 0 fail; `export demo --kind all` → functions 21 / strings 83 / symbols 102 / calls 14 / decompiled 18; batch 3 targets first ~48s → second cached run ~1s (3/3 cached); MCP handshake `server=rea 6.5.0`, provider 12.1.4.
+Measured numbers (Ubuntu 22.04 x86_64): `verify` 9/9; `doctor` 7 pass / 2 warn / 0 fail; `export demo --kind all` → functions 21 / strings 83 / symbols 102 / calls 14 / decompiled 18; batch 3 targets first ~48s → second cached run ~1s (3/3 cached); MCP handshake `server=rea 6.8.0`, provider 12.1.4.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
     Entry["Unified entry rea-ghidra"] --> Ins["install.sh / install-macos.sh / install.ps1"]
-    Ins --> Tools[("~/tools<br/>JDK21 · Ghidra 12.1.4 · portable Node 24.22.0<br/>current-ghidra / current-jdk symlinks")]
+    Ins --> Tools[("~/tools<br/>JDK21 · Ghidra 12.1.4 · portable Node 24.22.2<br/>current-ghidra / current-jdk symlinks")]
     Tools --> P1["① REA MCP server<br/>↔ Claude / Cursor"]
     Tools --> P2["② Ghidra headless<br/>analyze / decompile"]
     Tools --> P3["③ export / batch<br/>static export JSON / C"]
@@ -155,7 +155,7 @@ bash verify.sh        # 9 end-to-end analyze/decompile assertions
 ## Docker
 
 ```bash
-# Build image (JDK21 + portable Node 24.22.0 + Ghidra 12.1.4 + global rea)
+# Build image (JDK21 + portable Node 24.22.2 + Ghidra 12.1.4 + global rea)
 docker build -t rea-ghidra .
 ```
 
@@ -185,7 +185,7 @@ End-to-end REA + Ghidra deploy on Linux/macOS/Windows/ChromeOS/Docker; user-leve
 
 - Windows P0 supports only fixed local NTFS (no UNC/network/reparse); Windows on ARM64 unsupported (no upstream native).
 - ChromeOS only via Crostini; bare-metal Linux arm64 and macOS Intel have no CI runner (documented only).
-- Requires JDK **exactly 21** and Node ≥24.11 (or ≥22.19/26).
+- Requires JDK **exactly 21** and Node ≥24.22.1 (or ≥22.23.4 / ≥26.12.1; Node 23/25 unsupported).
 
 ## Compliance / legal
 
