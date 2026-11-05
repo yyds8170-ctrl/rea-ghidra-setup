@@ -4,6 +4,29 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.0.0] - 2026-11-05（收官：最终发布验证报告，为 Release 做准备）
+
+v5.2.0→v5.6.0 能力与自动化全部就位后的**收官版本**：新增双语最终发布验证报告，
+把本机实测、完整 CI、领域案例、多架构 fixture、MCP 握手的验证结论一次性对齐；
+命令基线仍为 **175 个真实命令**（另有 completions / mcp 两个集成入口不计入）。
+本版**不改任何功能行为**，只补验证文档并升级版本号；不 push、不打 tag。
+
+### Added
+- 新增双语最终发布验证报告 [`docs/release-validation.md`](docs/release-validation.md) / [`docs/release-validation.en.md`](docs/release-validation.en.md)：验证总览（verify.sh 9/9、完整 CI 9/9、domain-cases 16 passed/0 failed/0 skipped、fixture-multiarch 三架构、MCP 握手）；按 10 领域与 5 类可测性的覆盖矩阵摘要；v5.2.0→v5.6.0 改动摘要；风险与已知限制；Release 资产说明。
+- `README.md` / `README.en.md` 与 `docs/README.md` / `docs/README.en.md` 加入口指向验证报告。
+
+### 验证（与本报告一致）
+- 本机 `bash verify.sh` **9/9 通过**（JDK21 + Ghidra 12.1.4，analyze procs=28 / strings=83）。
+- 完整 CI **9 条腿全绿**：lint-build、lint-ps、e2e（linux/macos/windows）、docker、docker-arm64、checksum、fixture-multiarch、domain-cases。
+- domain-cases 真实 **16 passed / 0 failed / 0 skipped**；fixture-multiarch 断言 ELF32=`x86:LE:32`、AArch64=`AARCH64:LE:64`、PE32 导入成功；MCP stdio 握手返回 `server=rea 6.8.0`。
+- 覆盖矩阵实测：10 领域 20/20/15/28/33/9/15/9/16/10=175；可测性 78 linux-testable / 35 needs-tool / 50 needs-device / 8 needs-macos / 4 needs-jeb=175。
+- `shellcheck -x` 0 告警；bash3.2 自定义 grep 无输出（rc=1）；`scripts/check-docs-links.sh` 死链 0；`rea-ghidra version --raw` = 6.0.0 与 `VERSION` 一致。
+
+### 未实测 / 风险项（详见验证报告）
+- weekly-audit 的「开 PR→CI 门禁→squash 合并→blocked issue」写路径因无真实漂移且不得制造漂移，未做端到端，仅脚本级 / 静态验证。
+- needs-device（50）/ needs-macos（8）/ needs-jeb（4）在本环境无法验证，仅文档化，不冒充实测。
+- 合并 patch 升级进 main 不自动发版；Release 仍需人工打 `v*` 标签。
+
 ## [5.6.0] - 2026-11-05（Linux CI 领域案例：把可测性命令真正纳入自动化断言）
 
 把能力地图里"✅ 本机可实测 / 🔧 需安装工具"的命令从文档标注升级为 **CI 真实跑通并断言**；本机无 Android 真机 / JEB / macOS / docker，凡前置不可得一律显式 skip 并写明原因，绝不把 needs-device / needs-macos / needs-jeb 写成已测。

@@ -37,4 +37,5 @@ This directory organizes deployment, verification and usage docs for REA + Ghidr
 ## Versions
 
 - Single source of versions: [`config/versions.env`](../config/versions.env) (locked Ghidra / JDK / Node / REA).
+- Final pre-release validation report (local verify, full CI, domain cases, multi-arch fixture, MCP handshake, the 175-command coverage matrix and known limits): [release-validation.en.md](release-validation.en.md).
 - Changelog history: [`README.md`](../README.md#版本历史) (Chinese); releases on GitHub Releases.

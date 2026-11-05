@@ -69,6 +69,8 @@ irm https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/instal
 
 能力地图里"本机可测/需安装工具"的命令已由 `scripts/run-domain-cases.sh` 纳入 Linux CI 自动化断言（多格式 pyc/sqlite/wasm/pcap、objdump/pwntools/gdb/rizin、平台自检；前置缺失显式 skip），覆盖清单与 passed/skipped 口径见 [docs/domain-cases.md](docs/domain-cases.md)。
 
+打 `v*` 标签发版前的最终验证结论（verify.sh 9/9、完整 CI 9/9、domain-cases 16/0/0、三架构 fixture、MCP 握手、175 命令覆盖矩阵与已知限制）汇总在 [docs/release-validation.md](docs/release-validation.md)。
+
 ## 我该用哪个？（快速选择）
 
 ```mermaid

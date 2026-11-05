@@ -68,6 +68,8 @@ To call REA directly, use the unified wrapper: `./rea-ghidra run <command> [--js
 
 Capability-map commands marked "testable on Linux / requires tool" are now asserted in Linux CI by `scripts/run-domain-cases.sh` (multiformat pyc/sqlite/wasm/pcap, objdump/pwntools/gdb/rizin, platform self-checks; missing prerequisites are explicitly skipped). Coverage and the passed/skipped contract: [docs/domain-cases.en.md](docs/domain-cases.en.md).
 
+The final pre-release validation summary (verify.sh 9/9, full CI 9/9, domain-cases 16/0/0, three-arch fixture, MCP handshake, the 175-command coverage matrix and known limits) is collected in [docs/release-validation.en.md](docs/release-validation.en.md).
+
 ## Which one should I use? (quick pick)
 
 ```mermaid

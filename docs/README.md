@@ -47,4 +47,5 @@
 ## 版本
 
 - 版本号单一事实源：[`config/versions.env`](../config/versions.env)（Ghidra / JDK / Node / REA 锁定版本）。
+- 打 `v*` 标签发版前的最终验证报告（本机 verify、完整 CI、领域案例、多架构 fixture、MCP 握手、175 命令覆盖矩阵与已知限制）：[release-validation.md](release-validation.md)。
 - 变更历史见根目录 [`README.md`](../README.md#版本历史) 的「版本历史」；发布标签见 GitHub Releases。
