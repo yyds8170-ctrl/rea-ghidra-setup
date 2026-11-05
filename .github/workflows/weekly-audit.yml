@@ -66,7 +66,7 @@ jobs:
     outputs:
       drift_json: ${{ steps.collect.outputs.drift_json }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -124,7 +124,7 @@ jobs:
     needs: detect
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v4
         with:
           name: weekly-audit-drift
@@ -196,7 +196,7 @@ jobs:
     outputs:
       results_json: ${{ steps.prs.outputs.results_json }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: actions/setup-node@v4
