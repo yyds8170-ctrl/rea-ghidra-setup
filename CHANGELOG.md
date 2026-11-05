@@ -4,6 +4,19 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.0.5] - 2026-11-05（离线清单精确化 + 凭证防泄露纵深防御）
+
+### Fixed
+- **离线包清单混入陈旧文件**：`prepare-offline.sh` 原用通配符 `*.tar.gz/*.tgz/*.zip` 生成 SHA256SUMS，会把目录里残留的旧版本（node-v24.22.0、rea-agents-6.5.0）和跨平台包（windows zip）误纳入清单。改为显式枚举本次构建声明的当前版本/当前平台文件，清单只含 JDK、Node、Ghidra、REA 四个当前产物。
+
+### Security
+- **.gitignore 凭证纵深防御**：新增 `.env`、`.credentials*`、`*.pem`、`*.key`、`*.p12`、`id_rsa*`、`*.secret`、`*.token` 等敏感文件忽略规则（精确匹配 `.env`，不影响需入库的 `config/versions.env`）。
+- 全量安全审计确认：工作副本、git 全历史、所有远端分支（含 dependabot）均无任何真实密钥；所有 Authorization 仅引用环境变量/GitHub 临时 token，无硬编码；远端已启用 Secret scanning 与 push protection，无自定义 Actions secret。
+
+### 验证
+- verify 9/9、shellcheck、versions.env 正常入库不回退。
+
+
 ## [6.0.4] - 2026-11-05（端到端能力真实跑通 + 虚拟化文件系统删除加固）
 
 把此前只做静态/脚本级验证的几条核心链路全部真实端到端跑通，并修复一个构建健壮性问题。

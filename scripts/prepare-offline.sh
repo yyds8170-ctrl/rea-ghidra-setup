@@ -99,9 +99,12 @@ else
 fi
 
 # ---- 生成清单（离线机据此强校验）-------------------------------------------
+# 显式枚举本次构建声明的当前版本/当前平台文件，避免目录里残留的旧版本（如
+# node-v24.22.0、rea-agents-6.5.0）或跨平台包（windows zip）被通配符误纳入清单。
 echo "[清单] 生成 SHA256SUMS.txt"
 : > SHA256SUMS.txt
-for f in *.tar.gz *.tgz *.zip; do
+REA_TGZ="rea-agents-${REA_VERSION}.tgz"
+for f in "$JDK_PKG" "$NODE_PKG" "$GHIDRA_PKG" "$REA_TGZ"; do
   [ -e "$f" ] || continue
   cs_sha256 "$f" | awk -v n="$f" '{print $1"  "n}' >> SHA256SUMS.txt
 done

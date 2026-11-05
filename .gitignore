@@ -46,3 +46,16 @@ __pycache__/
 *.pyc
 .idea/
 .vscode/
+
+# 凭证/密钥文件（纵深防御，防止误提交；注意 versions.env 是版本号文件需入库，故不写 *.env）
+.env
+.env.*
+.credentials*
+credentials.*
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa*
+*.secret
+*.token
