@@ -66,6 +66,8 @@ You get JDK21 + Ghidra 12.1.4 + portable Node 24.22.2, automatically passing 9 e
 
 To call REA directly, use the unified wrapper: `./rea-ghidra run <command> [--json|--out <file>|--quiet] [-- passthrough...]`, plus `domains` and `d1..d10` domain entries (which validate command membership and layer stable exit codes 0/2/3/4). See [docs/command-wrapper.en.md](docs/command-wrapper.en.md).
 
+Capability-map commands marked "testable on Linux / requires tool" are now asserted in Linux CI by `scripts/run-domain-cases.sh` (multiformat pyc/sqlite/wasm/pcap, objdump/pwntools/gdb/rizin, platform self-checks; missing prerequisites are explicitly skipped). Coverage and the passed/skipped contract: [docs/domain-cases.en.md](docs/domain-cases.en.md).
+
 ## Which one should I use? (quick pick)
 
 ```mermaid

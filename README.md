@@ -67,6 +67,8 @@ irm https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/instal
 
 直接调用 REA 时用统一包装器：`./rea-ghidra run <命令> [--json|--out <文件>|--quiet] [-- 透传...]`，另有 `domains` 与 `d1..d10` 领域入口（校验命令归属、叠加稳定退出码 0/2/3/4），详见 [docs/command-wrapper.md](docs/command-wrapper.md)。
 
+能力地图里"本机可测/需安装工具"的命令已由 `scripts/run-domain-cases.sh` 纳入 Linux CI 自动化断言（多格式 pyc/sqlite/wasm/pcap、objdump/pwntools/gdb/rizin、平台自检；前置缺失显式 skip），覆盖清单与 passed/skipped 口径见 [docs/domain-cases.md](docs/domain-cases.md)。
+
 ## 我该用哪个？（快速选择）
 
 ```mermaid

@@ -28,5 +28,8 @@ examples/fixtures/
 # v3.4 端到端案例库编译产物（源码在 examples/cases/，运行 run-cases 生成）
 examples/cases/build/
 
+# v5.6.0 领域案例多格式样本（源文件在 examples/domain-fixtures_src/，运行 build-domain-fixtures 生成）
+examples/domain-fixtures/
+
 # mkdocs 构建产物（pages.yml 现构建现部署，不入库）
 site/

@@ -4,6 +4,31 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [5.6.0] - 2026-11-05（Linux CI 领域案例：把可测性命令真正纳入自动化断言）
+
+把能力地图里"✅ 本机可实测 / 🔧 需安装工具"的命令从文档标注升级为 **CI 真实跑通并断言**；本机无 Android 真机 / JEB / macOS / docker，凡前置不可得一律显式 skip 并写明原因，绝不把 needs-device / needs-macos / needs-jeb 写成已测。
+
+### Added
+- 新增 [`scripts/build-domain-fixtures.sh`](scripts/build-domain-fixtures.sh)：多格式小样本生成器。产物 `examples/domain-fixtures/`（gitignore）：`sample.pyc`（py_compile）、`sample.db`（stdlib sqlite3 建表插行）、`sample.pcap`（struct 拼 libpcap + 1 个以太/IP/TCP 包）、`add.wasm`/`sub.wasm`（wat2wasm 编译）。源文件入库 `examples/domain-fixtures_src/`（`sample.py`、`add.wat`、`sub.wat`）；ELF 多架构 fixture 复用 `build-fixtures.sh`。
+- 新增 [`scripts/run-domain-cases.sh`](scripts/run-domain-cases.sh)：逐条走 `lib/rea-wrap.sh`（统一 `--json`/退出码）对"样本+命令"断言——成功须 exit 0 且 JSON 含预期字段，失败即非 0；工具/样本/运行时版本轮廓缺失计 skip 并打印原因，末尾输出 `passed/failed/skipped` 计数，failed>0 才非 0 退出。
+- `ci.yml` 新增 `domain-cases` 作业（仅 schedule/workflow_dispatch，参照 fixture-multiarch 写法）：ubuntu-latest（24.04 自带 Wireshark 4.x）+ Node 24（REA sqlite provider 需 ≥24.15）；apt 装 binutils/gdb/tshark/rizin（单项失败不阻断，靠运行器 skip）；官方 release 拉 WABT 1.0.42 解到 `~/.local/wabt-1.0.42`（REA 钉死版本）；venv 装钉死 pwntools 4.15.0/pyelftools 0.33/unicorn 2.1.2 到 `/opt/rea-pwntools-env`。不依赖 Ghidra/JDK（全部非 d1 命令）。
+- 新增双语文档 [`docs/domain-cases.md`](docs/domain-cases.md) / [`docs/domain-cases.en.md`](docs/domain-cases.en.md)：覆盖命令清单、passed/skipped 口径、与能力地图可测性的对应；README(.en) 与 `docs/capability-map/README.md` 加入口。
+- `.gitignore` 增加 `examples/domain-fixtures/`。
+
+### 覆盖命令（16 条）
+- 离线二进制：`inspect-with-objdump`、`list-objdump-architectures`（binutils）、`inspect-binary-layout`（pwntools 钉死组合）。
+- 多格式：`inspect-python-pyc`、`inspect-sqlite-database`、`inspect-wasm-artifact`、`compare-wasm-interfaces`（wabt 1.0.42）、`inspect-pcap-client`/`inspect-pcap-capture`（Wireshark 4.x）。
+- 动态：`debug-with-gdb`（pty 作 --inferior-tty）、`execute-rizin-command`/`debug-with-rizin`（rizin 若可装）。
+- Evidence/平台自检：`inspect-artifact`、`inspect-byte-entropy`、`inspect-elf-notes`、`capabilities`。
+
+### 验证（本机实测）
+- 本机装好 wabt 1.0.42 / gdb / pwntools 钉死 venv 后真实跑 `run-domain-cases.sh`：**passed=11 / failed=0 / skipped=5**（sqlite 因本机 Node 22、pcap 因本机 Wireshark 3.6.2、rizin 未装，均按设计 skip；CI 用 Node 24 + Wireshark 4.x + rizin 安装后转 PASS）。
+- `shellcheck -x` 0 告警；bash3.2 `$变量`紧邻非 ASCII 检查 0 命中；`check-docs-links.sh` 死链 0。
+
+### 未实测 / 风险项
+- 本机无 rizin、无 Node 24、无 Wireshark 4.x：对应案例在本机为 skip，**其 CI 通过路径待 CI 实跑验证**；作业已对单工具安装失败做非阻断兜底。
+- `compare-wasm-interfaces` 的 left/right Evidence 输入结构经 wabt 1.0.42 本机实跑验证为 `{left,right,scope:"exports"}`。
+
 ## [5.5.0] - 2026-11-05（每周自动巡检 + 自动升级流水线，GitHub Actions）
 
 新增 `weekly-audit` 工作流：每周一 04:10 UTC 只读探测四路依赖上游漂移，绝不直推 main；patch 级自动开 PR、CI 绿后直接 squash 合并，minor/major 与命令删改等人审，CI 红开「受阻」issue。

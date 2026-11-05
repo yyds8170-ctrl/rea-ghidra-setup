@@ -494,3 +494,67 @@ jobs:
           OUT="$(mktemp -d)"
           scripts/ghidra-export.sh examples/fixtures/pe32.exe --out "$OUT" --kind functions 2>&1 | tee /tmp/pe.log
           test -s "$OUT/functions.json" || { echo "PE32 导出为空"; exit 1; }
+
+  # v5.6.0 领域案例回归：把能力地图里"本机可测/需安装工具"的命令真正纳入自动化断言。
+  # 仅 schedule / workflow_dispatch 跑。不依赖 Ghidra（全部为非 d1 命令），
+  # 但需要 Node 24（REA sqlite provider 的 DatabaseSync.limits）与若干外部工具。
+  # 单个工具装不上不阻断：运行器会把对应案例显式计 skip（见 scripts/run-domain-cases.sh）。
+  domain-cases:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest   # 24.04：tshark/capinfos 为 Wireshark 4.x，满足 REA pcap provider
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 安装 Node 24（REA sqlite provider 需 >=24.15；REA 整体支持 24.22.1+）
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 缓存 npx 包（rea-agents 只随版本变）
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm/_npx
+          key: npx-rea-agents-6.8.0
+
+      - name: 安装系统工具（binutils/gdb/tshark/rizin 等；单项失败不阻断，靠运行器 skip）
+        run: |
+          sudo apt-get update -qq
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            binutils file gdb tshark capinfos python3 python3-pip gcc || true
+          # rizin 在 Ubuntu universe 里可能没有；装不上就 skip，不阻断
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq rizin || true
+
+      - name: 准备钉死版本的 WABT 1.0.42（REA 只认 wasm-objdump/wasm2wat/wasm-validate == 1.0.42）
+        run: |
+          set -e
+          mkdir -p "$HOME/.local/wabt-1.0.42"
+          curl -fsSL -o /tmp/wabt.tar.gz \
+            "https://github.com/WebAssembly/wabt/releases/download/1.0.42/wabt-1.0.42-linux-x64.tar.gz"
+          tar -xzf /tmp/wabt.tar.gz -C "$HOME/.local/wabt-1.0.42" --strip-components=1
+          "$HOME/.local/wabt-1.0.42/bin/wasm-objdump" --version
+
+      - name: 准备钉死版本的 pwntools 组合（venv 放 HOME 外的绝对路径，避免 REA 子进程 HOME 差异）
+        run: |
+          set -e
+          sudo python3 -m venv /opt/rea-pwntools-env
+          sudo /opt/rea-pwntools-env/bin/pip install --quiet \
+            "pwntools==4.15.0" "pyelftools==0.33" "unicorn==2.1.2"
+
+      - name: 编译 ELF 多架构 fixture（至少产出 linux_x86_64）
+        run: bash scripts/build-fixtures.sh
+
+      - name: 生成多格式样本（pyc/sqlite/pcap/wasm）
+        run: bash scripts/build-domain-fixtures.sh
+
+      - name: 跑领域案例断言（要求 failed=0；skipped 允许）
+        env:
+          REA_PWNTOOLS_PYTHON: /opt/rea-pwntools-env/bin/python
+        run: |
+          set -e
+          # wabt 钉死版本放在 HOME 下绝对路径；runner 自己也会探测版本轮廓
+          export REA_WABT_BIN_DIRECTORY="$HOME/.local/wabt-1.0.42/bin"
+          test -x "$REA_WABT_BIN_DIRECTORY/wasm-objdump"
+          bash scripts/run-domain-cases.sh 2>&1 | tee /tmp/domain-summary.txt
+          # 脚本失败即非 0 退出；这里再兜底断言计数行
+          grep -Eq '汇总：passed=[0-9]+ failed=0 skipped=[0-9]+' /tmp/domain-summary.txt

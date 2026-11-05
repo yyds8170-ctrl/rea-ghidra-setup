@@ -27,6 +27,7 @@ The often-quoted "176 commands" resolves to **175 actual Commands**; two additio
 | **合计 / Total** | | **175** |
 | 附录：集成入口 Integrations | [integrations.md](integrations.md) | 2 |
 | 全量覆盖矩阵 Coverage matrix | [coverage-matrix.md](coverage-matrix.md) | 175 行 |
+| v5.6.0 领域案例自动化断言 / Domain cases CI | [../domain-cases.md](../domain-cases.md)（[EN](../domain-cases.en.md)） | 16 命令 |
 
 ## 可测性图例 / Testability legend
 
