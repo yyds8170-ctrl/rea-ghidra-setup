@@ -501,7 +501,7 @@ jobs:
   # 单个工具装不上不阻断：运行器会把对应案例显式计 skip（见 scripts/run-domain-cases.sh）。
   domain-cases:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest   # 24.04：tshark/capinfos 为 Wireshark 4.x，满足 REA pcap provider
+    runs-on: ubuntu-latest   # 24.04：tshark 为 Wireshark 4.x，满足 REA pcap provider
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -517,12 +517,15 @@ jobs:
           path: ~/.npm/_npx
           key: npx-rea-agents-6.8.0
 
-      - name: 安装系统工具（binutils/gdb/tshark/rizin 等；单项失败不阻断，靠运行器 skip）
+      - name: 安装系统工具（核心包装不上即失败；rizin 可选）
         run: |
+          # capinfos 不是独立包名（随 tshark/wireshark 一起装）；漏写会让 apt 中止整批
+          sudo add-apt-repository -y universe
           sudo apt-get update -qq
+          # 核心工具不用 || true 掩盖：装不上就显式失败，而不是整批静默跳过
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
-            binutils file gdb tshark capinfos python3 python3-pip gcc || true
-          # rizin 在 Ubuntu universe 里可能没有；装不上就 skip，不阻断
+            binutils file gdb tshark python3 python3-pip gcc
+          # rizin 在 universe；装不上不阻断，运行器会把两条 rizin 案例计 skip
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq rizin || true
 
       - name: 准备钉死版本的 WABT 1.0.42（REA 只认 wasm-objdump/wasm2wat/wasm-validate == 1.0.42）
@@ -533,6 +536,8 @@ jobs:
             "https://github.com/WebAssembly/wabt/releases/download/1.0.42/wabt-1.0.42-linux-x64.tar.gz"
           tar -xzf /tmp/wabt.tar.gz -C "$HOME/.local/wabt-1.0.42" --strip-components=1
           "$HOME/.local/wabt-1.0.42/bin/wasm-objdump" --version
+          # 把 wat2wasm 放进后续步骤 PATH：build-domain-fixtures 需要它编译 .wasm
+          echo "$HOME/.local/wabt-1.0.42/bin" >> "$GITHUB_PATH"
 
       - name: 准备钉死版本的 pwntools 组合（venv 放 HOME 外的绝对路径，避免 REA 子进程 HOME 差异）
         run: |

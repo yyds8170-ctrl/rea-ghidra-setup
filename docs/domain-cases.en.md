@@ -65,6 +65,14 @@ bash scripts/run-domain-cases.sh
 
 - Triggers: `schedule` / `workflow_dispatch` (same as fixture-multiarch).
 - Runner: `ubuntu-latest` (24.04 ships Wireshark 4.x).
-- Node **24** (sqlite provider); apt installs binutils/gdb/tshark/rizin (per-item failure non-blocking); official **WABT 1.0.42** release unpacked to `~/.local/wabt-1.0.42`; pinned pwntools venv at `/opt/rea-pwntools-env`.
+- Node **24** (sqlite provider); core apt packages binutils/gdb/tshark installed hard-fail (no masking); official **WABT 1.0.42** release unpacked to `~/.local/wabt-1.0.42` and its bin appended to `$GITHUB_PATH` (so later build/run steps find wat2wasm on PATH); pinned pwntools venv at `/opt/rea-pwntools-env`; rizin attempted separately with `|| true` from universe, else its two cases stay skipped.
 - No Ghidra/JDK required (all commands are outside 1-core-native), lighter than e2e.
 - Final assertion: `summary line 汇总：passed=N failed=0 skipped=M`.
+
+## Real counts
+
+- **Local (Linux x86_64, with wabt 1.0.42 + gdb + pinned pwntools venv)**：`passed=11 failed=0 skipped=5`.
+  skips: sqlite (local Node 22; provider needs Node ≥24), pcap pair (local Wireshark 3.6.2; needs 4.x), rizin pair (not installed locally).
+- **CI (Node 24 + ubuntu-24.04 Wireshark 4.x + wabt 1.0.42 + pinned pwntools)**：expected `passed=14 failed=0 skipped=2`——
+  sqlite / pcap×2 / wasm×2 / gdb all flip to PASS in CI; the 2 skips are rizin (`execute-rizin-command` / `debug-with-rizin`).
+  If CI's universe resolves rizin, it becomes `passed=16 failed=0 skipped=0`. **When rizin cannot be installed on the runner, those two cases stay skipped and are never written as tested.**
