@@ -63,12 +63,15 @@ function Run-Target([string]$script, [string[]]$rest) {
 }
 
 function Get-Version {
+  # 显式开关参数：不依赖函数内 $args 自动变量（splat 透传时 --raw 这类带连字符的
+  # 元素在某些绑定路径下不会稳定进入 $args，导致 raw 分支失效、版本断言拿到空值）
+  param([switch]$Raw, [switch]$Check)
   $v = 'unknown'
   try { $v = (Get-Content (Join-Path $RepoDir 'VERSION') -ErrorAction Stop).Trim() } catch {}
-  # --raw：只把版本号写到成功流（供脚本/CI 精确比对；Write-Output 可被管道捕获，不依赖 Write-Host 宿主流）
-  if ($args -contains '--raw') { Write-Output $v; return }
+  # -Raw：只把版本号写到成功流（供脚本/CI 精确比对；Write-Output 可被管道捕获，不依赖 Write-Host 宿主流）
+  if ($Raw) { Write-Output $v; return }
   Write-Host "当前版本：$v"
-  if ($args -contains '--check') {
+  if ($Check) {
     try {
       $meta = Invoke-RestMethod -Uri 'https://api.github.com/repos/yyds8170-ctrl/rea-ghidra-setup/releases/latest' -TimeoutSec 10
       Write-Host "最新 release：$($meta.tag_name)"
@@ -247,7 +250,9 @@ switch -Wildcard ($sub) {
   'batch'     { Run-Target 'scripts\batch-analyze.ps1' $rest }
   'fixtures'  { Write-Host 'fixtures 需要 i686/aarch64/mingw 交叉工具链（Linux），请在 WSL 或 CI ubuntu 作业运行：bash scripts/build-fixtures.sh'; exit 0 }
   'walkthrough' { Write-Host 'walkthrough 是 bash 演练脚本，请在 WSL 或 CI linux 运行：bash examples/walkthrough.sh'; exit 0 }
-  'version'   { Get-Version @rest; exit 0 }
+  # 用户入口沿用原生命令风格 --raw/--check；PowerShell 函数开关需单连字符，
+  # 数组 splat 无法把 "--raw" 绑定到 [switch]，这里显式映射，避免版本断言拿到空值。
+  'version'   { Get-Version -Raw:($rest -contains '--raw') -Check:($rest -contains '--check'); exit 0 }
   'current'   { Show-Current; exit 0 }
   'rollback'  { Invoke-Rollback; exit 0 }
   'self-update' { Invoke-SelfUpdate -Rest $rest; exit 0 }

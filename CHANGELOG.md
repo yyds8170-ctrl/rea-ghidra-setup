@@ -4,6 +4,19 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.0.2] - 2026-11-05（修复 version --raw 开关绑定，Windows e2e 回归）
+
+v6.0.1 全量 CI 的 e2e windows 失败，定位为 PowerShell 参数绑定问题并修复。
+
+### Fixed
+- **根因**：入口 `version --raw` 用双连字符（原生命令风格），但 PowerShell 函数开关需单连字符；数组 splat `Get-Version @rest` 按位置绑定，`--raw` 无法命中 `[switch]$Raw`，被静默忽略，导致 CI 版本断言拿到空值而失败。
+- Get-Version 改用显式 `param([switch]$Raw,[switch]$Check)`；version 分支显式映射 `--raw/--check` 到开关（`-Raw:($rest -contains '--raw')`），用户入口风格不变。
+
+### 验证
+- Linux pwsh 实测 `version --raw` 正确返回版本号、无参/--check 正常；语法解析 0 错误。
+- verify 9/9 不回退；其余 8 个 CI 作业在 v6.0.1 已通过，本版重跑全量确认。
+
+
 ## [6.0.1] - 2026-11-05（PowerShell 跨平台健壮性修复）
 
 在 Linux pwsh 上对全部 13 个 ps1 做真实运行测试（此前只做语法解析）发现并修复 4 个问题，bash 侧无改动。

@@ -507,6 +507,8 @@ scripts/web-analyze.sh --har ./抓包.har                            # HAR 离�
 
 ## 版本历史
 
+- **v6.0.2（2026-11-05，修复 version --raw 开关绑定）**
+  - 修复 Windows e2e：PowerShell 双连字符开关无法绑定的问题，version 分支显式映射，CI 版本断言恢复。
 - **v6.0.1（2026-11-05，PowerShell 跨平台健壮性修复）**
   - 修复主入口单参数反向范围 bug、四个 Windows 专用脚本加平台守卫（非 Windows 不再崩溃）、参数错误改友好提示。Linux pwsh 实测 13 个 ps1 全通过，175 基线对账无缺无多。
 - **v6.0.0（2026-11-05，收官里程碑）**
