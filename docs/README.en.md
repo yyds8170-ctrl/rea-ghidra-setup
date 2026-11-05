@@ -28,6 +28,7 @@ This directory organizes deployment, verification and usage docs for REA + Ghidr
 
 ## Operations
 
+- [weekly-audit.md](weekly-audit.en.md): weekly auto-audit & auto-upgrade pipeline (drift probe / patch auto-PR / direct squash merge after CI gate / blocked issues).
 - [troubleshooting.md](troubleshooting.en.md): cross-platform issues (JDK version, Node gate, Gatekeeper, native build, Windows PATH, Docker).
 - [platform-support-matrix.md](platform-support-matrix.en.md): 4 OS × 5 runtimes support matrix.
 

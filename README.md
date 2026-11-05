@@ -408,6 +408,7 @@ scripts/web-analyze.sh --har ./抓包.har                            # HAR 离�
 - **能离线 / 内网部署吗？** 能。有网机器用 `prepare-offline` 准备已校验离线包，内网 `OFFLINE_DIR` 离线安装。见 [docs/offline.md](docs/offline.md)。
 - **如何卸载？** Linux `./uninstall.sh`、macOS `./uninstall-macos.sh`、Windows `.\uninstall.ps1`，只删本项目安装内容。
 - **如何自更新 / 回滚？** `./rea-ghidra self-update`（git 副本 ff-only；tarball 副本校验 checksums 后覆盖，旧文件自动备份）；多版本并存时 `current` 查看、`rollback` 切回。见 [docs/entry.md](docs/entry.md)。
+- **上游新版谁来跟？** 仓库每周一 UTC 自动巡检 rea-agents / Ghidra / JDK21 / Node 上游漂移：patch 级自动开 PR、CI 绿后直接 squash 合并，minor/major 与命令删改等人审。见 [docs/weekly-audit.md](docs/weekly-audit.md)。
 - **Windows SmartScreen / macOS Gatekeeper 拦截？** Windows 用户态 zip 提示点“仍要运行”；macOS 安装脚本自动解除隔离属性。详见平台文档。
 - **能并存多个 Ghidra 版本吗？** 可以，都解压到 `~/tools`；`current-ghidra` 软链指向当前生效版本，`rollback` 在并存多版本目录时切换。
 

@@ -4,6 +4,32 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [5.5.0] - 2026-11-05（每周自动巡检 + 自动升级流水线，GitHub Actions）
+
+新增 `weekly-audit` 工作流：每周一 04:10 UTC 只读探测四路依赖上游漂移，绝不直推 main；patch 级自动开 PR、CI 绿后直接 squash 合并，minor/major 与命令删改等人审，CI 红开「受阻」issue。
+
+### Added
+- 新增 [`.github/workflows/weekly-audit.yml`](.github/workflows/weekly-audit.yml)：`schedule`（cron `10 4 * * 1`）+ `push`（paths 兜底续命）+ `workflow_dispatch`（`dry_run` 默认 true / `force_upgrade`）。job 流 `detect → report-issue → open-upgrade-pr → ci-gate → tiered-merge/blocked`；产生副作用的步骤严格 gated on `dry_run=false`，dry-run 只 `console.log`。permissions 最小化 `contents/pull-requests/issues: write` + `actions: write`（派 ci.yml 与轮询所需），不开 `workflows:` 写。
+- 新增 [`scripts/audit_collect_drift.py`](scripts/audit_collect_drift.py)：读 `config/versions.env`，实测 npm `rea-agents/latest`、Ghidra `releases/latest`、Adoptium `feature_releases/21/ga`、nodejs dist 同 major 最新 LTS，输出 `drift.json`（每项 `dep/locked/upstream/level/note`），含 engines 变化比对与命令清单 diff；任一路探测失败降级为 `level=unknown`，不崩溃。
+- 新增 [`scripts/audit_bump_and_branch.sh`](scripts/audit_bump_and_branch.sh)：仅对 `level=patch` 机械改 `config/versions.env`（ghidra 连带替换 `ci.yml` 里硬编码版本点），建分支 `chore/upgrade-<dep>-<newver>`、跑 `check-versions.sh` 自检不过即走 blocked；默认 dry-run，`--apply` 才改本地，`AUDIT_PUSH=1` 才 push。
+- 新增双语文档 [`docs/weekly-audit.md`](docs/weekly-audit.md) / [`docs/weekly-audit.en.md`](docs/weekly-audit.en.md)：流水线总览、触发与兜底、漂移端点、PR/issue 去重命名约定、CI 门禁、分级合并、受阻 issue、命令演进 diff；`README(.en)` FAQ 与 docs 索引加入口。
+
+### Changed / 合并策略（与旧设计的关键差异）
+- **不使用 GitHub `enable-auto-merge`**：本仓库规则集「Protect main」只含 deletion + non_fast_forward，无 required status checks、仓库级 `allow_auto_merge=false`。故 patch 级且 CI 绿时，由 `ci-gate` 轮询确认后**直接调合并 API** `PUT /repos/{owner}/{repo}/pulls/{n}/merge`（`merge_method=squash`）——这是「CI 绿后直接合并」，区别于 GitHub auto-merge 机制。
+- **显式派发 CI**：`GITHUB_TOKEN` 开的 PR 不触发 `pull_request`（防递归），故开 PR 后 `actions.createWorkflowDispatch(ci.yml)` 显式派到升级分支，再每 20s 轮询该分支最新 run conclusion（超时 60min）当门禁。
+- 所有 GitHub 调用带 `GITHUB_TOKEN`（匿名易 403）；lychee 扫 GitHub 外链带 `--github-token`，死链 `continue-on-error` 只报告。
+- 命令演进 diff 一律基于已入库的 `config/command-baseline/`（`research/` 已 gitignore，不再作运行时基线）；rea 升级 PR 会把新命令快照写成 `config/command-baseline/rea-<newver>.txt` 随 PR 提交。
+
+### 验证（本机实测）
+- `shellcheck -x scripts/audit_bump_and_branch.sh` clean；bash3.2 非 ASCII 紧邻检查 0 命中。
+- 真实跑 `audit_collect_drift.py`：rea 6.8.0=npm latest（in-sync）、JDK21 GA=21.0.13+9、Node 同 major v24 最新 LTS=24.22.2；Ghidra 因本机匿名 GitHub API 限流 403 如实降级为 `unknown`（CI 带 token 即可）。真实 `rea-agents@6.8.0 --help` diff 基线：+completions/mcp（已声明不计入 175 的集成入口）、-0 gone。
+- `audit_bump_and_branch.sh` 在临时 git clone 里 `--apply` 验证：rea/node/ghidra 三条 patch 分支均正确 bump、`check-versions.sh` 通过、ghidra 分支正确替换 `ci.yml` 全部 5 处硬编码；dry-run 不改工作树。
+- `bash scripts/check-docs-links.sh` 死链 0。
+
+### 未实测 / 风险项
+- 无真实漂移（四路上游当前与锁定一致），**真实的开 PR / 派 ci.yml / 轮询 / squash 合并端到端路径未在本仓库实跑**（不得制造漂移）；本版仅完成静态校验 + 脚本级真实探测/临时 clone 验证。
+- lychee 外链死链扫描、e2e/docker 等 9 条 CI 腿需在 GitHub Actions runner 上由真实 `workflow_dispatch` 触发验证。
+
 ## [5.3.0] - 2026-11-05（175 命令全量能力地图，中英双语）
 
 新增覆盖 rea-agents 6.8.0 全部 **175 个命令**的能力地图（中文为主、逐条中英双语），并把命令清单基线入库以支持每周演进 diff。

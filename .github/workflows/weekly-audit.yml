@@ -1,0 +1,398 @@
+name: weekly-audit
+
+# =============================================================================
+# 每周自动巡检 + 自动升级流水线（v5.5.0）
+#
+# 触发：
+#   schedule  每周一 04:10 UTC（= 北京 12:10），错峰避开 ci.yml 的周一 03:20。
+#   push       仅当 versions.env / 本 workflow / 命令基线变动时跑（给 60 天静默续命）。
+#   workflow_dispatch  手动/子代理重跑；dry_run 默认 true（只探测不写）。
+#
+# 语义：
+#   - schedule / push 事件没有 inputs.dry_run，视为「真跑」（自动开 patch PR）。
+#   - workflow_dispatch 默认 dry_run=true：只 console.log，不建 issue/PR/分支。
+#
+# 合并策略（与 GitHub auto-merge 无关）：
+#   仓库规则集「Protect main」只禁删分支 + 禁 force-push，无 required status checks、
+#   仓库级 allow_auto_merge=false。因此 patch 级且 CI 绿后，由本流水线直接调
+#   PUT /repos/{owner}/{repo}/pulls/{n}/merge（squash）完成合并——这是「CI 绿后直接
+#   合并」，不是 GitHub 的 enable-auto-merge 机制。
+#
+# 防递归：GITHUB_TOKEN 开的 PR 不触发 pull_request，故必须 createWorkflowDispatch 显式
+# 把 ci.yml 派到升级分支，再轮询该分支最新 run 的 conclusion（每 20s，超时 60min）。
+# =============================================================================
+
+on:
+  schedule:
+    - cron: '10 4 * * 1'          # 每周一 04:10 UTC
+  push:
+    branches: [ main ]
+    paths:
+      - 'config/versions.env'
+      - '.github/workflows/weekly-audit.yml'
+      - 'config/command-baseline/**'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: '只探测不发 issue/PR/分支（schedule/push 无此输入=真跑）'
+        type: choice
+        options: ['true', 'false']
+        default: 'true'
+      force_upgrade:
+        description: '强制升级指定依赖（rea/ghidra/jdk/node，留空=按 drift 自动判断）'
+        type: string
+        default: ''
+
+# 最小权限：contents/pull-requests/issues 写是开 PR/分支/issue 所需；
+# actions:write 是 createWorkflowDispatch 派 ci.yml 与轮询 run 所需。不开 workflows:写。
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: write
+
+concurrency:
+  group: weekly-audit
+  cancel-in-progress: false
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. detect：只读探测漂移 + 外链死链 + 命令清单 diff（永不产生副作用）
+  # ---------------------------------------------------------------------------
+  detect:
+    name: detect
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      drift_json: ${{ steps.collect.outputs.drift_json }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: 采集上游漂移 + 命令 diff
+        id: collect
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          # 既有探测脚本只 WARN，不阻断
+          bash scripts/check-versions.sh || true
+          # 最新 rea --help 抽命令清单（best-effort；失败不阻断）
+          npx -y rea-agents@latest --help > /tmp/help-new.txt 2>/tmp/help.err || true
+          if [ -s /tmp/help-new.txt ]; then
+            grep -E '^  [a-z][a-z0-9-]+ ' /tmp/help-new.txt \
+              | sed -E 's/^  ([a-z0-9-]+).*/\1/' | sort -u > /tmp/cmds-new.txt || true
+          fi
+          python3 scripts/audit_collect_drift.py \
+            --versions config/versions.env \
+            --out drift.json \
+            --help-dump /tmp/help-new.txt
+          # 把漂移 JSON 塞进 job output（单行），供 report-issue 等步骤直接读
+          echo "drift_json=$(jq -c . drift.json)" >> "$GITHUB_OUTPUT"
+
+      - name: 外链死链（lychee；失败不阻断升级流水线，只报告）
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: >-
+            --max-concurrency 5 --accept 200,204,301,302,307,308,429
+            --timeout 20 --retry-times 2
+            --github-token ${{ secrets.GITHUB_TOKEN }}
+            --exclude-loopback --exclude 'localhost|127\.0\.0\.1'
+            'README.md' 'README.en.md' 'docs/**/*.md'
+          fail: false
+
+      - name: 上传漂移产物（供下游 job 下载）
+        uses: actions/upload-artifact@v4
+        with:
+          name: weekly-audit-drift
+          path: |
+            drift.json
+            /tmp/cmds-new.txt
+          retention-days: 7
+
+  # ---------------------------------------------------------------------------
+  # 2. report-issue：把漂移/新命令/移除命令写成或更新去重 issue。
+  #    dry_run=true 时只 console.log，不真正写 issue。
+  # ---------------------------------------------------------------------------
+  report-issue:
+    name: report-issue
+    needs: detect
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: weekly-audit-drift
+      - uses: actions/github-script@v7
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run == 'true' }}
+        with:
+          script: |
+            const fs = require('fs');
+            const dryRun = process.env.DRY_RUN === 'true';
+            const drift = JSON.parse(fs.readFileSync('drift.json', 'utf8'));
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const today = new Date().toISOString().slice(0,10);
+
+            const rows = drift.items.map(it =>
+              `| ${it.dep} | ${it.locked} | ${it.upstream ?? '?'} | ${it.level} | ${it.note||''} |`
+            ).join('\n');
+            const cd = drift.command_diff || {};
+            const body = [
+              `## [weekly-audit] 上游漂移巡检（${today}）`,
+              '',
+              '| 依赖 | 锁定 | 上游最新 | 级别 | 说明 |',
+              '|---|---|---|---|---|',
+              rows,
+              '',
+              `**命令 diff（基线 ${cd.baseline_version||'?'}）**：`,
+              `- 新增（待覆盖）：${(cd.new_commands||[]).join(', ') || '无'}`,
+              `- 移除/改名（破坏性）：${(cd.gone_commands||[]).join(', ') || '无'}`,
+              '',
+              '> 外链死链见本 workflow lychee 步骤日志（只报告，不阻断升级）。',
+            ].join('\n');
+
+            if (dryRun) {
+              console.log('[dry_run] 将创建/更新漂移报告 issue：\n' + body);
+              return;
+            }
+
+            // 去重：找 open 的 audit-drift issue
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner, repo, state: 'open', labels: 'audit-drift', per_page: 100,
+            });
+            const title = `[weekly-audit] 上游漂移巡检（${today}）`;
+            if (issues.length) {
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: issues[0].number, body,
+              });
+              console.log('已更新既有 drift issue #' + issues[0].number);
+            } else {
+              const { data: iss } = await github.rest.issues.create({
+                owner, repo, title, body, labels: ['dependencies', 'automated', 'audit-drift'],
+              });
+              console.log('已创建 drift issue #' + iss.number);
+            }
+
+  # ---------------------------------------------------------------------------
+  # 3. open-upgrade-pr：仅当非 dry_run 时跑。对每个 patch 项 bump/建分支/push，
+  #    开/去重 PR，并 createWorkflowDispatch 把 ci.yml 派到升级分支。
+  # ---------------------------------------------------------------------------
+  open-upgrade-pr:
+    name: open-upgrade-pr
+    needs: detect
+    if: ${{ github.event.inputs.dry_run != 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: write
+    outputs:
+      results_json: ${{ steps.prs.outputs.results_json }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/download-artifact@v4
+        with:
+          name: weekly-audit-drift
+
+      - name: bump patch 版本并建分支（自检不过则 blocked）
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUDIT_PUSH: '1'
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          bash scripts/audit_bump_and_branch.sh drift.json --apply \
+            --cmd-list ./cmds-new.txt
+          cat /tmp/upgrade-manifest.tsv
+
+      - name: 开/去重 PR + 派发 ci.yml 门禁
+        id: prs
+        uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const fs = require('fs');
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const drift = JSON.parse(fs.readFileSync('drift.json', 'utf8'));
+            const levelOf = (dep) => {
+              const it = drift.items.find(x => x.dep === dep);
+              return it ? it.level : 'unknown';
+            };
+            const enginesOf = (dep) => {
+              const it = drift.items.find(x => x.dep === dep);
+              return it ? (it.engines_node || '') : '';
+            };
+            let manifest = '';
+            try { manifest = fs.readFileSync('/tmp/upgrade-manifest.tsv', 'utf8'); } catch (e) {}
+            const results = [];
+            const openPrs = (await github.rest.pulls.list({
+              owner, repo, state: 'open', per_page: 100,
+            })).data;
+
+            for (const line of manifest.split('\n')) {
+              if (!line.trim()) continue;
+              const [dep, branch, oldVer, newVer, status, note] = line.split('\t');
+              if (status !== 'ok') {
+                // blocked：开/去重 audit-blocked issue
+                const bt = `[weekly-audit] 升级受阻：${dep} ${oldVer} -> ${newVer}`;
+                const { data: bIssues } = await github.rest.issues.listForRepo({
+                  owner, repo, state: 'open', labels: 'audit-blocked', per_page: 100,
+                });
+                const existing = bIssues.find(i => i.title === bt);
+                const bodyB = `\`${dep}\` ${oldVer} -> ${newVer} 自动升级受阻：${note}`;
+                if (existing) {
+                  await github.rest.issues.createComment({owner, repo, issue_number: existing.number, body: bodyB});
+                } else {
+                  await github.rest.issues.create({owner, repo, title: bt, body: bodyB,
+                    labels: ['dependencies','automated','audit-blocked']});
+                }
+                results.push({dep, branch, old: oldVer, new: newVer, level: levelOf(dep), pr_number: null, conclusion: 'blocked'});
+                continue;
+              }
+
+              const label = `upgrade:${dep}`;
+              const prTitle = `chore(deps): bump ${dep} ${oldVer} -> ${newVer}`;
+              const prBody = [
+                `bump ${dep} ${oldVer} -> ${newVer}`,
+                `- 级别：${levelOf(dep)}`,
+                enginesOf(dep) ? `- engines/node：${enginesOf(dep)}` : '',
+                `- 自动合并策略：patch=CI 绿后直接 squash 合并；minor/major=hold 人工`,
+                '- [ ] 合并后如需发版请手动打 v* tag（release.yml 触发）',
+              ].filter(Boolean).join('\n');
+
+              const dup = openPrs.find(p =>
+                p.head.ref === branch ||
+                (p.title === prTitle && (p.labels||[]).some(l => l.name === label)));
+              let prNumber;
+              if (dup) {
+                prNumber = dup.number;
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: prNumber,
+                  body: `:arrows_counterclockwise: 巡检复跑：刷新到 ${newVer}（已存在 open PR，去重未新开）`,
+                });
+              } else {
+                const { data: pr } = await github.rest.pulls.create({
+                  owner, repo, title: prTitle, head: branch, base: 'main', body: prBody,
+                });
+                prNumber = pr.number;
+                await github.rest.issues.addLabels({
+                  owner, repo, issue_number: prNumber,
+                  labels: [label, 'automated', 'dependencies'],
+                });
+              }
+
+              // GITHUB_TOKEN 开的 PR 不触发 pull_request：显式派 ci.yml 到升级分支
+              await github.rest.actions.createWorkflowDispatch({
+                owner, repo, workflow_id: 'ci.yml', ref: branch,
+              });
+              console.log(`dispatched ci.yml -> ${branch} (PR #${prNumber})`);
+              results.push({dep, branch, old: oldVer, new: newVer, level: levelOf(dep), pr_number: prNumber, conclusion: 'pending'});
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'results_json=' + JSON.stringify(results) + '\n');
+
+  # ---------------------------------------------------------------------------
+  # 4. ci-gate：轮询升级分支上 ci.yml 的 conclusion（每 20s，超时 60min）
+  # ---------------------------------------------------------------------------
+  ci-gate:
+    name: ci-gate
+    needs: open-upgrade-pr
+    if: ${{ needs.open-upgrade-pr.outputs.results_json != '[]' && needs.open-upgrade-pr.outputs.results_json != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    outputs:
+      gate_json: ${{ steps.poll.outputs.gate_json }}
+    steps:
+      - uses: actions/github-script@v7
+        id: poll
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RESULTS_JSON: ${{ needs.open-upgrade-pr.outputs.results_json }}
+        with:
+          script: |
+            const fs = require('fs');
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const results = JSON.parse(process.env.RESULTS_JSON || '[]');
+            const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+            const deadline = Date.now() + 60 * 60 * 1000; // 60 分钟
+            const gated = [];
+            for (const r of results) {
+              if (!r.pr_number) { gated.push({...r, conclusion: 'blocked'}); continue; }
+              let conclusion = null, runUrl = '';
+              while (Date.now() < deadline) {
+                const { data } = await github.rest.actions.listWorkflowRuns({
+                  owner, repo, workflow_id: 'ci.yml', branch: r.branch, per_page: 1,
+                });
+                const run = data.workflow_runs[0];
+                if (run && run.status === 'completed') {
+                  conclusion = run.conclusion; runUrl = run.html_url; break;
+                }
+                await sleep(20000);
+              }
+              console.log(`branch=${r.branch} pr=#${r.pr_number} conclusion=${conclusion ?? 'timeout'}`);
+              gated.push({...r, conclusion: conclusion ?? 'timeout', run_url: runUrl});
+            }
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, 'gate_json=' + JSON.stringify(gated) + '\n');
+
+  # ---------------------------------------------------------------------------
+  # 5. tiered-merge：patch 且 CI 绿 → 直接 squash 合并；minor/major → 评论 hold；
+  #    CI 红 → 评论失败链接 + 开/去重 blocked issue。绝不强制合并。
+  # ---------------------------------------------------------------------------
+  tiered-merge:
+    name: tiered-merge
+    needs: [open-upgrade-pr, ci-gate]
+    if: ${{ always() && needs.open-upgrade-pr.result == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GATE_JSON: ${{ needs.ci-gate.outputs.gate_json || '[]' }}
+        with:
+          script: |
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const gated = JSON.parse(process.env.GATE_JSON || '[]');
+            for (const g of gated) {
+              if (!g.pr_number) continue;
+              if (g.conclusion === 'success' && g.level === 'patch') {
+                // CI 绿 + patch：直接 squash 合并（区别于 GitHub enable-auto-merge）
+                await github.rest.pulls.merge({
+                  owner, repo, pull_number: g.pr_number, merge_method: 'squash',
+                  commit_title: `chore(deps): bump ${g.dep} ${g.old} -> ${g.new}`,
+                });
+                console.log(`merged PR #${g.pr_number} (squash)`);
+              } else if (g.conclusion === 'success') {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: g.pr_number,
+                  body: `:eyes: CI 绿，但级别=${g.level}（含 minor/major 或命令演进），hold for human review，不自动合并。`,
+                });
+              } else {
+                await github.rest.issues.createComment({
+                  owner, repo, issue_number: g.pr_number,
+                  body: `:x: CI 未绿（${g.conclusion}），不合并。失败 run：${g.run_url || '(见 Actions)'}`,
+                });
+                const bt = `[weekly-audit] 升级受阻：${g.dep} ${g.old} -> ${g.new}`;
+                const { data: bIssues } = await github.rest.issues.listForRepo({
+                  owner, repo, state: 'open', labels: 'audit-blocked', per_page: 100,
+                });
+                const existing = bIssues.find(i => i.title === bt);
+                const bodyB = `\`${g.dep}\` ${g.old} -> ${g.new} CI=${g.conclusion}，不合并。run：${g.run_url || ''}`;
+                if (!existing) {
+                  await github.rest.issues.create({owner, repo, title: bt, body: bodyB,
+                    labels: ['dependencies','automated','audit-blocked']});
+                }
+              }
+            }

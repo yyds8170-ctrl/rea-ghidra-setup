@@ -201,6 +201,7 @@ Licensed under PolyForm Noncommercial 1.0.0. For authorized security research on
 - **Offline / air-gapped?** Yes — `prepare-offline` then `OFFLINE_DIR` (see offline.md, Chinese).
 - **Uninstall?** The uninstall scripts above.
 - **Self-update / rollback?** `./rea-ghidra self-update` (git ff-only; tarball checksums-verified, old files backed up); `current`/`rollback` when multiple versions coexist.
+- **Who follows upstream versions?** A weekly UTC audit probes rea-agents / Ghidra / JDK21 / Node drift: patch-level opens a PR and squash-merges after CI goes green; minor/major and any command removal wait for human review. See [docs/weekly-audit.en.md](docs/weekly-audit.en.md).
 - **SmartScreen / Gatekeeper?** Windows click "run anyway"; macOS installer clears quarantine.
 - **Multiple Ghidra versions?** Yes, all extract to `~/tools`; `current-ghidra` points at the active one.
 
