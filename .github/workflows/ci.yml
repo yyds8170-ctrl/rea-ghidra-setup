@@ -517,7 +517,7 @@ jobs:
           path: ~/.npm/_npx
           key: npx-rea-agents-6.8.0
 
-      - name: 安装系统工具（核心包装不上即失败；rizin 可选）
+      - name: 安装系统工具（核心包装不上即失败）
         run: |
           # capinfos 不是独立包名（随 tshark/wireshark 一起装）；漏写会让 apt 中止整批
           sudo add-apt-repository -y universe
@@ -525,8 +525,24 @@ jobs:
           # 核心工具不用 || true 掩盖：装不上就显式失败，而不是整批静默跳过
           sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
             binutils file gdb tshark python3 python3-pip gcc
-          # rizin 在 universe；装不上不阻断，运行器会把两条 rizin 案例计 skip
-          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq rizin || true
+
+      - name: 准备 rizin 0.9.1 静态 build（失败不阻断，运行器保持 skip）
+        run: |
+          # Ubuntu noble 即使开 universe 也无 rizin apt 包；用官方静态自包含 tarball（解压即跑）。
+          # 整块 || true 兜底：下载/解压/版本校验任一失败都只打印提示，不让作业变红。
+          set +e
+          mkdir -p "$HOME/.local/rizin-0.9.1"
+          curl -fsSL -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -o /tmp/rizin.tar.xz \
+            "https://github.com/rizinorg/rizin/releases/download/v0.9.1/rizin-v0.9.1-static-x86_64.tar.xz"
+          if [ $? -eq 0 ]; then
+            tar -xJf /tmp/rizin.tar.xz -C "$HOME/.local/rizin-0.9.1"
+            "$HOME/.local/rizin-0.9.1/bin/rizin" --version
+            if [ $? -eq 0 ]; then
+              echo "$HOME/.local/rizin-0.9.1/bin" >> "$GITHUB_PATH"
+            fi
+          fi
+          echo "rizin 准备块结束（若失败，两条 rizin 案例将保持 skip）"
 
       - name: 准备钉死版本的 WABT 1.0.42（REA 只认 wasm-objdump/wasm2wat/wasm-validate == 1.0.42）
         run: |

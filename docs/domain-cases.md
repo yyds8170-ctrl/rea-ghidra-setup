@@ -67,7 +67,8 @@ bash scripts/run-domain-cases.sh
 - runner：`ubuntu-latest`（24.04 自带 Wireshark 4.x）。
 - Node **24**（sqlite provider 需要）；apt 装 binutils/gdb/tshark 等核心工具（装不上即失败，不掩盖）；
   官方 release 拉 **WABT 1.0.42** 解到 `~/.local/wabt-1.0.42` 并把其 bin 追加进 `$GITHUB_PATH`（让后续 build/run 都能在 PATH 找到 wat2wasm）；
-  venv 装钉死版 pwntools 三件套到 `/opt/rea-pwntools-env`；rizin 单独一条 `|| true` 尝试装 universe，失败则其两条案例保持 skip。
+  venv 装钉死版 pwntools 三件套到 `/opt/rea-pwntools-env`；
+  **rizin**：Ubuntu noble 无 apt 包，改用官方静态自包含 build `rizin-v0.9.1-static-x86_64.tar.xz` 解到 `~/.local/rizin-0.9.1`、`--version` 校验后追加进 `$GITHUB_PATH`；整块 `|| true` 兜底，失败则两条 rizin 案例保持 skip。
 - 不依赖 Ghidra/JDK（全部为非 d1-core-native 命令），比 e2e 轻。
 - 末尾要求 `汇总：passed=N failed=0 skipped=M`。
 
@@ -75,6 +76,7 @@ bash scripts/run-domain-cases.sh
 
 - **本机（Linux x86_64，装齐 wabt 1.0.42 + gdb + 钉死 pwntools venv）**：`passed=11 failed=0 skipped=5`。
   skip：sqlite（本机 Node 22，sqlite provider 需 Node≥24）、pcap 两条（本机 Wireshark 3.6.2，需 4.x）、rizin 两条（本机未装）。
-- **CI（Node 24 + ubuntu-24.04 Wireshark 4.x + wabt 1.0.42 + 钉死 pwntools）**：预期 `passed=14 failed=0 skipped=2`——
-  sqlite/pcap×2/wasm×2/gdb 全部在 CI 转 PASS；skipped 的 2 条为 rizin（`execute-rizin-command`/`debug-with-rizin`），
-  若 CI 的 universe 源能装上 rizin，则为 `passed=16 failed=0 skipped=0`。**rizin 两条在 runner 装不上时保持 skip，不写成已测。**
+- **CI（Node 24 + ubuntu-24.04 Wireshark 4.x + wabt 1.0.42 + 钉死 pwntools + rizin 0.9.1 静态 build）**：
+  预期 `passed=16 failed=0 skipped=0`——sqlite/pcap×2/wasm×2/gdb/rizin×2 全部在 CI 转 PASS。
+  若 rizin 静态包下载/解压偶发失败（整块兜底不阻断），则回退为 `passed=14 failed=0 skipped=2`（即 rizin 两条保持 skip）。
+  **rizin 两条在 runner 装不上时保持 skip，不写成已测。**
