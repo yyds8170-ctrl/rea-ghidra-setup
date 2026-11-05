@@ -71,3 +71,4 @@ These flags apply globally and are not repeated per entry; domain files list onl
   ```
 
 - 升级到后续 REA 版本时，在 `config/command-baseline/` 新增对应版本文件，旧基线保留以追踪演进。
+- **运行时领域路由 / Runtime domain routing**：[`config/command-baseline/command-domain.tsv`](../../config/command-baseline/command-domain.tsv)（175 行：命令名/领域/可测性）供 `rea-ghidra run|domains|d1..d10` 在运行时校验命令合法性与领域归属；用法见 [command-wrapper.md](../command-wrapper.md)。

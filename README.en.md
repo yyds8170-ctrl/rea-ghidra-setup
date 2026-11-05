@@ -64,6 +64,8 @@ Package-manager (Homebrew / Scoop) assets and steps: see [packaging/README.md](p
 
 You get JDK21 + Ghidra 12.1.4 + portable Node 24.22.2, automatically passing 9 end-to-end checks. Subcommands and self-update/rollback: see [docs/entry.en.md](docs/entry.en.md).
 
+To call REA directly, use the unified wrapper: `./rea-ghidra run <command> [--json|--out <file>|--quiet] [-- passthrough...]`, plus `domains` and `d1..d10` domain entries (which validate command membership and layer stable exit codes 0/2/3/4). See [docs/command-wrapper.en.md](docs/command-wrapper.en.md).
+
 ## Which one should I use? (quick pick)
 
 ```mermaid

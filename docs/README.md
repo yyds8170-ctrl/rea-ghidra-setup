@@ -28,6 +28,7 @@
 ## 通用文档
 
 ### 使用
+- [command-wrapper.md](command-wrapper.md)：统一 REA 命令包装器（`run` / `domains` / `d1..d10`）、包装器开关与稳定退出码 0/2/3/4。
 - [mcp.md](mcp.md)：MCP 客户端一键注册 + stdio 连接自检（`--list/--dry-run/--check`）。
 - [export.md](export.md)：Ghidra 静态分析导出（functions/strings/symbols/calls/decompiled JSON/C）。
 - [batch.md](batch.md)：批量并行分析 + 快照缓存（`--jobs/--snapshot/失败隔离/summary.json`）。

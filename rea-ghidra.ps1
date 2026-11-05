@@ -38,6 +38,18 @@ rea-ghidra 一体化入口（v3.0）
   walkthrough    端到端演练（bash 脚本，Windows 请在 WSL/CI 跑）
   version        打印本仓库 VERSION；--check 联网查最新 release（只读）
   self-update    自更新（git 副本 ff-only；tarball 校验 checksums）；--check 只报告
+  run <命令> [开关] [-- 透传...]
+                 统一 REA 命令包装器：校验基线 + 解析环境 + 调用 REA。
+                 开关：--json 强制 --format json；--schema 透传；
+                       --out <文件> stdout 落盘（自动建目录）；--quiet 压 stderr；
+                       -- 其后全部透传给 REA。
+                 示例：.\rea-ghidra.ps1 run doctor --json
+                       .\rea-ghidra.ps1 run analyze --out C:\tmp\analyze.json -- --provider ghidra
+  domains        列出 10 个 REA 领域及各自命令数
+  d1..d10 <命令> [开关] [-- 透传...]
+                 领域入口：先用 command-domain.tsv 校验该命令确属 dN 领域，
+                 否则退出码 2；通过后等价于 run。
+                 示例：.\rea-ghidra.ps1 d1 analyze --json -- --provider ghidra
   current        列出 tools 下 Ghidra/JDK 版本与 current 联接指向
   rollback       把 current 切回上一版本（多版本并存时生效）
   help           本帮助
@@ -234,5 +246,28 @@ switch -Wildcard ($sub) {
   'current'   { Show-Current; exit 0 }
   'rollback'  { Invoke-Rollback; exit 0 }
   'self-update' { Invoke-SelfUpdate -Rest $rest; exit 0 }
+  'run' {
+    . (Join-Path $RepoDir 'lib\rea-wrap.ps1')
+    exit (Invoke-ReaCommand -Rest $rest)
+  }
+  'domains' {
+    . (Join-Path $RepoDir 'lib\rea-wrap.ps1')
+    Write-Host 'REA 领域 / Domain                命令数 / Count'
+    foreach ($r in Get-ReaDomainsTable) {
+      Write-Host ("  {0,-30} {1}" -f $r.Domain, $r.Count)
+    }
+    Write-Host '  （共 175 个命令；详见 docs/capability-map/README.md）'
+    exit 0
+  }
+  'd1'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd1')  -Rest $rest) }
+  'd2'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd2')  -Rest $rest) }
+  'd3'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd3')  -Rest $rest) }
+  'd4'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd4')  -Rest $rest) }
+  'd5'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd5')  -Rest $rest) }
+  'd6'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd6')  -Rest $rest) }
+  'd7'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd7')  -Rest $rest) }
+  'd8'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd8')  -Rest $rest) }
+  'd9'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd9')  -Rest $rest) }
+  'd10' { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd10') -Rest $rest) }
   default { Write-Host "未知子命令：$sub（用 .\rea-ghidra.ps1 help 查看全部）" -ForegroundColor Red; exit 2 }
 }

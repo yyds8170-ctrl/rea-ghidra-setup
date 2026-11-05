@@ -15,6 +15,7 @@ This directory organizes deployment, verification and usage docs for REA + Ghidr
 
 ## Usage
 
+- [command-wrapper.md](command-wrapper.en.md): unified REA command wrapper (`run` / `domains` / `d1..d10`), wrapper switches and stable exit codes 0/2/3/4.
 - [mcp.md](mcp.en.md): one-command MCP client registration + stdio self-check (`--list/--dry-run/--check`).
 - [export.md](export.en.md): Ghidra static export (functions/strings/symbols/calls/decompiled JSON/C).
 - [batch.md](batch.en.md): parallel batch analysis + snapshot cache (`--jobs/--snapshot/failure isolation/summary.json`).

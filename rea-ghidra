@@ -35,6 +35,18 @@ rea-ghidra 一体化入口（v3.0）
                  ./rea-ghidra batch ./bin --out ./batch-out --kind functions --jobs 2
   fixtures       交叉编译多架构 fixture（i686/aarch64/mingw 交叉工具链，Linux）
   walkthrough    端到端中文实战演练（幂等只读）
+  run <命令> [开关] [-- 透传...]
+                 统一 REA 命令包装器：校验基线 + 解析环境 + 调用 REA。
+                 开关：--json 强制 --format json；--schema 透传；
+                       --out <文件> stdout 落盘（自动建目录）；--quiet 压 stderr；
+                       -- 其后全部透传给 REA。
+                 示例：./rea-ghidra run doctor --json
+                       ./rea-ghidra run analyze --out /tmp/analyze.json -- --provider ghidra
+  domains        列出 10 个 REA 领域及各自命令数
+  d1..d10 <命令> [开关] [-- 透传...]
+                 领域入口：先用 command-domain.tsv 校验该命令确属 dN 领域，
+                 否则退出码 2；通过后等价于 run。
+                 示例：./rea-ghidra d1 analyze --json -- --provider ghidra
   version        打印本仓库版本；--check 联网查 GitHub 最新 release（只读）
   self-update    自更新（git 副本走 ff-only；tarball 副本校验 checksums 后解压）
                  --check 只报告不写盘；--dry-run 预览
@@ -231,5 +243,24 @@ case "$sub" in
   uninstall)
     if [ "$(os_name)" = "Darwin" ]; then run uninstall-macos.sh "$@"; else run uninstall.sh "$@"; fi ;;
   detect-env)  run scripts/detect-env.sh "$@" ;;
+  run)
+    # shellcheck source=lib/rea-wrap.sh
+    . "$REPO_DIR/lib/rea-wrap.sh"
+    rea_wrap_exec "$@"
+    exit $? ;;
+  domains)
+    # shellcheck source=lib/rea-wrap.sh
+    . "$REPO_DIR/lib/rea-wrap.sh"
+    echo "REA 领域 / Domain                命令数 / Count"
+    rea_domains_table | while IFS=$'\t' read -r d c; do
+      printf "  %-30s %s\n" "$d" "$c"
+    done
+    echo "  （共 175 个命令；详见 docs/capability-map/README.md）"
+    exit 0 ;;
+  d1|d2|d3|d4|d5|d6|d7|d8|d9|d10)
+    # shellcheck source=lib/rea-wrap.sh
+    . "$REPO_DIR/lib/rea-wrap.sh"
+    rea_domain_dispatch "$sub" "$@"
+    exit $? ;;
   *) echo "未知子命令：${sub}（用 ./rea-ghidra help 查看全部）" >&2; exit 2 ;;
 esac

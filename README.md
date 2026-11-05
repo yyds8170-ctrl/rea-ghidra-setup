@@ -65,6 +65,8 @@ irm https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/instal
 
 装完即得 JDK21 + Ghidra 12.1.4 + 便携 Node 24.22.2，并自动通过 9 项端到端验证。子命令一览与自更新/回滚见 [docs/entry.md](docs/entry.md)。
 
+直接调用 REA 时用统一包装器：`./rea-ghidra run <命令> [--json|--out <文件>|--quiet] [-- 透传...]`，另有 `domains` 与 `d1..d10` 领域入口（校验命令归属、叠加稳定退出码 0/2/3/4），详见 [docs/command-wrapper.md](docs/command-wrapper.md)。
+
 ## 我该用哪个？（快速选择）
 
 ```mermaid
