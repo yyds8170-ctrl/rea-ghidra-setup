@@ -56,6 +56,8 @@ pwsh -File .\scripts\mcp-setup.ps1 -Check
 
 - `command` 用 **npx 的绝对路径**（脚本自动 `command -v npx` 解析），避免客户端 PATH 找不到。
 - `env` 仅在已设置时写入 `JAVA_HOME` / `GHIDRA_INSTALL_DIR`；`REA_MIRROR=cn` 时会带上 `REA_MIRROR=cn`。
+- `JAVA_HOME` / `GHIDRA_INSTALL_DIR` 由 `resolve_jdk_home` / `resolve_ghidra_dir` 发现，
+  默认在 `$HOME/tools` 下找 `current-jdk` / `current-ghidra`；自定义工具位置用 `TOOLS_DIR=<dir>` 覆盖。
 - 不写全局 npm 配置，不改 `.npmrc`。
 
 ## 连接自检 `--check` 做了什么

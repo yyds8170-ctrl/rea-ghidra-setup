@@ -57,6 +57,8 @@ The registered server is named `rea`; a standard stdio entry looks like:
 
 - `command` uses the **absolute path to npx** (resolved via `command -v npx`), so the client's PATH does not matter.
 - `env` writes `JAVA_HOME` / `GHIDRA_INSTALL_DIR` only when already set; with `REA_MIRROR=cn` it also carries `REA_MIRROR=cn`.
+- `JAVA_HOME` / `GHIDRA_INSTALL_DIR` are discovered by `resolve_jdk_home` / `resolve_ghidra_dir`,
+  which look under `$HOME/tools` for `current-jdk` / `current-ghidra` by default; set `TOOLS_DIR=<dir>` to override.
 - It does not touch global npm config or `.npmrc`.
 
 ## What `--check` does
