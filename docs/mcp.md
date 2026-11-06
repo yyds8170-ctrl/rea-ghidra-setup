@@ -60,21 +60,21 @@ pwsh -File .\scripts\mcp-setup.ps1 -Check
 
 ## 连接自检 `--check` 做了什么
 
-1. **原生 MCP stdio 握手**：按 JSON-RPC 2.0 发一行 `initialize`（带 protocolVersion/capabilities/clientInfo），
-   读到合法 `result`（含 `serverInfo.name=rea`）即判定 server 可启动、协议通。
+1. **MCP stdio 端到端自检**：直接复用 `examples/web-samples/run-mcp-e2e.sh`，
+   真实启动 `rea-agents --mcp`，走完整一轮 JSON-RPC——
+   `initialize` → `notifications/initialized` → `tools/list` → 多个**离线 tools/call**：
+   - `inspect_byte_entropy`（对临时小文件算 Shannon 熵）、
+     `inspect_analysis_settings`、`list_unknowns`、`binary_session`（会话级，无需 Ghidra/真机）；
+   - 外加 2 个错误信封断言：调用未声明工具应返回顶层 JSON-RPC `error`（code `-32602`），
+     缺必填参数应返回 `result.isError==true`。
+   每一步都校验 `jsonrpc=="2.0"`、`id` 对齐、`result`/`error` 信封与 `content[].type=="text"`；
+   任一失败即打印逐项 FAIL 列表并退出 1。
    - 实测 rea-agents 的 MCP over stdio 是**换行分隔 JSONL（无 Content-Length 帧）**。
 2. **Ghidra provider 体检**：仅当 `JAVA_HOME` 与 `GHIDRA_INSTALL_DIR` 都已设置时，
    跑 `rea doctor --provider ghidra --format json`，断言 `providerInspections[].id=ghidra.available==true`；
    否则优雅跳过第 2 步（第 1 步必过）。
 
-> `--check` 只做握手级验证。想看**完整一轮** JSON-RPC（`initialize` →
-> `notifications/initialized` → `tools/list` → 一次真实 `tools/call`，并逐条校验
-> 信封 `jsonrpc`/`id`/`result`/`content` 类型），跑：
->
-> ```bash
-> bash examples/web-samples/run-mcp-e2e.sh            # 离线工具 inspect_byte_entropy，无需 Ghidra/真机
-> bash examples/web-samples/run-mcp-e2e.sh --out /tmp/mcp-transcript.log
-> ```
+> 想单独复跑/落盘报文：`bash examples/web-samples/run-mcp-e2e.sh [--out transcript.log]`。
 
 ## 安全与幂等
 

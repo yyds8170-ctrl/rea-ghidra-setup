@@ -61,18 +61,21 @@ The registered server is named `rea`; a standard stdio entry looks like:
 
 ## What `--check` does
 
-1. **Native MCP stdio handshake**: sends a JSON-RPC 2.0 `initialize` line (protocolVersion/capabilities/clientInfo); a legal `result` (with `serverInfo.name=rea`) means the server starts and the protocol works.
+1. **MCP stdio end-to-end self-check**: delegates to `examples/web-samples/run-mcp-e2e.sh`,
+   which really starts `rea-agents --mcp` and walks a full JSON-RPC round —
+   `initialize` → `notifications/initialized` → `tools/list` → several **offline tools/call**:
+   - `inspect_byte_entropy` (Shannon entropy of a temp file),
+     `inspect_analysis_settings`, `list_unknowns`, `binary_session` (session-level, no Ghidra/device);
+   - plus 2 error-envelope assertions: an unadvertised tool must return a top-level
+     JSON-RPC `error` (code `-32602`), and a missing required argument must return
+     `result.isError==true`.
+   Every step validates `jsonrpc=="2.0"`, `id` correlation, the `result`/`error` envelope,
+   and `content[].type=="text"`; any failure prints a per-check FAIL list and exits 1.
    - rea-agents' MCP over stdio is **newline-delimited JSONL (no Content-Length framing)**.
 2. **Ghidra provider check**: only when both `JAVA_HOME` and `GHIDRA_INSTALL_DIR` are set, runs `rea doctor --provider ghidra --format json` and asserts `providerInspections[].id=ghidra.available==true`; otherwise it gracefully skips step 2 (step 1 must still pass).
 
-> `--check` is handshake-level only. To walk a **full** JSON-RPC round
-> (`initialize` → `notifications/initialized` → `tools/list` → one real `tools/call`,
-> validating `jsonrpc`/`id`/`result`/`content` envelope fields), run:
->
-> ```bash
-> bash examples/web-samples/run-mcp-e2e.sh            # offline tool inspect_byte_entropy; no Ghidra/device needed
-> bash examples/web-samples/run-mcp-e2e.sh --out /tmp/mcp-transcript.log
-> ```
+> To re-run on its own / dump the wire transcript:
+> `bash examples/web-samples/run-mcp-e2e.sh [--out transcript.log]`.
 
 ## Safety and idempotency
 

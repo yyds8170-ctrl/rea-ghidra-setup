@@ -3,11 +3,17 @@
 # run-mcp-e2e.sh — REA MCP server（rea-agents --mcp, stdio JSON-RPC）端到端自测
 #
 # 真启动 server，按 MCP 2025-11-25 协议走完整一轮：
-#   initialize → notifications/initialized → tools/list → tools/call
+#   initialize → notifications/initialized → tools/list → 多个离线 tools/call
 # 并逐条校验 JSON-RPC 信封（jsonrpc=="2.0"、id 对齐、result/error、content 类型）。
 #
-# 选的离线工具：inspect_byte_entropy（对一个临时小文件算 Shannon 熵，
-# 不需要 Ghidra / 真机 / 网络，在本环境可真实跑通）。
+# 已实跑的离线 tools/call（无需 Ghidra/真机/网络）：
+#   - inspect_byte_entropy     对临时小文件算 Shannon 熵
+#   - inspect_analysis_settings 读运行时设置清单
+#   - list_unknowns            列 residual unknowns（空会话）
+#   - binary_session            报告当前无打开目标
+# 错误用例（断言信封形状）：
+#   - 调用未声明工具        -> 顶层 JSON-RPC error（code=-32602）
+#   - 缺必填参数            -> result.isError==true（MCP 业务错误）
 #
 # 用法：
 #   bash examples/web-samples/run-mcp-e2e.sh                # 跑完整序列
@@ -55,10 +61,17 @@ def check(name, cond, detail=""):
         fails.append(name)
     print(f"  [{mark}] {name}{(' — ' + detail) if detail else ''}")
 
+dead = False
 def send(obj):
+    global dead
+    if dead:
+        return
     line = json.dumps(obj, ensure_ascii=False)
-    p.stdin.write(line + "\n"); p.stdin.flush()
-    if tf: tf.write(">>> " + line + "\n"); tf.flush()
+    try:
+        p.stdin.write(line + "\n"); p.stdin.flush()
+        if tf: tf.write(">>> " + line + "\n"); tf.flush()
+    except BrokenPipeError:
+        dead = True
 
 def recv(timeout=180):
     deadline = time.time() + timeout
@@ -131,13 +144,75 @@ try:
 except Exception as e:
     check("Evidence text 可解析且含 summary.file_entropy", False, repr(e))
 
-p.stdin.close()
+def call_tool(cid, name, args, timeout=120):
+    send({"jsonrpc": "2.0", "id": cid, "method": "tools/call",
+          "params": {"name": name, "arguments": args}})
+    return recv(timeout)
+
+def first_text(res):
+    c = res.get("result", {}).get("content", [])
+    return c[0]["text"] if c and isinstance(c[0], dict) else ""
+
+# 5) 离线工具 #2：inspect_analysis_settings（会话级，无需文件/目标）
+r4 = call_tool(4, "inspect_analysis_settings", {})
+check("tools/call#4 inspect_analysis_settings 有响应", r4 is not None and r4.get("id") == 4)
+try:
+    s4 = json.loads(first_text(r4 or {}))
+    check("inspect_analysis_settings.settings 是非空数组",
+          isinstance(s4.get("settings"), list) and len(s4["settings"]) > 0,
+          f"count={len(s4.get('settings', []))}")
+except Exception as e:
+    check("inspect_analysis_settings text 可解析", False, repr(e))
+
+# 6) 离线工具 #3：list_unknowns（会话级空清单）
+r5 = call_tool(5, "list_unknowns", {})
+check("tools/call#5 list_unknowns 有响应", r5 is not None and r5.get("id") == 5)
+try:
+    s5 = json.loads(first_text(r5 or {}))
+    items = s5.get("result", {}).get("items")
+    check("list_unknowns.result.items 是数组", isinstance(items, list), f"items={items}")
+except Exception as e:
+    check("list_unknowns text 可解析", False, repr(e))
+
+# 7) 离线工具 #4：binary_session（报告当前无打开目标）
+r6 = call_tool(6, "binary_session", {})
+check("tools/call#6 binary_session 有响应", r6 is not None and r6.get("id") == 6)
+try:
+    s6 = json.loads(first_text(r6 or {}))
+    check("binary_session.result.open 是布尔（无目标打开）",
+          isinstance(s6.get("result", {}).get("open"), bool),
+          f"open={s6.get('result', {}).get('open')}")
+except Exception as e:
+    check("binary_session text 可解析", False, repr(e))
+
+# 8) 错误用例 A：调用未声明的工具 -> 标准 JSON-RPC error 信封（-32602）
+r7 = call_tool(7, "no_such_tool_does_not_exist", {})
+check("tools/call#7 未知工具返回 JSON-RPC error 信封",
+      r7 is not None and "error" in r7 and r7.get("id") == 7,
+      f"code={(r7 or {}).get('error', {}).get('code')}")
+check("tools/call#7 error.code==-32602",
+      r7 is not None and r7.get("error", {}).get("code") == -32602)
+
+# 9) 错误用例 B：缺必填参数 -> result.isError==true（MCP 业务错误信封，非 JSON-RPC 级）
+r8 = call_tool(8, "inspect_byte_entropy", {})
+check("tools/call#8 缺必填参数 result.isError==true",
+      r8 is not None and r8.get("result", {}).get("isError") is True
+      and r8.get("id") == 8,
+      f"isError={(r8 or {}).get('result', {}).get('isError')}")
+
+try:
+    p.stdin.close()
+except (BrokenPipeError, OSError):
+    pass
 try:
     p.wait(timeout=10)
 except Exception:
     p.kill()
 if tf:
-    tf.write("=== stderr ===\n" + p.stderr.read() + "\n")
+    try:
+        tf.write("=== stderr ===\n" + p.stderr.read() + "\n")
+    except Exception:
+        pass
     tf.close()
 
 print()

@@ -24,8 +24,13 @@ bash examples/web-samples/run-mcp-e2e.sh --out /tmp/mcp-transcript.log   # 同�
 
 它真的启动 `npx -y rea-agents@<REA_VERSION> --mcp`（版本取自 `config/versions.env`，
 不硬编码），走完整一轮 JSON-RPC，并逐条校验信封：`jsonrpc=="2.0"`、`id` 对齐、
-`result`/无 `error`、`result.content[].type=="text"`。选的离线工具是
-`inspect_byte_entropy`（对一个临时小文件算 Shannon 熵，不需要 Ghidra/真机）。
+`result`/无 `error`、`result.content[].type=="text"`。
+
+已真实跑通的离线 `tools/call`（均无需 Ghidra/真机/网络）：
+`inspect_byte_entropy`（临时小文件 Shannon 熵）、`inspect_analysis_settings`、
+`list_unknowns`、`binary_session`。错误信封断言：调用未声明工具 → 顶层 JSON-RPC
+`error`（code `-32602`）；缺必填参数 → `result.isError==true`。
+Ghidra/设备类工具需真机，未在本脚本实跑。
 
 ## 跑一遍 HAR 离线复盘
 
