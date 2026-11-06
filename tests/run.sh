@@ -93,6 +93,28 @@ else
     cat "$LOGDIR/shellcheck.log" >&2
     bump 0 1
   fi
+
+  # 全仓库回归门：所有 git 跟踪的 *.sh 在 -S warning 下零告警。
+  # SC1091=动态 source 路径 info，豁免；其余 warning 及以上一律不许出现。
+  echo
+  echo "## shellcheck 全仓库回归门（git ls-files '*.sh'，-S warning）"
+  repo_sc="$LOGDIR/shellcheck-repo.log"
+  repo_count="$(git -C "$REPO_ROOT" ls-files '*.sh' | grep -c '\.sh$' || true)"
+  if [ "${repo_count:-0}" -gt 0 ]; then
+    # NUL 分隔，兼容带空格文件名；SC1091=动态 source 路径 info 豁免
+    if git -C "$REPO_ROOT" ls-files -z '*.sh' \
+        | xargs -0 shellcheck -S warning --exclude=SC1091 >"$repo_sc" 2>&1; then
+      echo "PASS 全仓库 shellcheck 零告警（${repo_count} 个脚本）"
+      bump 1 0
+    else
+      echo "FAIL 全仓库 shellcheck 出现新增告警，涉及文件："
+      grep -E '^In ' "$repo_sc" | sort -u >&2
+      echo "详情见 $repo_sc" >&2
+      bump 0 1
+    fi
+  else
+    echo "SKIP 全仓库门：git ls-files 未返回 *.sh"
+  fi
 fi
 
 # ---- 汇总 -------------------------------------------------------------------
