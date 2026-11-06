@@ -39,11 +39,16 @@ if (-not $JavaHome) {
   throw "未找到 JDK21（要求 major>=21）。当前 JAVA_HOME=$cur；请先跑 install.ps1 或设置 JAVA_HOME 指向 JDK21。"
 }
 $env:JAVA_HOME = $JavaHome
-$env:Path = "$(Join-Path $JavaHome 'bin');$env:Path"
+$env:Path = "$(Join-Path $JavaHome 'bin')$([IO.Path]::PathSeparator)$env:Path"
 
 $ghidra = Resolve-GhidraDir
 if (-not $ghidra) { throw "未找到 Ghidra（设 GHIDRA_INSTALL_DIR 或先跑 install.ps1）" }
-$headless = Join-Path $ghidra "support\analyzeHeadless.bat"
+# 跨平台：Windows 用 support\analyzeHeadless.bat，Linux/macOS 用 support/analyzeHeadless
+if ($IsWindows) {
+  $headless = Join-Path $ghidra "support\analyzeHeadless.bat"
+} else {
+  $headless = Join-Path $ghidra "support/analyzeHeadless"
+}
 
 $kindMap = @{
   functions  = "ExportFunctions.java"; strings = "ExportStrings.java";

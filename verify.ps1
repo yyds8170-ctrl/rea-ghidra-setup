@@ -19,14 +19,13 @@
 #>
 . (Join-Path $PSScriptRoot 'lib/common.ps1')
 
-# 平台守卫：本脚本验证 Windows PE fixture + analyzeHeadless.bat，非 Windows 请用 verify.sh
-if (-not $IsWindows) {
-  Write-Output 'verify.ps1 仅支持 Windows；当前平台请使用 bash 验证脚本：verify.sh'
-  exit 0
-}
+# 跨平台：PE fixture 的分析由 Ghidra/REA 完成，Linux/macOS 同样可跑（用 support/analyzeHeadless 而非 .bat）。
+# 仅在 Windows 上才需要 analyzeHeadless.bat 与 win_x86_64\decompile.exe；非 Windows 走对应原生目录。
+$PSep = [IO.Path]::PathSeparator
+$HomeDir = if ($env:USERPROFILE) { $env:USERPROFILE } else { $HOME }
 
 $Cfg = Import-VersionConfig
-$ToolsDir = if ($env:TOOLS_DIR) { $env:TOOLS_DIR } else { Join-Path $env:USERPROFILE 'tools' }
+$ToolsDir = if ($env:TOOLS_DIR) { $env:TOOLS_DIR } else { Join-Path $HomeDir 'tools' }
 
 $Pass = 0; $Fail = 0
 function Write-Pass { param([string]$m) Write-Output "  [PASS] $m"; $script:Pass++ }
@@ -39,7 +38,7 @@ $GhidraDir = Resolve-GhidraDir
 if ($JavaHome) {
   # 关键：CI runner 可能注入 JAVA_HOME=JDK17（覆盖注册表用户值），必须在本进程强制改回 21
   $env:JAVA_HOME = $JavaHome
-  $env:Path = "$(Join-Path $JavaHome 'bin');$env:Path"
+  $env:Path = "$(Join-Path $JavaHome 'bin')$PSep$env:Path"
 }
 if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
   $portableNode = Get-ChildItem -LiteralPath $ToolsDir -Directory -Filter 'node-v*-win-x64' -ErrorAction SilentlyContinue |
@@ -48,9 +47,10 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 }
 $env:GHIDRA_INSTALL_DIR = $GhidraDir
 
-# REA 调用：优先 PATH 上的 rea，否则用 npx 拉取已发布版本
+# REA 调用：优先 PATH 上的 rea，否则用 npx 拉取已发布版本（Windows 用 npx.cmd，*nix 用 npx）
 $reaCmd = Get-Command rea -ErrorAction SilentlyContinue
 $npx = Get-Command npx.cmd -ErrorAction SilentlyContinue
+if (-not $npx) { $npx = Get-Command npx -ErrorAction SilentlyContinue }
 if (-not $npx) {
   $localNpx = Join-Path $ToolsDir 'node-v*-win-x64\npx.cmd'
   $found = Get-ChildItem $localNpx -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -79,22 +79,31 @@ Write-Output "  REA 调用           = $(if ($reaCmd) { 'rea' } else { "npx -y $
 Write-Output "  npx 路径           = $(if ($npx) { $npx.Path } else { '（未找到 npx.cmd！）' })"
 $nodeProbe = Get-Command node -ErrorAction SilentlyContinue
 Write-Output "  node               = $(if ($nodeProbe) { (& node --version 2>&1) -join '' } else { '（未找到）' })"
-Write-Output "  TEMP 目标          = $env:TEMP"
+Write-Output "  TEMP 目标          = $([IO.Path]::GetTempPath())"
 
 # 硬性前置（不满足直接终止，避免后面一堆次生错误）
 if ((Get-JdkMajor -JavaHome $JavaHome) -lt 21) { Stop-Fatal '未找到 JDK 21，请先运行 install.ps1（或设置 JAVA_HOME）' }
-if (-not $GhidraDir -or -not (Test-Path -LiteralPath (Join-Path $GhidraDir 'support\analyzeHeadless.bat'))) {
-  Stop-Fatal '未找到 Ghidra 的 support\analyzeHeadless.bat，请先运行 install.ps1'
+# 跨平台：Windows 认 support\analyzeHeadless.bat，*nix 认 support/analyzeHeadless
+$headlessBat = Join-Path $GhidraDir 'support\analyzeHeadless.bat'
+$headlessSh  = Join-Path $GhidraDir 'support/analyzeHeadless'
+if (-not $GhidraDir -or -not ((Test-Path -LiteralPath $headlessBat) -or (Test-Path -LiteralPath $headlessSh))) {
+  Stop-Fatal '未找到 Ghidra 的 analyzeHeadless(.bat)，请先运行 install.ps1'
 }
-$decompiler = Join-Path $GhidraDir 'Ghidra\Features\Decompiler\os\win_x86_64\decompile.exe'
-if (-not (Test-Path -LiteralPath $decompiler)) {
-  Stop-Fatal '未找到 native decompiler（win_x86_64\decompile.exe），官方 Windows x64 包应自带该文件'
+# 跨平台 decompiler：Windows 为 win_x86_64\decompile.exe，Linux 为 linux_x86_64/decompile，macOS 为 osx_x86_64/decompile
+$decompCandidates = @(
+  (Join-Path $GhidraDir 'Ghidra\Features\Decompiler\os\win_x86_64\decompile.exe'),
+  (Join-Path $GhidraDir 'Ghidra/Features/Decompiler/os/linux_x86_64/decompile'),
+  (Join-Path $GhidraDir 'Ghidra/Features/Decompiler/os/osx_x86_64/decompile')
+)
+$decompiler = $decompCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+if (-not $decompiler) {
+  Stop-Fatal '未找到 native decompiler（win/linux/osx_x86_64），官方 Ghidra 包应自带对应平台文件'
 }
 
 $BinDir = Join-Path $Script:RepoRoot 'examples\bin\windows-x64'
 $Fixture = Join-Path $BinDir 'demo.exe'
 $Stripped = Join-Path $BinDir 'demo-stripped.exe'
-$WorkDir = Join-Path $env:TEMP ("rea-verify-" + [System.IO.Path]::GetRandomFileName())
+$WorkDir = Join-Path ([IO.Path]::GetTempPath()) ("rea-verify-" + [System.IO.Path]::GetRandomFileName())
 New-Item -ItemType Directory -Force -Path $WorkDir | Out-Null
 
 # REA Windows P0 仅支持“固定本地 NTFS 卷”，不支持网络/UNC/重解析点路径。
@@ -171,9 +180,9 @@ function Resolve-Function {
 # ---- 1. 前置检查 ------------------------------------------------------------
 Write-Output '== 1. 前置检查 =='
 if (Get-Command node -ErrorAction SilentlyContinue) { Write-Pass 'node 存在' } else { Write-Fail '缺少 node' }
-if (Test-Path -LiteralPath (Join-Path $GhidraDir 'support\analyzeHeadless.bat')) {
-  Write-Pass 'analyzeHeadless.bat 存在'
-} else { Write-Fail '未找到 Ghidra analyzeHeadless.bat（请先运行 install.ps1）' }
+if ((Test-Path -LiteralPath (Join-Path $GhidraDir 'support\analyzeHeadless.bat')) -or (Test-Path -LiteralPath (Join-Path $GhidraDir 'support/analyzeHeadless'))) {
+  Write-Pass 'analyzeHeadless(.bat) 存在'
+} else { Write-Fail '未找到 Ghidra analyzeHeadless(.bat)（请先运行 install.ps1）' }
 
 # ---- 2. 预编译 fixture 检查（替代 Linux 上的 gcc 编译步骤）------------------
 Write-Output '== 2. 检查预编译 PE fixture =='

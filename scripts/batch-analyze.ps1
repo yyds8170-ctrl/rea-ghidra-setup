@@ -74,24 +74,35 @@ $queue = New-Object System.Collections.Queue
 foreach ($t in $targets) { $queue.Enqueue($t) }
 
 function Start-OneTarget {
-  param([string]$Target)
+  # Start-Job 在独立 pwsh 进程里跑，不继承父脚本变量；所有依赖必须经 -ArgumentList 显式传入。
+  param(
+    [Parameter(Mandatory)][string]$Target,
+    [Parameter(Mandatory)][string]$TargetsRoot,
+    [Parameter(Mandatory)][string]$Mark,
+    [string]$Snapshot = '',
+    [bool]$Continue = $false,
+    [int]$Retries = 1,
+    [Parameter(Mandatory)][string]$Exporter,
+    [Parameter(Mandatory)][string]$Kind,
+    [int]$SchemaVersion = 1
+  )
   $sha = (Get-FileHash -Algorithm SHA256 -LiteralPath $Target).Hash.ToLower()
   $sha12 = $sha.Substring(0,12)
-  $tOut = Join-Path $targetsRoot $sha12
+  $tOut = Join-Path $TargetsRoot $sha12
   New-Item -ItemType Directory -Force -Path $tOut | Out-Null
   $sw = [System.Diagnostics.Stopwatch]::StartNew()
 
   # 快照命中
   if ($Snapshot -ne "") {
-    $cDir = Join-Path $Snapshot ($sha + "_" + $Kind + "_v" + $ExportSchemaVersion)
-    if (Test-Path -LiteralPath (Join-Path $cDir $mark)) {
+    $cDir = Join-Path $Snapshot ($sha + "_" + $Kind + "_v" + $SchemaVersion)
+    if (Test-Path -LiteralPath (Join-Path $cDir $Mark)) {
       Copy-Item (Join-Path $cDir "*.json") $tOut -Force -ErrorAction SilentlyContinue
       $sw.Stop()
       return [pscustomobject]@{ input=$Target; sha256=$sha; status="success"; cached=$true; elapsed_sec=[int]$sw.Elapsed.TotalSeconds; retries=0; out_dir=$tOut; error="" }
     }
   }
   # continue
-  if ($Continue -and (Test-Path -LiteralPath (Join-Path $tOut $mark))) {
+  if ($Continue -and (Test-Path -LiteralPath (Join-Path $tOut $Mark))) {
     $sw.Stop()
     return [pscustomobject]@{ input=$Target; sha256=$sha; status="skipped"; cached=$false; elapsed_sec=[int]$sw.Elapsed.TotalSeconds; retries=0; out_dir=$tOut; error="" }
   }
@@ -100,12 +111,12 @@ function Start-OneTarget {
   while ($tries -le $Retries -and -not $ok) {
     $tries++
     $log = Join-Path $tOut "headless.log"
-    & pwsh -NoProfile -File $exporter -Bin $Target -Out $tOut -Kind $Kind *> $log
-    if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath (Join-Path $tOut $mark))) { $ok = $true }
+    & pwsh -NoProfile -File $Exporter -Bin $Target -Out $tOut -Kind $Kind *> $log
+    if ($LASTEXITCODE -eq 0 -and (Test-Path -LiteralPath (Join-Path $tOut $Mark))) { $ok = $true }
     else { $err = (Get-Content $log -Tail 3 -ErrorAction SilentlyContinue) -join " " }
   }
   if ($ok -and $Snapshot -ne "") {
-    $cDir = Join-Path $Snapshot ($sha + "_" + $Kind + "_v" + $ExportSchemaVersion)
+    $cDir = Join-Path $Snapshot ($sha + "_" + $Kind + "_v" + $SchemaVersion)
     New-Item -ItemType Directory -Force -Path $cDir | Out-Null
     Copy-Item (Join-Path $tOut "*.json") $cDir -Force -ErrorAction SilentlyContinue
   }
@@ -118,13 +129,22 @@ $start = Get-Date
 while ($queue.Count -gt 0 -or $running.Count -gt 0) {
   while ($queue.Count -gt 0 -and $running.Count -lt $Jobs) {
     $t = $queue.Dequeue()
-    $running += Start-Job -ScriptBlock ${function:Start-OneTarget} -ArgumentList $t
+    # 显式把作业所需的全部父变量经 -ArgumentList 传入（Start-Job 不继承父作用域）
+    $running += Start-Job -ScriptBlock ${function:Start-OneTarget} -ArgumentList @(
+      $t, $targetsRoot, $mark, $Snapshot, [bool]$Continue, $Retries, $exporter, $Kind, $ExportSchemaVersion
+    )
   }
   if ($running.Count -gt 0) {
     $done = $running | Wait-Job -Any
     foreach ($j in $done) {
-      $results += Receive-Job $j
-      Remove-Job $j
+      # 单个作业内部异常不应炸掉整个 summary；吞掉错误记录并记一条 failed 结果
+      try {
+        $jobRecv = Receive-Job $j -ErrorAction SilentlyContinue
+        if ($jobRecv) { $results += $jobRecv }
+      } catch {
+        $results += [pscustomobject]@{ input='?'; sha256=''; status='failed'; cached=$false; elapsed_sec=0; retries=0; out_dir=''; error=$_.Exception.Message }
+      }
+      Remove-Job $j -Force -ErrorAction SilentlyContinue
       $running = @($running | Where-Object { $_.Id -ne $j.Id })
     }
   }

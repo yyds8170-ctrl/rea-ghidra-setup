@@ -107,9 +107,11 @@ function Test-NodeVersion {
 }
 
 # 读取某 JDK 目录的主版本号；失败返回 0
+# 跨平台：Windows 为 bin\java.exe，Linux/macOS 为 bin/java（CI / 本机 Linux pwsh 也要能发现真实 JDK）
 function Get-JdkMajor {
   param([string]$JavaHome)
   $java = Join-Path $JavaHome 'bin\java.exe'
+  if (-not (Test-Path -LiteralPath $java)) { $java = Join-Path $JavaHome 'bin/java' }
   if (-not (Test-Path -LiteralPath $java)) { return 0 }
   try {
     $out = & $java -version 2>&1 | Out-String
@@ -411,14 +413,15 @@ function New-ToolJunction {
 # 坏缓存还原成的文件型链接一律跳过，回退真实 jdk-21* 目录并顺带修复链接。
 function Resolve-JdkHome {
   param()
-  if ($env:JAVA_HOME -and (Test-Path -LiteralPath (Join-Path $env:JAVA_HOME 'bin\java.exe')) -and ((Get-JdkMajor -JavaHome $env:JAVA_HOME) -ge 21)) { return $env:JAVA_HOME }
+  if ($env:JAVA_HOME -and ((Get-JdkMajor -JavaHome $env:JAVA_HOME) -ge 21)) { return $env:JAVA_HOME }
   $tools = Get-ToolsDir
   $cur = Join-Path $tools 'current-jdk'
-  if ((Test-ToolJunction -LinkPath $cur -Marker 'bin\java.exe') -and ((Get-JdkMajor -JavaHome $cur) -ge 21)) { return $cur }
+  # marker 用 'bin'（JDK 目录都有）；真正的版本校验交给 Get-JdkMajor（兼容 java.exe / java）
+  if ((Test-ToolJunction -LinkPath $cur -Marker 'bin') -and ((Get-JdkMajor -JavaHome $cur) -ge 21)) { return $cur }
   $found = Get-ChildItem -LiteralPath $tools -Directory -Filter 'jdk-21*' -ErrorAction SilentlyContinue | Where-Object { (Get-JdkMajor -JavaHome $_.FullName) -ge 21 } | Select-Object -First 1
   if ($found) {
     # 顺带修复坏/缺失链接（best-effort；只读体检场景失败不阻断）
-    try { New-ToolJunction -LinkName $cur -Target $found.FullName -Marker 'bin\java.exe' } catch { Write-Verbose "current-jdk 修复失败（忽略，返回真实目录）：$($_.Exception.Message)" }
+    try { New-ToolJunction -LinkName $cur -Target $found.FullName -Marker 'bin' } catch { Write-Verbose "current-jdk 修复失败（忽略，返回真实目录）：$($_.Exception.Message)" }
     return $found.FullName
   }
   return $null
@@ -428,7 +431,12 @@ function Resolve-JdkHome {
 # v5.2.0：同上，拒绝坏缓存还原的文件型链接，回退真实 ghidra_*_PUBLIC 目录并顺带修复。
 function Resolve-GhidraDir {
   param()
-  if ($env:GHIDRA_INSTALL_DIR -and (Test-Path -LiteralPath (Join-Path $env:GHIDRA_INSTALL_DIR 'support\analyzeHeadless.bat'))) { return $env:GHIDRA_INSTALL_DIR }
+  # 跨平台：Windows 认 support\analyzeHeadless.bat，Linux/macOS 认 support/analyzeHeadless
+  function Test-AnalyzeHeadless([string]$Dir) {
+    (Test-Path -LiteralPath (Join-Path $Dir 'support\analyzeHeadless.bat')) -or
+      (Test-Path -LiteralPath (Join-Path $Dir 'support/analyzeHeadless'))
+  }
+  if ($env:GHIDRA_INSTALL_DIR -and (Test-AnalyzeHeadless $env:GHIDRA_INSTALL_DIR)) { return $env:GHIDRA_INSTALL_DIR }
   $tools = Get-ToolsDir
   $cur = Join-Path $tools 'current-ghidra'
   if (Test-ToolJunction -LinkPath $cur -Marker 'Ghidra\application.properties') { return $cur }
