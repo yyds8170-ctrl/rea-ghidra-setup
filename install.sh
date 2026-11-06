@@ -59,7 +59,12 @@ command -v curl >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 curl，请先�
 command -v unzip >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 unzip，请先安装（apt install unzip）"
 command -v tar >/dev/null 2>&1 || fatal "$RC_DEPENDENCY" "缺少 tar，请先安装"
 
-mkdir -p "$TOOLS_DIR"
+mkdir -p "$TOOLS_DIR" 2>/dev/null || true
+# 目标目录不存在/不可写（只读父目录、权限不足）：给干净命名错误，而非让 set -e
+# 直接被 mkdir 的非零退出带飞（历史是裸 "Permission denied" + 未归类码 1）。
+if [ ! -w "$TOOLS_DIR" ]; then
+  fatal "$RC_DEPENDENCY" "无法创建/写入安装目录 ${TOOLS_DIR}（权限不足或路径非法）"
+fi
 # v4.3：WSL 下 /mnt/* 安装目录性能提示
 warn_if_wsl_mnt "$TOOLS_DIR"
 # v4.2：安装原子锁——防止两个 install 并发写同一 TOOLS_DIR；死锁（上次崩溃残留）自动接管
@@ -94,7 +99,14 @@ else
     [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "JDK 下载物校验和失败（${JDK_PKG}）"
     fatal "$RC_UPSTREAM" "JDK 下载失败（${JDK_API}）"
   fi
-  tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
+  # 解压失败（包损坏/截断）不能让 set -e 以 tar 的裸退出码（2，与 RC_USAGE 撞码）带飞：
+  # 显式捕获、清理半成品、报干净的 RC_UPSTREAM(12)。
+  if ! tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR" 2>"$TMP_DIR/tar.err"; then
+    cat "$TMP_DIR/tar.err" >&2
+    JDK_PARTIAL="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' 2>/dev/null | head -1 || true)"
+    [ -n "$JDK_PARTIAL" ] && safe_rm "$JDK_PARTIAL"
+    fatal "$RC_UPSTREAM" "JDK 解压失败：下载物可能损坏/不完整（${JDK_PKG}），已中止"
+  fi
   JDK_DIR="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' | head -1)"
   echo "      已安装：$JDK_DIR"
 fi
@@ -127,7 +139,11 @@ else
     [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "Ghidra 下载物校验和失败（$(ghidra_zip_name)）"
     fatal "$RC_UPSTREAM" "Ghidra 下载失败（${GHIDRA_URL}）"
   fi
-  unzip -q -o "$TMP_DIR/ghidra.zip" -d "$TOOLS_DIR"
+  if ! unzip -q -o "$TMP_DIR/ghidra.zip" -d "$TOOLS_DIR" 2>"$TMP_DIR/unzip.err"; then
+    cat "$TMP_DIR/unzip.err" >&2
+    safe_rm "$GHIDRA_DIR"
+    fatal "$RC_UPSTREAM" "Ghidra 解压失败：下载物可能损坏/不完整（$(ghidra_zip_name)），已中止"
+  fi
   echo "      已安装：$GHIDRA_DIR"
 fi
 

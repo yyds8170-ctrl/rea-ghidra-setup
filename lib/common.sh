@@ -55,6 +55,24 @@ warn() { printf '%b[!]%b %s\n' "$C_YELLOW" "$C_RESET" "$*"; }
 # v4.1：die() 改由 lib/exitcodes.sh 提供（= fatal 1，未归类错误，行为兼容）
 # shellcheck source=lib/exitcodes.sh
 . "$LIB_DIR/exitcodes.sh"
+
+# ---- hpvs_fs / 网络文件系统安全删除 -----------------------------------------
+# 这类 fs 上 `rm -rf` 偶发 "Directory not empty" 而删不干净（并发/延迟回收目录项）。
+# 对关键删除路径（锁目录、半成品目录、卸载目标）做带限重试：先静默重试几次，
+# 仍残留则最后如实返回退出码，不吞掉真实失败。
+safe_rm() {
+  local target="$1"
+  # 不存在（含悬空软链已被删）即视为成功；软链本身也要能被删
+  [ -e "$target" ] || [ -L "$target" ] || return 0
+  for _ in 1 2 3; do
+    rm -rf -- "$target" 2>/dev/null || true
+    [ -e "$target" ] || [ -L "$target" ] || return 0
+    sleep 0.3
+  done
+  # 最后一次如实返回（让调用方能感知真实失败，而不是被静默吞掉）
+  rm -rf -- "$target"
+}
+
 # v4.2：安装原子锁 + 半成品自愈
 # shellcheck source=lib/install-lock.sh
 . "$LIB_DIR/install-lock.sh"
@@ -221,7 +239,14 @@ install_node_portable() {
     download "$tmp/$name" "$(node_tarball_url "$os" "$arch")" \
       || fatal "$RC_UPSTREAM" "便携 Node 下载失败（${name}）"
   fi
-  tar -xzf "$tmp/$name" -C "$tools_dir"
+  # 解压失败（包损坏/截断）：不能让 set -e 以 tar 裸码带飞。清理半成品 node 目录后
+  # 报干净的 RC_UPSTREAM(12)。注意本函数 stdout 只承载返回路径，错误一律走 stderr。
+  if ! tar -xzf "$tmp/$name" -C "$tools_dir" 2>"$tmp/tar.err"; then
+    cat "$tmp/tar.err" >&2
+    safe_rm "$tools_dir/$(node_tarball_dir "$os" "$arch")"
+    rm -rf "$tmp"
+    fatal "$RC_UPSTREAM" "便携 Node 解压失败：下载物可能损坏/不完整（${name}）"
+  fi
   rm -rf "$tmp"
   ln -sfn "$tools_dir/$(node_tarball_dir "$os" "$arch")" "$tools_dir/node"
   printf '%s\n' "$tools_dir/node"
