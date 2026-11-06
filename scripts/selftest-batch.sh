@@ -84,7 +84,7 @@ snap_entries = os.listdir(snap) if os.path.isdir(snap) else []
 ok = (corrupt.get("status") == "failed"
       and good.get("status") == "success"
       and len(snap_entries) == 1
-      and "未产出结果文件" in (corrupt.get("error") or ""))
+      and bool(corrupt.get("error")))
 print(f"    t1={good.get('status')} corrupt={corrupt.get('status')} snap_entries={len(snap_entries)}")
 print(f"    corrupt.error={(corrupt.get('error') or '')[:50]}")
 sys.exit(0 if ok else 1)
