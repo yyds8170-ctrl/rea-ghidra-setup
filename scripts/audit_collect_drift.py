@@ -94,20 +94,23 @@ def parse_ver_tuple(text):
 def semver_level(locked, upstream):
     a = parse_ver_tuple(locked)
     b = parse_ver_tuple(upstream)
+    # 按 (major,minor,patch) 元组字典序整体比较：上游不更新（相等或更低）一律 none，
+    # 避免旧实现「逐位大于」在 minor 降、patch 反高时误报 patch 漂移。
+    if b <= a:
+        return "none"
     if b[0] > a[0]:
         return "major"
     if b[1] > a[1]:
         return "minor"
-    if b[2] > a[2]:
-        return "patch"
-    return "none"
+    return "patch"
 
 
 def extract_commands_from_help(text):
-    """从 `rea --help` 输出里抽命令名：命令段是「两空格起头 <cmd>  <desc>」。"""
+    """从 `rea --help` 输出里抽命令名：命令段是「两空格起头 <cmd>  <desc>」。
+    命令名后可以是空白，也可以行尾直接结束（无描述列）。"""
     cmds = set()
     for line in text.splitlines():
-        m = re.match(r"^  ([a-z][a-z0-9-]+)\s", line)
+        m = re.match(r"^  ([a-z][a-z0-9-]+)(?:\s|$)", line)
         if m:
             cmds.add(m.group(1))
     return cmds

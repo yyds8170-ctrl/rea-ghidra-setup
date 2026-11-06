@@ -29,5 +29,5 @@ TESTS_LOG_DIR=/tmp/x bash tests/run.sh   # 自定义日志目录
 - `scripts/verify-integrity.sh`：核对离线工件 SHA-256 与清单一致、版本漂移检测。
   命令：`OFFLINE_DIR=/abs/offline bash scripts/verify-integrity.sh`
 
-> 已知缺陷（未在本仓库修复，见提交说明）：`semver_level` 按位比较，upstream minor 降而 patch 升时会误报 patch 漂移；
-> `test_older_upstream_current_known_behavior` 钉住现状，待上游修复后翻转提醒。
+> `semver_level` 已按 (major,minor,patch) 元组字典序修复（上游不更新一律 none），
+> `extract_commands_from_help` 支持行尾无描述列的命令行。

@@ -37,25 +37,31 @@ class ParseVerTupleTest(unittest.TestCase):
 
 
 class SemverLevelTest(unittest.TestCase):
-    def test_none_when_equal(self):
+    def test_equal_is_none(self):
         self.assertEqual(m.semver_level("6.8.0", "6.8.0"), "none")
 
-    def test_patch(self):
+    def test_patch_only(self):
         self.assertEqual(m.semver_level("6.8.0", "6.8.1"), "patch")
 
-    def test_minor(self):
-        self.assertEqual(m.semver_level("12.1.4", "12.2"), "minor")
+    def test_minor_only(self):
+        self.assertEqual(m.semver_level("12.1.4", "12.2.0"), "minor")
 
     def test_major(self):
         self.assertEqual(m.semver_level("6.8.0", "7.0.0"), "major")
 
-    def test_older_upstream_current_known_behavior(self):
-        # KNOWN DEFECT（不在本测试套件修复范围内，见提交报告）：
-        # semver_level 按 major/minor/patch 顺序只做“位大于”判断，缺少整体
-        # 元组比较。locked=(6,8,0) vs upstream=(6,7,9) 时 minor 已退一位、
-        # patch 反高一位，当前实现误判 "patch"（整体其实更旧，应为 "none"）。
-        # 此用例钉住现状，待上游修复后会翻转、提醒同步更新。
-        self.assertEqual(m.semver_level("6.8.0", "6.7.9"), "patch")
+    def test_older_upstream_is_none(self):
+        # 修复回归：minor 降、patch 反高（6.8.0 -> 6.7.9）必须判 none，而非旧的误报 patch
+        self.assertEqual(m.semver_level("6.8.0", "6.7.9"), "none")
+
+    def test_two_segment_upstream_is_minor(self):
+        self.assertEqual(m.semver_level("12.1.4", "12.2"), "minor")
+
+    def test_two_digit_minor_tuple_order(self):
+        # 10 > 9：字典序按数字而非字符串；6.10.0 应判 minor
+        self.assertEqual(m.semver_level("6.9.0", "6.10.0"), "minor")
+
+    def test_same_minor_higher_patch(self):
+        self.assertEqual(m.semver_level("6.9.0", "6.9.1"), "patch")
 
 
 class ExtractCommandsTest(unittest.TestCase):
@@ -76,6 +82,11 @@ Options:
 
     def test_empty(self):
         self.assertEqual(m.extract_commands_from_help(""), set())
+
+    def test_command_without_trailing_description(self):
+        # 命令行尾无描述列（行尾直接结束）也应被抽出
+        text = "Commands:\n  run\n  report   export\n"
+        self.assertEqual(m.extract_commands_from_help(text), {"run", "report"})
 
 
 class LoadVersionsTest(unittest.TestCase):
