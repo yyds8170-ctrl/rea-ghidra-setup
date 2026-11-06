@@ -18,7 +18,8 @@
 #       attach 已开着目标页的浏览器，做一次完整观察并把 Evidence JSON 落盘。
 #
 #   scripts/web-analyze.sh --har 文件.har
-#       离线复盘 HAR 抓包（请求/响应、暴露的 payload 与源码位置）。
+#       离线复盘 HAR 抓包（rea inspect-web-network-capture <文件> har）：
+#       逐条复盘请求方法/URL/状态码/响应头/请求 payload，不联网重放。
 #
 # 前置（一次）：用独立 profile + 调试端口起浏览器，手动打开目标 URL：
 #   google-chrome --remote-debugging-port=9222 \
@@ -122,7 +123,9 @@ fi
 if [ -n "$HAR" ]; then
   [ -f "$HAR" ] || { echo "[ERR] HAR 文件不存在：${HAR}" >&2; exit "$RC_USAGE"; }
   echo "== 离线复盘 HAR：${HAR} =="
-  run_rea analyze "$HAR" --format json
+  # 注意：必须用 inspect-web-network-capture <path> har 复盘 HAR；
+  # 误用 `analyze <path>` 会把 HAR 当二进制 artifact 打开并报 unsupported binary format。
+  run_rea inspect-web-network-capture "$HAR" har --format json
   exit "$?"
 fi
 

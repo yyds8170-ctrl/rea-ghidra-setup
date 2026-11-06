@@ -49,6 +49,19 @@ scripts/web-analyze.sh --cdp http://127.0.0.1:9222 \
 scripts/web-analyze.sh --har ./抓包.har
 ```
 
+`--har` 底层调的是 `rea inspect-web-network-capture <文件> har --format json`
+（**离线、不联网重放**，逐 entry 复盘方法/URL/状态码/响应头/postData），
+不是 `rea analyze <文件>`——后者会把 HAR 当二进制 artifact 打开并报
+`unsupported binary format`。Transport 凭证（Authorization / Cookie）会被自动打码。
+
+仓库自带可复跑样本（凭证均为明显占位假值）：
+
+```bash
+scripts/web-analyze.sh --har examples/web-samples/good.har                  # 退出 0，复盘 2 条 entry
+scripts/web-analyze.sh --har examples/web-samples/broken-missing-fields.har  # 退出 1，结构化报缺字段
+scripts/web-analyze.sh --har examples/web-samples/not-json.har               # 退出 1，报 malformed JSON
+```
+
 产物都是标准 Evidence JSON（`inspect.json` / `bundle.json` / `targets.json`），
 每个结论带 provider、时间窗、coverage（complete/filtered/truncated）和局限说明。
 

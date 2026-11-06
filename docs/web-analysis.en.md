@@ -50,6 +50,20 @@ scripts/web-analyze.sh --cdp http://127.0.0.1:9222 \
 scripts/web-analyze.sh --har ./capture.har
 ```
 
+`--har` shells out to `rea inspect-web-network-capture <file> har --format json`
+(**offline, no live replay**, replaying method/URL/status/response-headers/postData
+per entry) — **not** `rea analyze <file>`, which would try to open the HAR as a
+binary artifact and fail with `unsupported binary format`. Transport credentials
+(Authorization / Cookie) are redacted automatically.
+
+Reproducible samples ship in-repo (credentials are obvious placeholders):
+
+```bash
+scripts/web-analyze.sh --har examples/web-samples/good.har                  # exit 0, 2 entries replayed
+scripts/web-analyze.sh --har examples/web-samples/broken-missing-fields.har # exit 1, structured missing-field error
+scripts/web-analyze.sh --har examples/web-samples/not-json.har              # exit 1, malformed JSON error
+```
+
 Outputs are standard Evidence JSON (`inspect.json` / `bundle.json` / `targets.json`),
 each with provider, observation window, coverage (complete/filtered/truncated), and
 limitations.
