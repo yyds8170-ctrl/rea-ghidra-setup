@@ -1,0 +1,125 @@
+{
+  "SPDXID": "SPDXRef-DOCUMENT",
+  "creationInfo": {
+    "created": "2026-11-06T02:46:30Z",
+    "creators": [
+      "Tool: rea-ghidra-setup/scripts/gen-sbom.sh"
+    ],
+    "licenseListVersion": "3.25"
+  },
+  "dataLicense": "CC0-1.0",
+  "documentDescribes": [
+    "SPDXRef-Package-wrapper"
+  ],
+  "documentNamespace": "https://rea-ghidra-setup.local/spdx/reproducible/v6.0.5/offline-linux-x64",
+  "name": "rea-ghidra-setup 6.0.5 offline bundle (linux/x64)",
+  "packages": [
+    {
+      "SPDXID": "SPDXRef-Package-wrapper",
+      "comment": "本仓库：JDK21+Ghidra+Node+rea-agents 的离线安装/封装器（PolyForm Noncommercial）。 | 离线清单未提供该工件哈希，checksum 字段省略",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "NONE",
+      "filesAnalyzed": false,
+      "licenseConcluded": "PolyForm-Noncommercial-1.0.0",
+      "name": "rea-ghidra-setup",
+      "supplier": "Organization: rea-ghidra-setup",
+      "versionInfo": "6.0.5"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-jdk",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "d7f5d5cf865a2902b70ff549b97586a7d3f234e016f041ab447ea740c7d66d1c"
+        }
+      ],
+      "comment": "JDK 主版本锁 21（Ghidra 12.x 要求）；确切 patch 安装时由 Adoptium GA 决定。",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jdk/hotspot/normal/eclipse",
+      "filesAnalyzed": false,
+      "licenseConcluded": "GPL-2.0-only WITH Classpath-exception-2.0",
+      "name": "Eclipse Temurin OpenJDK",
+      "supplier": "Organization: Eclipse Adoptium",
+      "versionInfo": "21"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-ghidra",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "ddac49f903da9d5bac833e5cc79395098b9c33cfd3279be5f31bd00387d2d4db"
+        }
+      ],
+      "comment": "逆向分析平台；build=Ghidra_12.1.4_build date=20260921。",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "https://github.com/NationalSecurityAgency/ghidra/releases/download/Ghidra_12.1.4_build/ghidra_12.1.4_PUBLIC_20260921.zip",
+      "filesAnalyzed": false,
+      "licenseConcluded": "Apache-2.0",
+      "name": "NSA Ghidra",
+      "supplier": "Organization: National Security Agency",
+      "versionInfo": "12.1.4"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-node",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "361718c444e49af2ca5a110c83ba6a8901143f23ab285ebbef0341f391f482a9"
+        }
+      ],
+      "comment": "便携 Node；满足 rea-agents 6.8 engines（^22.23.4 || ^24.22.1 || >=26.12.1）。",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "https://nodejs.org/dist/v24.22.2/node-v24.22.2-linux-x64.tar.gz",
+      "filesAnalyzed": false,
+      "licenseConcluded": "MIT",
+      "name": "Node.js",
+      "supplier": "Organization: Node.js Foundation",
+      "versionInfo": "24.22.2"
+    },
+    {
+      "SPDXID": "SPDXRef-Package-rea",
+      "checksums": [
+        {
+          "algorithm": "SHA256",
+          "checksumValue": "8d542ec76a9cb350584b60a6c9c088706ff812d5bb5b094c20c95b6dc25698bb"
+        }
+      ],
+      "comment": "npm 包；离线随附 tgz，license 未在本 SBOM 中断言（未读取包内 LICENSE）。",
+      "copyrightText": "NOASSERTION",
+      "downloadLocation": "https://registry.npmjs.org/rea-agents/-/rea-agents-6.8.0.tgz",
+      "filesAnalyzed": false,
+      "licenseConcluded": "NOASSERTION",
+      "name": "rea-agents",
+      "supplier": "Organization: npmjs/rea-agents maintainers",
+      "versionInfo": "6.8.0"
+    }
+  ],
+  "relationships": [
+    {
+      "relatedSpdxElement": "SPDXRef-Package-wrapper",
+      "relationshipType": "DESCRIBES",
+      "spdxElementId": "SPDXRef-DOCUMENT"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-jdk",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-wrapper"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-ghidra",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-wrapper"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-node",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-wrapper"
+    },
+    {
+      "relatedSpdxElement": "SPDXRef-Package-rea",
+      "relationshipType": "DEPENDS_ON",
+      "spdxElementId": "SPDXRef-Package-wrapper"
+    }
+  ],
+  "spdxVersion": "SPDX-2.3"
+}
