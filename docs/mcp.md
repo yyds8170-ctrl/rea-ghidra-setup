@@ -67,6 +67,15 @@ pwsh -File .\scripts\mcp-setup.ps1 -Check
    跑 `rea doctor --provider ghidra --format json`，断言 `providerInspections[].id=ghidra.available==true`；
    否则优雅跳过第 2 步（第 1 步必过）。
 
+> `--check` 只做握手级验证。想看**完整一轮** JSON-RPC（`initialize` →
+> `notifications/initialized` → `tools/list` → 一次真实 `tools/call`，并逐条校验
+> 信封 `jsonrpc`/`id`/`result`/`content` 类型），跑：
+>
+> ```bash
+> bash examples/web-samples/run-mcp-e2e.sh            # 离线工具 inspect_byte_entropy，无需 Ghidra/真机
+> bash examples/web-samples/run-mcp-e2e.sh --out /tmp/mcp-transcript.log
+> ```
+
 ## 安全与幂等
 
 - 默认**不写盘**；只有 `--client <名> --yes`（PS：`-Client <名> -Yes`）才写。

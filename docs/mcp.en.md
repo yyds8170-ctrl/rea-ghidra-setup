@@ -65,6 +65,15 @@ The registered server is named `rea`; a standard stdio entry looks like:
    - rea-agents' MCP over stdio is **newline-delimited JSONL (no Content-Length framing)**.
 2. **Ghidra provider check**: only when both `JAVA_HOME` and `GHIDRA_INSTALL_DIR` are set, runs `rea doctor --provider ghidra --format json` and asserts `providerInspections[].id=ghidra.available==true`; otherwise it gracefully skips step 2 (step 1 must still pass).
 
+> `--check` is handshake-level only. To walk a **full** JSON-RPC round
+> (`initialize` → `notifications/initialized` → `tools/list` → one real `tools/call`,
+> validating `jsonrpc`/`id`/`result`/`content` envelope fields), run:
+>
+> ```bash
+> bash examples/web-samples/run-mcp-e2e.sh            # offline tool inspect_byte_entropy; no Ghidra/device needed
+> bash examples/web-samples/run-mcp-e2e.sh --out /tmp/mcp-transcript.log
+> ```
+
 ## Safety and idempotency
 
 - By default it **does not write**; only `--client <name> --yes` (PS: `-Client <name> -Yes`) writes.
