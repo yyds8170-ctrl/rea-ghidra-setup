@@ -81,7 +81,12 @@ else
     [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "JDK 下载物校验和失败（${JDK_PKG}）"
     fatal "$RC_UPSTREAM" "JDK 下载失败（${JDK_API}）"
   fi
-  tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR"
+  if ! tar -xzf "$TMP_DIR/jdk21.tar.gz" -C "$TOOLS_DIR" 2>"$TMP_DIR/tar.err"; then
+    cat "$TMP_DIR/tar.err" >&2
+    JDK_BUNDLE_PARTIAL="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' -type d 2>/dev/null | head -1 || true)"
+    [ -n "$JDK_BUNDLE_PARTIAL" ] && safe_rm "$JDK_BUNDLE_PARTIAL"
+    fatal "$RC_UPSTREAM" "JDK 解压失败：下载物可能损坏/不完整（${JDK_PKG}），已中止"
+  fi
   JDK_BUNDLE="$(find "$TOOLS_DIR" -maxdepth 1 -name 'jdk-21*' -type d | head -1)"
   JDK_HOME="$JDK_BUNDLE/Contents/Home"
   # 解压后仍无 java 二进制 = 上游资源损坏/不完整 → RC_UPSTREAM(12)
@@ -117,7 +122,11 @@ else
     [ "$rc" -eq 1 ] && fatal "$RC_CHECKSUM" "Ghidra 下载物校验和失败（$(ghidra_zip_name)）"
     fatal "$RC_UPSTREAM" "Ghidra 下载失败（${GHIDRA_URL}）"
   fi
-  unzip -q -o "$TMP_DIR/ghidra.zip" -d "$TOOLS_DIR"
+  if ! unzip -q -o "$TMP_DIR/ghidra.zip" -d "$TOOLS_DIR" 2>"$TMP_DIR/unzip.err"; then
+    cat "$TMP_DIR/unzip.err" >&2
+    safe_rm "$GHIDRA_DIR"
+    fatal "$RC_UPSTREAM" "Ghidra 解压失败：下载物可能损坏/不完整（$(ghidra_zip_name)），已中止"
+  fi
   echo "      已安装：$GHIDRA_DIR"
 fi
 

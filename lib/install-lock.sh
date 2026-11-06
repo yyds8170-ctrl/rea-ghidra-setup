@@ -62,7 +62,7 @@ acquire_install_lock() {
 
   # 死锁：上次安装被中断、PID 已不在。告警后接管，不阻塞用户。
   warn "发现上次安装未正常退出的残留锁（PID ${other_pid:-未知} 已不存在），自动清理并继续。"
-  rm -rf "$INSTALL_LOCK_DIR"
+  safe_rm "$INSTALL_LOCK_DIR"
   mkdir "$INSTALL_LOCK_DIR" || fatal "$RC_BUSY" "无法获取安装锁 $INSTALL_LOCK_DIR"
   echo "$$" > "$INSTALL_LOCK_DIR/pid" 2>/dev/null || true
   log "已获取安装锁（接管自残留死锁）"
@@ -71,7 +71,7 @@ acquire_install_lock() {
 # release_install_lock
 release_install_lock() {
   if [ -n "$INSTALL_LOCK_DIR" ]; then
-    rm -rf "$INSTALL_LOCK_DIR" 2>/dev/null || true
+    safe_rm "$INSTALL_LOCK_DIR" 2>/dev/null || true
     INSTALL_LOCK_DIR=""
   fi
 }
@@ -82,6 +82,6 @@ self_heal_partial() {
   local dir="$1" marker="$2"
   if [ -d "$dir" ] && [ ! -e "$dir/$marker" ]; then
     warn "[自愈] 检测到上次中断的半成品目录（缺 ${marker}），已清理：${dir}"
-    rm -rf "$dir"
+    safe_rm "$dir"
   fi
 }
