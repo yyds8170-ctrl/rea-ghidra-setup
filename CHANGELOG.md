@@ -4,6 +4,50 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.1.0] - 2026-11-06（可复现测试体系 + 跨平台 PS1 + 安装边界加固 + MCP/HAR 端到端）
+
+多方向并行深化：新增离线可复现测试与供应链校验、PowerShell 脚本真实跨平台运行、
+install/uninstall 边界与幂等加固、MCP 与 HAR 离线复盘端到端、性能基准文档。
+
+### Added
+- **离线可复现测试体系**：`tests/` 统一入口 `tests/run.sh`（bash 单测 + Python 校验），
+  117/117 通过，含全仓库 52 个脚本的 shellcheck 回归门（`-S warning` 零告警）。
+  新增 `tests/python/` 校验 SPDX SBOM 与依赖漂移脚本。
+- **供应链完整性**：`packaging/rea-ghidra-setup.spdx.json`（SPDX 2.3 SBOM），
+  `scripts/verify-integrity.sh` 负向回归（篡改/删除/清单改动全检出），
+  `scripts/gen-sbom.sh` 从 `config/versions.env` 与离线清单再生成 SBOM，
+  `scripts/ci-offline-gate.sh` 离线质量门。
+- **MCP 端到端**：`mcp-setup.sh --check` 升级为 25 项端到端健康检查（initialize→
+  initialized→tools/list 全量工具→tools/call 含错误信封）；`examples/web-samples/`
+  提供离线 MCP stdio 驱动与 HAR 1.2 样本集。
+- **HAR 离线复盘**：`web-analyze.sh --har` 改用官方 `inspect-web-network-capture`，
+  支持 HAR/SAZ/qlog/mitm 多格式；凭证打码覆盖敏感头与 URL query token，且不误伤
+  业务 body（如 item_token 保留），无敏感信息时零副作用原样透传。
+- **性能基准文档**：`docs/benchmark.md` / `.en.md`，真实测量（单目标墙钟 ~30s，
+  8 目标 j1=282s→j4=214s 仅 1.32×，8GB 内存为瓶颈建议 `--jobs 2`，缓存命中 ~219×）。
+
+### Fixed
+- **PowerShell 跨平台与并发**：`rea-wrap.ps1`/`rea-ghidra.ps1` 空子命令崩溃并吞掉
+  REA 退出码；`batch-analyze.ps1` 的 `Start-Job` 不继承父变量导致作业全崩；
+  `common.ps1`/`ghidra-export.ps1`/`verify.ps1` 硬编码 Windows 路径使 Linux 下真实
+  JDK/Ghidra 不可见；`run-cases.ps1` 的 `Write-Output` 污染返回值致 10 例全误报。
+  修复后 verify.ps1 在 Linux 真实 9/9 通过（pwsh 7.5.2/7.6.9 双运行时交叉验证）。
+- **install/uninstall 边界**：解压失败退出码与 RC_USAGE 撞码、TOOLS_DIR 只读父目录
+  无干净错误；卸载残留悬空软链与便携 Node；新增带重试 `safe_rm` 应对 hpvs_fs 的
+  "Directory not empty"。隔离 prefix 下真实安装→重入→自愈→卸载全链路 rc=0。
+- **依赖漂移脚本**：`audit_collect_drift.py` 的 `semver_level` 改元组字典序比较，
+  修正 lock 6.8.0 vs upstream 6.7.9 的误报。
+
+### Docs
+- 补全 `docs/entry` 子命令全表（run/domains/d1–d10）；修正 mirrors 文档 Node 版本表述；
+  0 死链（86 文件/564 链接）；platform-docker 镜像 Node 同步为 24.22.2。
+
+### 验证
+- `tests/run.sh` 117/117；`shellcheck -x *.sh lib/*.sh scripts/*.sh` 零告警；
+  SBOM versionInfo 与 VERSION(6.1.0) 一致；全量密钥扫描无命中；
+  verify.sh 9/9 不回退。
+
+
 ## [6.0.6] - 2026-11-06（杜绝 Ghidra 导入失败被误报成功）
 
 ### Fixed

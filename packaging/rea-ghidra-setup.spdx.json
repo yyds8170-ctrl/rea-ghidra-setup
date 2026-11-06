@@ -1,7 +1,7 @@
 {
   "SPDXID": "SPDXRef-DOCUMENT",
   "creationInfo": {
-    "created": "2026-11-06T02:46:30Z",
+    "created": "2026-11-06T03:13:04Z",
     "creators": [
       "Tool: rea-ghidra-setup/scripts/gen-sbom.sh"
     ],
@@ -11,8 +11,8 @@
   "documentDescribes": [
     "SPDXRef-Package-wrapper"
   ],
-  "documentNamespace": "https://rea-ghidra-setup.local/spdx/reproducible/v6.0.5/offline-linux-x64",
-  "name": "rea-ghidra-setup 6.0.5 offline bundle (linux/x64)",
+  "documentNamespace": "https://rea-ghidra-setup.local/spdx/reproducible/v6.1.0/offline-linux-x64",
+  "name": "rea-ghidra-setup 6.1.0 offline bundle (linux/x64)",
   "packages": [
     {
       "SPDXID": "SPDXRef-Package-wrapper",
@@ -23,7 +23,7 @@
       "licenseConcluded": "PolyForm-Noncommercial-1.0.0",
       "name": "rea-ghidra-setup",
       "supplier": "Organization: rea-ghidra-setup",
-      "versionInfo": "6.0.5"
+      "versionInfo": "6.1.0"
     },
     {
       "SPDXID": "SPDXRef-Package-jdk",

@@ -23,7 +23,7 @@ set -u
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# shellcheck source=../config/versions.env
+# shellcheck source=config/versions.env
 . "$REPO_ROOT/config/versions.env"
 
 OFFLINE_DIR="${OFFLINE_DIR:-$REPO_ROOT/offline}"

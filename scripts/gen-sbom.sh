@@ -22,7 +22,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # ---- 读版本（只读）----------------------------------------------------------
-# shellcheck source=../config/versions.env
+# shellcheck source=config/versions.env
 . "$REPO_ROOT/config/versions.env"
 WRAPPER_VERSION="$(cat "$REPO_ROOT/VERSION")"
 
