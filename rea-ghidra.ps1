@@ -258,7 +258,8 @@ switch -Wildcard ($sub) {
   'self-update' { Invoke-SelfUpdate -Rest $rest; exit 0 }
   'run' {
     . (Join-Path $RepoDir 'lib\rea-wrap.ps1')
-    exit (Invoke-ReaCommand -Rest $rest)
+    Invoke-ReaCommand -Rest $rest
+    exit $script:ReaWrapExit
   }
   'domains' {
     . (Join-Path $RepoDir 'lib\rea-wrap.ps1')
@@ -269,15 +270,15 @@ switch -Wildcard ($sub) {
     Write-Host '  （共 175 个命令；详见 docs/capability-map/README.md）'
     exit 0
   }
-  'd1'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd1')  -Rest $rest) }
-  'd2'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd2')  -Rest $rest) }
-  'd3'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd3')  -Rest $rest) }
-  'd4'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd4')  -Rest $rest) }
-  'd5'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd5')  -Rest $rest) }
-  'd6'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd6')  -Rest $rest) }
-  'd7'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd7')  -Rest $rest) }
-  'd8'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd8')  -Rest $rest) }
-  'd9'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd9')  -Rest $rest) }
-  'd10' { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); exit (Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd10') -Rest $rest) }
+  'd1'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd1')  -Rest $rest; exit $script:ReaWrapExit }
+  'd2'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd2')  -Rest $rest; exit $script:ReaWrapExit }
+  'd3'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd3')  -Rest $rest; exit $script:ReaWrapExit }
+  'd4'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd4')  -Rest $rest; exit $script:ReaWrapExit }
+  'd5'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd5')  -Rest $rest; exit $script:ReaWrapExit }
+  'd6'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd6')  -Rest $rest; exit $script:ReaWrapExit }
+  'd7'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd7')  -Rest $rest; exit $script:ReaWrapExit }
+  'd8'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd8')  -Rest $rest; exit $script:ReaWrapExit }
+  'd9'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd9')  -Rest $rest; exit $script:ReaWrapExit }
+  'd10' { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd10') -Rest $rest; exit $script:ReaWrapExit }
   default { Write-Host "未知子命令：$sub（用 .\rea-ghidra.ps1 help 查看全部）" -ForegroundColor Red; exit 2 }
 }

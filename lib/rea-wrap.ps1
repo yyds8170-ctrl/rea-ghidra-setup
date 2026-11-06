@@ -9,7 +9,9 @@
 #   Get-ReaCommandRecord <cmd>   返回 @{Domain;Testability}；命令不在基线返回 $null
 #   Get-ReaDomainsTable          返回 [pscustomobject]@{Domain;Count}[]（10 行）
 #   Invoke-ReaCommand            解析 -Rest（= <cmd> [开关] [-- 透传...]）并执行，
-#                                可选 -ExpectedDomain 做领域归属校验；返回退出码
+#                                可选 -ExpectedDomain 做领域归属校验；
+#                                分类退出码写入 $script:ReaWrapExit（0/2/3/4），
+#                                REA 的 stdout 原样透出（不要用 exit (Invoke-ReaCommand) 捕获）。
 #
 # 包装器开关（在透传前解析；`--` 之后全部原样透传给 REA）：
 #   --json / --schema / --out <file> / --quiet / --
@@ -84,18 +86,24 @@ function Initialize-ReaEnvironment {
   return $cfg
 }
 
-# 真正的包装执行：返回退出码 0/2/3/4
+# 真正的包装执行：由调用方读取 $script:ReaWrapExit 获取分类退出码（0/2/3/4）。
+# 不在输出流里回传退出码：否则调用方若写成 exit (Invoke-ReaCommand ...)，会把 REA
+# 透传到 stdout 的输出一并捕获进退出码实参，既吞掉 REA 输出又把退出码污染成数组。
 # -Rest: <cmd> [开关...] [-- 透传...]
-# -ExpectedDomain: 若非空，要求命令的领域与之相等，否则返回 2
+# -ExpectedDomain: 若非空，要求命令的领域与之相等，否则退出码记 2
 function Invoke-ReaCommand {
   param(
     [string]$ExpectedDomain = '',
-    [Parameter(Mandatory)][string[]]$Rest
+    [string[]]$Rest = @()
   )
+  # 调用方读取本变量拿到分类退出码；函数自身只把 REA 的 stdout 原样透出，不再 emit 退出码。
+  $script:ReaWrapExit = 0
+  if ($null -eq $Rest) { $Rest = @() }
 
-  if ($Rest.Count -lt 1 -or [string]::IsNullOrWhiteSpace($Rest[0])) {
+  if ($Rest.Count -lt 1 -or [string]::IsNullOrWhiteSpace("$($Rest[0])")) {
     Write-Host 'rea-wrap: 缺少命令名（用 run <命令>）' -ForegroundColor Red
-    return 2
+    $script:ReaWrapExit = 2
+    return
   }
   $cmd = $Rest[0]
 
@@ -116,7 +124,8 @@ function Invoke-ReaCommand {
         '--quiet'   { $quiet = $true; $i++ }
         '--out' {
           if ($i + 1 -ge $Rest.Count) {
-            Write-Host 'rea-wrap: --out 需要一个文件路径参数' -ForegroundColor Red; return 2
+            Write-Host 'rea-wrap: --out 需要一个文件路径参数' -ForegroundColor Red
+            $script:ReaWrapExit = 2; return
           }
           $outFile = [string]$Rest[$i + 1]; $i += 2
         }
@@ -124,7 +133,7 @@ function Invoke-ReaCommand {
         default {
           Write-Host "rea-wrap: 未知包装器开关：$a" -ForegroundColor Red
           Write-Host '        可用：--json --schema --out <file> --quiet --（其后透传 REA）'
-          return 2
+          $script:ReaWrapExit = 2; return
         }
       }
     }
@@ -134,12 +143,12 @@ function Invoke-ReaCommand {
   $rec = Get-ReaCommandRecord -Command $cmd
   if ($null -eq $rec) {
     Write-Host "rea-wrap: 未知命令：$cmd（不在 rea-agents 基线的 175 个命令内）" -ForegroundColor Red
-    return 2
+    $script:ReaWrapExit = 2; return
   }
   if ($ExpectedDomain -ne '' -and $rec.Domain -ne $ExpectedDomain) {
     Write-Host "rea-wrap: 命令 '$cmd' 属于领域 '$($rec.Domain)'，不是 '$ExpectedDomain'" -ForegroundColor Red
     Write-Host "        （用 ./rea-ghidra.ps1 run $cmd 直接跑，或选对应 dN 领域入口）"
-    return 2
+    $script:ReaWrapExit = 2; return
   }
 
   # ---- 2) 前置解析 ----
@@ -147,11 +156,11 @@ function Invoke-ReaCommand {
   if ($rec.Domain -eq '1-core-native') {
     if (-not $env:JAVA_HOME -or -not (Test-Path -LiteralPath (Join-Path $env:JAVA_HOME 'bin\java.exe'))) {
       Write-Host "rea-wrap: 命令 '$cmd' 属于 1-core-native，需要 JDK 21，但未解析到可用 JAVA_HOME（请先运行 .\rea-ghidra.ps1 install）" -ForegroundColor Red
-      return 3
+      $script:ReaWrapExit = 3; return
     }
     if (-not $env:GHIDRA_INSTALL_DIR -or -not (Test-Path -LiteralPath (Join-Path $env:GHIDRA_INSTALL_DIR 'support\analyzeHeadless.bat'))) {
       Write-Host "rea-wrap: 命令 '$cmd' 属于 1-core-native，需要 Ghidra，但未解析到 GHIDRA_INSTALL_DIR（请先运行 .\rea-ghidra.ps1 install）" -ForegroundColor Red
-      return 3
+      $script:ReaWrapExit = 3; return
     }
   }
 
@@ -185,7 +194,7 @@ function Invoke-ReaCommand {
   $rc = $LASTEXITCODE
 
   # ---- 5) 退出码映射 ----
-  if ($rc -eq 0) { return 0 }
+  if ($rc -eq 0) { $script:ReaWrapExit = 0; return }
   Write-Host "rea-wrap: REA 执行 '$cmd' 返回非 0（rc=$rc）" -ForegroundColor Red
-  return 4
+  $script:ReaWrapExit = 4
 }
