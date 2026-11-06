@@ -29,6 +29,7 @@ A single command that consolidates the scripts scattered across earlier versions
 | `rollback` | When multiple versions coexist, switch current back to the previous one | — |
 | `uninstall` | Remove JDK/Ghidra and clean the `~/.bashrc` env block (per-platform; interactive confirm, `--yes` skips) | uninstall.sh / uninstall-macos.sh / uninstall.ps1 |
 | `detect-env` | Read-only OS/arch/runtime detection (physical/wsl/crostini/docker/vm) and whether a native build is needed | scripts/detect-env.sh |
+| `run` / `domains` / `d1…d10` | Unified REA command wrapper (since v5.4.0: baseline check + JDK/Ghidra resolution + stable exit codes 0/2/3/4), see [command-wrapper.md](command-wrapper.en.md) | lib/rea-wrap.ps1/bash (calls REA) |
 | `help` / `--help` | Usage | — |
 
 ## Quick start

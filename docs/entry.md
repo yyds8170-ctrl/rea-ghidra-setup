@@ -29,6 +29,7 @@
 | `rollback` | 多版本并存时把 current 切回上一个 | — |
 | `uninstall` | 卸载 JDK/Ghidra 并清理 `~/.bashrc` 环境块（按平台分发，交互确认；`--yes` 跳过） | uninstall.sh / uninstall-macos.sh / uninstall.ps1 |
 | `detect-env` | 只读识别系统/架构/运行环境（physical/wsl/crostini/docker/vm），判断是否需自建 native | scripts/detect-env.sh |
+| `run` / `domains` / `d1…d10` | REA 命令统一包装器（v5.4.0 起：校验命令基线 + 解析 JDK/Ghidra + 稳定退出码 0/2/3/4），详见 [command-wrapper.md](command-wrapper.md) | lib/rea-wrap.sh（调用 REA） |
 | `help` / `--help` | 中文用法 | — |
 
 ## 快速开始
