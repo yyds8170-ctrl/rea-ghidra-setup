@@ -4,6 +4,20 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.0.6] - 2026-11-06（杜绝 Ghidra 导入失败被误报成功）
+
+### Fixed
+- **ghidra-export.sh 假成功 bug**：analyzeHeadless 对空文件、随机垃圾、纯文本等
+  无法导入的输入只打印 ERROR REPORT，进程退出码仍为 0；旧脚本不校验产物就报
+  "完成"并返回 0，会让批量分析/CI 把失败误判为成功（假绿）。现在 headless 跑完后
+  按 kind 校验期望产物（functions/strings/...json）真实存在且非空，缺失即返回
+  RC_UPSTREAM(12) 并提示常见原因。batch-analyze 坏目标正确隔离为 FAILED、不写缓存。
+
+### 验证
+- 真实坏输入矩阵（空文件/随机二进制/纯文本）均正确返回 12；真实 ELF 仍成功；
+  verify 9/9、shellcheck 干净；batch 两坏目标正确 0/2 失败隔离。
+
+
 ## [6.0.5] - 2026-11-05（离线清单精确化 + 凭证防泄露纵深防御）
 
 ### Fixed

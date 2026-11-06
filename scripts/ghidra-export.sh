@@ -144,6 +144,23 @@ run_headless "$PROJ_DIR" Proj \
   -postScript "$SCRIPT" "$OUT_DIR" \
   -deleteProject
 
+# v6.0.6：analyzeHeadless 对空文件/垃圾/非可识别二进制只打印 ERROR REPORT，
+# 进程退出码仍是 0。必须校验期望产物真实存在且非空，否则把失败误报成成功——
+# 批量/CI 会因此假绿。kind=all 至少要有 functions.json（ExportAll 的主产物）。
+case "$KIND" in
+  functions)   EXPECT="functions.json" ;;
+  strings)     EXPECT="strings.json" ;;
+  symbols)     EXPECT="symbols.json" ;;
+  calls)       EXPECT="calls.json" ;;
+  decompiled)   EXPECT="decompiled.json" ;;
+  all)         EXPECT="functions.json" ;;
+esac
+if [ ! -s "$OUT_DIR/$EXPECT" ]; then
+  echo "[ERR] Ghidra 未能产出 ${EXPECT}（上方应有 ERROR REPORT）" >&2
+  echo "  常见原因：空文件、纯文本、随机垃圾、损坏或 Ghidra 不支持的格式。" >&2
+  fatal "$RC_UPSTREAM" "导出失败：${EXPECT} 缺失或为空（输入可能不是可识别的二进制）"
+fi
+
 echo "完成。产物："
 for f in functions strings symbols calls decompiled; do
   p="$OUT_DIR/$f.json"
