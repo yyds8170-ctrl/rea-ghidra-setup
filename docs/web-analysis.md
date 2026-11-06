@@ -52,7 +52,12 @@ scripts/web-analyze.sh --har ./抓包.har
 `--har` 底层调的是 `rea inspect-web-network-capture <文件> har --format json`
 （**离线、不联网重放**，逐 entry 复盘方法/URL/状态码/响应头/postData），
 不是 `rea analyze <文件>`——后者会把 HAR 当二进制 artifact 打开并报
-`unsupported binary format`。Transport 凭证（Authorization / Cookie）会被自动打码。
+`unsupported binary format`。
+
+凭证打码分两层：rea 内置打码 `Authorization` / `Proxy-Authorization` /
+`Cookie` / `Set-Cookie`；本脚本在 stdout 上再补一层，把自定义凭证头
+（`X-Api-Key` / `X-Auth-Token` / `X-Custom-Session` 等）以及 URL query 里的
+`token=/access_token=/api_key=` 值全部置空/替换为 `<redacted>`。
 
 仓库自带可复跑样本（凭证均为明显占位假值）：
 
@@ -61,6 +66,18 @@ scripts/web-analyze.sh --har examples/web-samples/good.har                  # �
 scripts/web-analyze.sh --har examples/web-samples/broken-missing-fields.har  # 退出 1，结构化报缺字段
 scripts/web-analyze.sh --har examples/web-samples/not-json.har               # 退出 1，报 malformed JSON
 ```
+
+多格式抓包（同样走 `inspect-web-network-capture`，只是 format 参数不同）：
+
+| format | 样本 | 本机实测 |
+|---|---|---|
+| `har` | `examples/web-samples/good.har` | 真跑通，无需外部引擎 |
+| `saz` | `examples/web-samples/sample.saz`（ZIP+Fiddler raw 会话） | 真跑通，无需外部引擎 |
+| `qlog` | `examples/web-samples/sample.qlog`（aioquic 0.3 profile） | 真跑通，无需外部引擎 |
+| `mitmproxy` | `examples/web-samples/sample.mitm` | 需 `REA_MITMDUMP_COMMAND=<绝对路径 mitmdump 12.2.3>`，本机实测通过 |
+
+> mitmproxy 二进制 flow 必须由本机 mitmdump 12.2.3 解码；未设置
+> `REA_MITMDUMP_COMMAND` 时 rea 返回 `capability_unavailable`，这是预期行为而非脚本缺陷。
 
 产物都是标准 Evidence JSON（`inspect.json` / `bundle.json` / `targets.json`），
 每个结论带 provider、时间窗、coverage（complete/filtered/truncated）和局限说明。

@@ -125,8 +125,47 @@ if [ -n "$HAR" ]; then
   echo "== 离线复盘 HAR：${HAR} =="
   # 注意：必须用 inspect-web-network-capture <path> har 复盘 HAR；
   # 误用 `analyze <path>` 会把 HAR 当二进制 artifact 打开并报 unsupported binary format。
-  run_rea inspect-web-network-capture "$HAR" har --format json
-  exit "$?"
+  #
+  # rea 自带打码只覆盖 Authorization/Proxy-Authorization/Cookie/Set-Cookie；
+  # 自定义凭证头（X-Api-Key/X-Auth-Token/X-Custom-Session…）与 query 里的
+  # token= 参数仍会明文落盘。这里在 stdout 上再加一层白名单式打码后再输出。
+  set +o pipefail
+  run_rea inspect-web-network-capture "$HAR" har --format json \
+    | python3 -c '
+import json, re, sys
+raw = sys.stdin.read()
+i = raw.find("{")
+prefix, body = raw[:i], raw[i:]
+if not body.strip():
+    sys.stdout.write(raw); sys.exit(0)
+doc = json.loads(body)
+HDR = re.compile(r"^(authorization|proxy-authorization|cookie|set-cookie|"
+                 r"x-api-key|x-auth-token|x-access-token|x-auth|x-custom-session|"
+                 r"x-session-token|api-key)$", re.I)
+QS = re.compile(r"(token|api[-_]?key|secret|password|credential)", re.I)
+QS_URL = re.compile(r"((?:[?&])(?:token|access_token|api_key|apikey|secret|password|credential)=)[^&#]*", re.I)
+def scrub(o):
+    if isinstance(o, dict):
+        name, val = o.get("name"), o.get("value")
+        if isinstance(name, str) and isinstance(val, str) and (HDR.match(name) or QS.search(name)):
+            o["value"] = None
+        for k, v in o.items():
+            if isinstance(v, str):
+                o[k] = QS_URL.sub(r"\1<redacted>", v)
+            else:
+                scrub(v)
+    elif isinstance(o, list):
+        for v in o:
+            scrub(v)
+    elif isinstance(o, str):
+        o = QS_URL.sub(r"\1<redacted>", o)
+    return o
+scrub(doc)
+sys.stdout.write(prefix + json.dumps(doc, ensure_ascii=False))
+'
+  rc=${PIPESTATUS[0]}
+  set -o pipefail
+  exit "$rc"
 fi
 
 [ -n "$CDP" ] || { echo "[ERR] 需要 --cdp http://127.0.0.1:PORT（或 --har 文件 / --doctor）" >&2; usage; exit "$RC_USAGE"; }

@@ -12,6 +12,10 @@
 | `good.har` | 标准 HAR 1.2 样本：1 个 POST（带 postData/Authorization/Cookie）+ 1 个 GET（JS 响应），共 2 条 entry |
 | `broken-missing-fields.har` | 异常样本：合法 JSON 但缺 HAR 必填字段（entry 缺 `time`/`request.method`/`response.status`），用于验证报错 |
 | `not-json.har` | 异常样本：根本不是 JSON，用于验证解析报错 |
+| `redaction-probe.har` | 打码覆盖探针：含 Authorization/Proxy-Authorization/X-Api-Key/X-Auth-Token/X-Custom-Session/query token/Set-Cookie，全部 PLACEHOLDER 假值 |
+| `sample.saz` | Fiddler SAZ（ZIP+raw 会话），1 条 POST→200 |
+| `sample.qlog` | aioquic 0.3 profile qlog（用 aioquic 自带 trace 编码器生成） |
+| `sample.mitm` | mitmproxy 12.x 二进制 flow（用 mitmproxy 库 FlowWriter 生成）；复盘需 `REA_MITMDUMP_COMMAND=<绝对路径 mitmdump 12.2.3>` |
 | `mcp-client-config.example.json` | MCP 客户端配置文件里 `mcpServers.rea` 条目的形状（路径占位，勿直接用） |
 | `run-mcp-e2e.sh` | 可复跑的 MCP stdio JSON-RPC 端到端脚本（见下） |
 

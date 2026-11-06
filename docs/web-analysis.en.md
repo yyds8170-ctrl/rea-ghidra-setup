@@ -53,8 +53,13 @@ scripts/web-analyze.sh --har ./capture.har
 `--har` shells out to `rea inspect-web-network-capture <file> har --format json`
 (**offline, no live replay**, replaying method/URL/status/response-headers/postData
 per entry) — **not** `rea analyze <file>`, which would try to open the HAR as a
-binary artifact and fail with `unsupported binary format`. Transport credentials
-(Authorization / Cookie) are redacted automatically.
+binary artifact and fail with `unsupported binary format`.
+
+Redaction happens in two layers: rea natively redacts `Authorization` /
+`Proxy-Authorization` / `Cookie` / `Set-Cookie`; this script adds a second pass
+on stdout that nulls custom credential headers (`X-Api-Key` / `X-Auth-Token` /
+`X-Custom-Session`, …) and rewrites URL-query `token=/access_token=/api_key=`
+values to `<redacted>`.
 
 Reproducible samples ship in-repo (credentials are obvious placeholders):
 
@@ -63,6 +68,19 @@ scripts/web-analyze.sh --har examples/web-samples/good.har                  # ex
 scripts/web-analyze.sh --har examples/web-samples/broken-missing-fields.har # exit 1, structured missing-field error
 scripts/web-analyze.sh --har examples/web-samples/not-json.har              # exit 1, malformed JSON error
 ```
+
+Other capture formats (same `inspect-web-network-capture`, different format arg):
+
+| format | sample | this machine |
+|---|---|---|
+| `har` | `examples/web-samples/good.har` | works, no external engine |
+| `saz` | `examples/web-samples/sample.saz` (ZIP + Fiddler raw sessions) | works, no external engine |
+| `qlog` | `examples/web-samples/sample.qlog` (aioquic 0.3 profile) | works, no external engine |
+| `mitmproxy` | `examples/web-samples/sample.mitm` | needs `REA_MITMDUMP_COMMAND=<abs path to mitmdump 12.2.3>`; verified locally |
+
+> The mitmproxy binary flow is decoded by the caller-supplied mitmdump 12.2.3;
+> without `REA_MITMDUMP_COMMAND` rea returns `capability_unavailable` — expected,
+> not a script bug.
 
 Outputs are standard Evidence JSON (`inspect.json` / `bundle.json` / `targets.json`),
 each with provider, observation window, coverage (complete/filtered/truncated), and

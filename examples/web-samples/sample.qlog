@@ -1,0 +1,16 @@
+{
+  "qlog_format": "JSON",
+  "qlog_version": "0.3",
+  "traces": [
+    {
+      "common_fields": {
+        "ODCID": "30313233343536373839616263646566"
+      },
+      "events": [],
+      "vantage_point": {
+        "name": "aioquic",
+        "type": "client"
+      }
+    }
+  ]
+}
