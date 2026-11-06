@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "rea": {
+      "command": "/ABS/PATH/TO/npx",
+      "args": ["-y", "rea-agents@6.8.0", "--mcp"],
+      "env": {
+        "JAVA_HOME": "/ABS/PATH/TO/jdk-21",
+        "GHIDRA_INSTALL_DIR": "/ABS/PATH/TO/ghidra_12.1.4_PUBLIC"
+      }
+    }
+  }
+}

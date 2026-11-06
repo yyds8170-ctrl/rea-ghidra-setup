@@ -49,6 +49,47 @@ scripts/web-analyze.sh --cdp http://127.0.0.1:9222 \
 scripts/web-analyze.sh --har ./抓包.har
 ```
 
+`--har` 底层调的是 `rea inspect-web-network-capture <文件> har --format json`
+（**离线、不联网重放**，逐 entry 复盘方法/URL/状态码/响应头/postData），
+不是 `rea analyze <文件>`——后者会把 HAR 当二进制 artifact 打开并报
+`unsupported binary format`。
+
+凭证打码分两层：rea 内置打码 `Authorization` / `Proxy-Authorization` /
+`Cookie` / `Set-Cookie`；本脚本在 stdout 上再补一层，把自定义凭证头
+（`X-Api-Key` / `X-Auth-Token` / `X-Custom-Session` 等）以及 URL query 里的
+`token=/access_token=/api_key=` 值全部置空/替换为 `<redacted>`。
+
+打码边界（重要，勿扩大化）：
+
+- **只打**：(a) 敏感请求/响应**头的 value**（按头名白名单匹配）；
+  (b) **URL/query 串里** `?token=...&api_key=...` 这类查询键值。
+- **绝不打**：请求/响应 **body 原文**（`postData.text` / `response.content.text`）——
+  哪怕 body JSON 里恰好有字段名叫 `item_token` / `session_token` / `api_token`，
+  这些是业务数据，复盘 body 正是 `--har` 的价值所在；业务字段名不含 `?key=`
+  查询形态，正则天然不会命中。
+- 若一条 HAR 里没有任何需要打码的载体，脚本**原样透传** rea 的字节，
+  不做重排/美化，零副作用；上游输出若不是 JSON（异常日志）也原样透传。
+
+仓库自带可复跑样本（凭证均为明显占位假值）：
+
+```bash
+scripts/web-analyze.sh --har examples/web-samples/good.har                  # 退出 0，复盘 2 条 entry
+scripts/web-analyze.sh --har examples/web-samples/broken-missing-fields.har  # 退出 1，结构化报缺字段
+scripts/web-analyze.sh --har examples/web-samples/not-json.har               # 退出 1，报 malformed JSON
+```
+
+多格式抓包（同样走 `inspect-web-network-capture`，只是 format 参数不同）：
+
+| format | 样本 | 本机实测 |
+|---|---|---|
+| `har` | `examples/web-samples/good.har` | 真跑通，无需外部引擎 |
+| `saz` | `examples/web-samples/sample.saz`（ZIP+Fiddler raw 会话） | 真跑通，无需外部引擎 |
+| `qlog` | `examples/web-samples/sample.qlog`（aioquic 0.3 profile） | 真跑通，无需外部引擎 |
+| `mitmproxy` | `examples/web-samples/sample.mitm` | 需 `REA_MITMDUMP_COMMAND=<绝对路径 mitmdump 12.2.3>`，本机实测通过 |
+
+> mitmproxy 二进制 flow 必须由本机 mitmdump 12.2.3 解码；未设置
+> `REA_MITMDUMP_COMMAND` 时 rea 返回 `capability_unavailable`，这是预期行为而非脚本缺陷。
+
 产物都是标准 Evidence JSON（`inspect.json` / `bundle.json` / `targets.json`），
 每个结论带 provider、时间窗、coverage（complete/filtered/truncated）和局限说明。
 

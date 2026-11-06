@@ -57,13 +57,27 @@ The registered server is named `rea`; a standard stdio entry looks like:
 
 - `command` uses the **absolute path to npx** (resolved via `command -v npx`), so the client's PATH does not matter.
 - `env` writes `JAVA_HOME` / `GHIDRA_INSTALL_DIR` only when already set; with `REA_MIRROR=cn` it also carries `REA_MIRROR=cn`.
+- `JAVA_HOME` / `GHIDRA_INSTALL_DIR` are discovered by `resolve_jdk_home` / `resolve_ghidra_dir`,
+  which look under `$HOME/tools` for `current-jdk` / `current-ghidra` by default; set `TOOLS_DIR=<dir>` to override.
 - It does not touch global npm config or `.npmrc`.
 
 ## What `--check` does
 
-1. **Native MCP stdio handshake**: sends a JSON-RPC 2.0 `initialize` line (protocolVersion/capabilities/clientInfo); a legal `result` (with `serverInfo.name=rea`) means the server starts and the protocol works.
+1. **MCP stdio end-to-end self-check**: delegates to `examples/web-samples/run-mcp-e2e.sh`,
+   which really starts `rea-agents --mcp` and walks a full JSON-RPC round —
+   `initialize` → `notifications/initialized` → `tools/list` → several **offline tools/call**:
+   - `inspect_byte_entropy` (Shannon entropy of a temp file),
+     `inspect_analysis_settings`, `list_unknowns`, `binary_session` (session-level, no Ghidra/device);
+   - plus 2 error-envelope assertions: an unadvertised tool must return a top-level
+     JSON-RPC `error` (code `-32602`), and a missing required argument must return
+     `result.isError==true`.
+   Every step validates `jsonrpc=="2.0"`, `id` correlation, the `result`/`error` envelope,
+   and `content[].type=="text"`; any failure prints a per-check FAIL list and exits 1.
    - rea-agents' MCP over stdio is **newline-delimited JSONL (no Content-Length framing)**.
 2. **Ghidra provider check**: only when both `JAVA_HOME` and `GHIDRA_INSTALL_DIR` are set, runs `rea doctor --provider ghidra --format json` and asserts `providerInspections[].id=ghidra.available==true`; otherwise it gracefully skips step 2 (step 1 must still pass).
+
+> To re-run on its own / dump the wire transcript:
+> `bash examples/web-samples/run-mcp-e2e.sh [--out transcript.log]`.
 
 ## Safety and idempotency
 

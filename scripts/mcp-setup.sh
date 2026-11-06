@@ -141,14 +141,16 @@ fi
 
 # ---- --check：连接自检（不需要 --client）-----------------------------------
 if [ "$MODE_CHECK" = "1" ]; then
-  echo "== [a] MCP stdio 原生握手（JSON-RPC initialize）=="
-  init='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"rea-setup","version":"1.0.0"}}}'
-  resp="$(printf '%s\n' "$init" | timeout_run 90 npx -y "rea-agents@${REA_VERSION}" --mcp 2>/dev/null | head -n 1)"
-  if printf '%s' "$resp" | grep -q '"result"'; then
-    srv="$(printf '%s' "$resp" | python3 -c 'import sys,json;d=json.load(sys.stdin);print(d.get("result",{}).get("serverInfo",{}).get("name","?"),d.get("result",{}).get("serverInfo",{}).get("version","?"))' 2>/dev/null || echo "?")"
-    echo "  [OK] initialize 成功，server=$srv"
+  echo "== [a] MCP stdio 端到端自检（initialize→initialized→tools/list→离线 tools/call）=="
+  E2E_SCRIPT="$SCRIPT_DIR/../examples/web-samples/run-mcp-e2e.sh"
+  if [ ! -f "$E2E_SCRIPT" ]; then
+    echo "  [FAIL] 找不到端到端自检脚本：$E2E_SCRIPT" >&2
+    exit 1
+  fi
+  if bash "$E2E_SCRIPT"; then
+    echo "  [OK] MCP 端到端自检通过（握手 + tools/list + 4 个离线 tools/call + 2 个错误信封断言）"
   else
-    echo "  [FAIL] 未收到合法 initialize result（响应：${resp:-<空>}）" >&2
+    echo "  [FAIL] MCP 端到端自检未通过（逐项校验见上方输出）" >&2
     exit 1
   fi
 
