@@ -12,6 +12,8 @@
   "完成"并返回 0，会让批量分析/CI 把失败误判为成功（假绿）。现在 headless 跑完后
   按 kind 校验期望产物（functions/strings/...json）真实存在且非空，缺失即返回
   RC_UPSTREAM(12) 并提示常见原因。batch-analyze 坏目标正确隔离为 FAILED、不写缓存。
+- **ghidra-decompile.sh 同款假成功**：跑 analyzeHeadless 后不校验产物，现在 combined 模式
+  校验 decompiled.c 非空、separate 模式校验至少一个 .c 产物，否则非零退出。
 
 ### 验证
 - 真实坏输入矩阵（空文件/随机二进制/纯文本）均正确返回 12；真实 ELF 仍成功；

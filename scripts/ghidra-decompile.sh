@@ -43,4 +43,17 @@ OUTDIR="$(cd "$OUTDIR" && pwd)"
   -postScript DecompileAll.java "$OUTDIR" "$MODE" \
   -deleteProject
 
+# v6.0.6：analyzeHeadless 对空/垃圾/非二进制只打 ERROR REPORT 仍返回 0。
+# 校验反编译产物真实存在，否则把导入失败误报成成功。
+if [ "$MODE" = "combined" ]; then
+  [ -s "$OUTDIR/decompiled.c" ] || {
+    echo "[ERR] 未产出 decompiled.c（Ghidra 导入失败：空/损坏/非二进制？）" >&2; exit 1; }
+else
+  # separate：至少应有一个 .c 产物
+  found=0
+  for f in "$OUTDIR"/*.c; do [ -e "$f" ] && { found=1; break; }; done
+  [ "$found" = 1 ] || {
+    echo "[ERR] 未产出任何 .c 反编译文件（Ghidra 导入失败：空/损坏/非二进制？）" >&2; exit 1; }
+fi
+
 echo "完成，输出目录：$OUTDIR"
