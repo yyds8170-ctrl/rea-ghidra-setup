@@ -138,30 +138,38 @@ i = raw.find("{")
 prefix, body = raw[:i], raw[i:]
 if not body.strip():
     sys.stdout.write(raw); sys.exit(0)
-doc = json.loads(body)
+try:
+    doc = json.loads(body)
+except ValueError:
+    # 非 JSON 输出（异常日志/纯文本）：原样透传，不破坏上游
+    sys.stdout.write(raw); sys.exit(0)
 HDR = re.compile(r"^(authorization|proxy-authorization|cookie|set-cookie|"
                  r"x-api-key|x-auth-token|x-access-token|x-auth|x-custom-session|"
                  r"x-session-token|api-key)$", re.I)
 QS = re.compile(r"(token|api[-_]?key|secret|password|credential)", re.I)
 QS_URL = re.compile(r"((?:[?&])(?:token|access_token|api_key|apikey|secret|password|credential)=)[^&#]*", re.I)
+touched = [False]
 def scrub(o):
     if isinstance(o, dict):
         name, val = o.get("name"), o.get("value")
         if isinstance(name, str) and isinstance(val, str) and (HDR.match(name) or QS.search(name)):
-            o["value"] = None
-        for k, v in o.items():
+            o["value"] = None; touched[0] = True
+        for k, v in list(o.items()):
             if isinstance(v, str):
-                o[k] = QS_URL.sub(r"\1<redacted>", v)
+                nv = QS_URL.sub(r"\1<redacted>", v)
+                if nv != v:
+                    o[k] = nv; touched[0] = True
             else:
                 scrub(v)
     elif isinstance(o, list):
         for v in o:
             scrub(v)
-    elif isinstance(o, str):
-        o = QS_URL.sub(r"\1<redacted>", o)
-    return o
 scrub(doc)
-sys.stdout.write(prefix + json.dumps(doc, ensure_ascii=False))
+# 没有任何打码发生时，原样透传上游字节，保证普通 HAR 输出零副作用
+if not touched[0]:
+    sys.stdout.write(raw)
+else:
+    sys.stdout.write(prefix + json.dumps(doc, ensure_ascii=False))
 '
   rc=${PIPESTATUS[0]}
   set -o pipefail

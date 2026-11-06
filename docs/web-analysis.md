@@ -59,6 +59,17 @@ scripts/web-analyze.sh --har ./抓包.har
 （`X-Api-Key` / `X-Auth-Token` / `X-Custom-Session` 等）以及 URL query 里的
 `token=/access_token=/api_key=` 值全部置空/替换为 `<redacted>`。
 
+打码边界（重要，勿扩大化）：
+
+- **只打**：(a) 敏感请求/响应**头的 value**（按头名白名单匹配）；
+  (b) **URL/query 串里** `?token=...&api_key=...` 这类查询键值。
+- **绝不打**：请求/响应 **body 原文**（`postData.text` / `response.content.text`）——
+  哪怕 body JSON 里恰好有字段名叫 `item_token` / `session_token` / `api_token`，
+  这些是业务数据，复盘 body 正是 `--har` 的价值所在；业务字段名不含 `?key=`
+  查询形态，正则天然不会命中。
+- 若一条 HAR 里没有任何需要打码的载体，脚本**原样透传** rea 的字节，
+  不做重排/美化，零副作用；上游输出若不是 JSON（异常日志）也原样透传。
+
 仓库自带可复跑样本（凭证均为明显占位假值）：
 
 ```bash

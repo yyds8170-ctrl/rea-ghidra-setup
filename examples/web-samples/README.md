@@ -13,6 +13,7 @@
 | `broken-missing-fields.har` | 异常样本：合法 JSON 但缺 HAR 必填字段（entry 缺 `time`/`request.method`/`response.status`），用于验证报错 |
 | `not-json.har` | 异常样本：根本不是 JSON，用于验证解析报错 |
 | `redaction-probe.har` | 打码覆盖探针：含 Authorization/Proxy-Authorization/X-Api-Key/X-Auth-Token/X-Custom-Session/query token/Set-Cookie，全部 PLACEHOLDER 假值 |
+| `overredact-probe.har` | 过度打码反向探针：body 里业务字段 item_token/session_token/api_token 必须原文保留，同时真凭证仍被打码 |
 | `sample.saz` | Fiddler SAZ（ZIP+raw 会话），1 条 POST→200 |
 | `sample.qlog` | aioquic 0.3 profile qlog（用 aioquic 自带 trace 编码器生成） |
 | `sample.mitm` | mitmproxy 12.x 二进制 flow（用 mitmproxy 库 FlowWriter 生成）；复盘需 `REA_MITMDUMP_COMMAND=<绝对路径 mitmdump 12.2.3>` |

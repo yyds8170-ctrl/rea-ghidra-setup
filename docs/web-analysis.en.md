@@ -61,6 +61,19 @@ on stdout that nulls custom credential headers (`X-Api-Key` / `X-Auth-Token` /
 `X-Custom-Session`, …) and rewrites URL-query `token=/access_token=/api_key=`
 values to `<redacted>`.
 
+Redaction boundary (do not over-broaden):
+
+- **Only**: (a) sensitive request/response **header values** (matched by header-name
+  allowlist); (b) `?token=…&api_key=…`-style values inside URL/query strings.
+- **Never**: request/response **body text** (`postData.text` / `response.content.text`) —
+  even if a body JSON happens to name fields `item_token` / `session_token` /
+  `api_token`; those are business data, and replaying bodies is the whole point of
+  `--har`. Business field names never have the `?key=` query shape, so the regex
+  cannot match them.
+- If a HAR has nothing sensitive, the script **passes rea's bytes through unchanged**
+  (no re-serialization, zero side effects); non-JSON upstream output (error logs)
+  is likewise passed through verbatim.
+
 Reproducible samples ship in-repo (credentials are obvious placeholders):
 
 ```bash
