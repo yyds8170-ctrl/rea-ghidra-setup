@@ -51,4 +51,4 @@ REA_MIRROR=cn bash scripts/check-mirrors.sh
 
 `doctor.sh` prints the current mirror mode (cn = WARN notice, non-blocking).
 
-> Sources were measured on 2026-10-15 for locked Node v24.22.0: npmmirror and Huawei Cloud reachable; TUNA `nodejs-release` 404 for that version and is intentionally omitted. JDK uses Tsinghua TUNA (verified Range 206 / Content-Length). Details in [mirrors.md](mirrors.md) (Chinese).
+> Sources were measured on 2026-10-15 on sample Node v24.22.0: npmmirror and Huawei Cloud reachable; TUNA `nodejs-release` 404 for that version and is intentionally omitted. The portable Node was later bumped to 24.22.2 (same directory naming, expected synced by mirror convention, not re-tested). JDK uses Tsinghua TUNA (verified Range 206 / Content-Length). Details in [mirrors.md](mirrors.md) (Chinese).
