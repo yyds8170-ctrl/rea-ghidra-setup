@@ -69,7 +69,9 @@ function Invoke-CaseAssert {
   $script:badCount = 0
   function Check([bool]$ok, [string]$msg) {
     $tag = if ($ok) { 'PASS' } else { 'FAIL' }
-    Write-Output ("  [{0}] {1}/{2}: {3}" -f $tag, $CaseName, $Mode, $msg)
+    # 用 Write-Host 走宿主流：明细不能进成功流，否则会被外层 $bad = Invoke-CaseAssert 捕获，
+    # 使返回值变成「消息数组+int」，进而 $bad -gt 0 恒真、永远误报失败（且吞掉明细）。
+    Write-Host ("  [{0}] {1}/{2}: {3}" -f $tag, $CaseName, $Mode, $msg)
     if (-not $ok) { $script:badCount++ }
   }
 
@@ -148,9 +150,9 @@ function Invoke-CaseAssert {
   }
 
   if ($script:badCount -gt 0) {
-    Write-Output "[FAIL] $CaseName/$Mode 共 $($script:badCount) 项失败"
+    Write-Host "[FAIL] $CaseName/$Mode 共 $($script:badCount) 项失败"
   } else {
-    Write-Output "[PASS] $CaseName/$Mode 全部断言通过"
+    Write-Host "[PASS] $CaseName/$Mode 全部断言通过"
   }
   return $script:badCount
 }
