@@ -81,6 +81,7 @@ else
     "$HERE"/test_*.sh
     "$REPO_ROOT/scripts/gen-sbom.sh"
     "$REPO_ROOT/scripts/verify-integrity.sh"
+    "$REPO_ROOT/scripts/ci-offline-gate.sh"
   )
   # SC1091=“未跟随 source 文件”：被 source 的 lib/* 是他人所有、不在本次 lint 范围；
   # 这里动态路径在运行时确定，显式排除该 info，其余规则零容忍。
