@@ -4,6 +4,14 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.1.1] - 2026-11-07（CI bash3.2 非 ASCII 紧邻检查门修复）
+
+### Fixed
+- `ci-offline-gate.sh` 与 `verify-integrity.sh` 中 `$OFFLINE_DIR）`/`$n（` 变量后紧跟
+  全角标点，macOS 自带 bash 3.2 在 set -u 下会把中文标点字节误并入变量名。改为
+  `${var}` 显式界定，通过 CI 的 bash3.2 非 ASCII 紧邻检查门。
+
+
 ## [6.1.0] - 2026-11-06（可复现测试体系 + 跨平台 PS1 + 安装边界加固 + MCP/HAR 端到端）
 
 多方向并行深化：新增离线可复现测试与供应链校验、PowerShell 脚本真实跨平台运行、

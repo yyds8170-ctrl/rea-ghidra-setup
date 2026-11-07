@@ -94,7 +94,7 @@ for n in "${!MAN[@]}"; do
   known=0
   for e in "${EXPECTED[@]}"; do [ "$n" = "$e" ] && known=1 && break; done
   if [ "$known" -eq 0 ]; then
-    warn "清单含未跟踪工件：$n（版本漂移或多余文件）"
+    warn "清单含未跟踪工件：${n}（版本漂移或多余文件）"
     FAIL=1
   fi
 done

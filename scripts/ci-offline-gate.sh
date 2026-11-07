@@ -34,7 +34,7 @@ if [ -n "${OFFLINE_DIR:-}" ] && [ -d "$OFFLINE_DIR" ]; then
     FAILURES+=("verify-integrity.sh")
   fi
 else
-  echo "SKIP step2：OFFLINE_DIR 未设置或目录不存在（$OFFLINE_DIR）"
+  echo "SKIP step2：OFFLINE_DIR 未设置或目录不存在（${OFFLINE_DIR}）"
 fi
 
 step "3/3 gen-sbom.sh 可复现性（两次生成字节级 diff）"
