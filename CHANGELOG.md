@@ -4,6 +4,20 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.1.2] - 2026-11-07（命令基线补齐 completions/mcp + SBOM 同步 + Ghidra 兼容边界）
+
+### Fixed
+- 命令基线 `rea-6.8.0.txt` 从 175 补到 177：纳入 REA 官方的两个集成入口命令
+  `completions`（shell 补全）与 `mcp`（MCP server 注册）。此前 weekly-audit 的命令
+  diff 一直报"+2 new"，补齐后重跑 `audit_collect_drift.py` 为 +0/-0。
+- SPDX SBOM 的项目版本随 v6.1.1 一起刷新到 6.1.1，修复
+  `test_versions_match_versions_env` 断言失败（测试 117/117 恢复）。
+
+### Docs
+- `config/versions.env` 注明 Ghidra 兼容边界：REA 6.8.0 官方仅支持 12.1.x，
+  上游 12.2（2026-10）暂不兼容，故锁 12.1.4，巡检探测到 12.2 应 hold 人工。
+
+
 ## [6.1.1] - 2026-11-07（CI bash3.2 非 ASCII 紧邻检查门修复）
 
 ### Fixed

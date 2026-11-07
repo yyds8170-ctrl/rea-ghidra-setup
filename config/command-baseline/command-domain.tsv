@@ -173,3 +173,5 @@ uninstall-adb-package	5-android-adb	needs-device
 update	10-platform-jeb	linux-testable
 verify-managed-native-boundaries	9-evidence-engineering	linux-testable
 xrefs	1-core-native	needs-tool
+completions	10-platform-jeb	linux-testable
+mcp	10-platform-jeb	linux-testable

@@ -21,6 +21,7 @@ compare-source-to-bundle
 compare-wasm-interfaces
 compare-web-captures
 compare-web-screenshots
+completions
 cutter-command
 debug-with-gdb
 debug-with-rizin
@@ -131,6 +132,7 @@ list-javascript-runtime-targets
 list-jeb-units
 list-objdump-architectures
 match-native-functions
+mcp
 observe-javascript-runtime
 observe-native-calls
 observe-native-ui
