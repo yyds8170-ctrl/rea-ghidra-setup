@@ -507,6 +507,12 @@ scripts/web-analyze.sh --har ./抓包.har                            # HAR 离�
 
 ## 版本历史
 
+- **v6.1.2（2026-11-07，命令基线补齐 + 兼容边界 + 幂等实测）**
+  - 命令基线从 175 补到 177：纳入 REA 官方的 `completions`（shell 补全）与 `mcp`（MCP 注册）两个集成入口，weekly-audit 命令 diff 清零；
+  - 实测 install/uninstall 幂等（重复安装跳过、二次卸载不残留、verify 9/9）与 MCP 写入幂等（备份/合并/不动其它客户端条目）；
+  - 标注 Ghidra 兼容边界：REA 6.8.0 仅支持 12.1.x，上游 12.2 暂不兼容故锁 12.1.4。
+- **v6.1.1（2026-11-07，CI bash3.2 非 ASCII 检查门修复）**
+  - 修复两处脚本中 `$变量` 后紧跟全角标点（macOS bash 3.2 在 set -u 下会误判变量名），改为 `${var}` 显式界定。
 - **v6.1.0（2026-11-06，可复现测试体系 + 跨平台 PS1 + 边界加固 + MCP/HAR 端到端）**
   - 新增 `tests/` 离线可复现测试体系（117 项，含全仓库 shellcheck 回归门）、SPDX SBOM 与 `verify-integrity` 供应链校验；
   - PowerShell 脚本跨平台化（Linux 下 verify.ps1 9/9 通过，修复并发/退出码/路径硬编码）；
