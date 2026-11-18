@@ -2,7 +2,7 @@
 # lib/rea-wrap.ps1 — v5.4.0 统一 REA 命令包装器（PowerShell，仅被 dot-source）
 #
 # 与 lib/rea-wrap.sh 对等：统一环境解析 + 包装器开关 + 稳定退出码。
-# 运行时只依赖入库基线 config/command-baseline/command-domain.tsv（175 行），
+# 运行时只依赖入库基线 config/command-baseline/command-domain.tsv（198 行），
 # 不依赖 gitignored 的 research/。
 #
 # 提供：
@@ -142,7 +142,7 @@ function Invoke-ReaCommand {
   # ---- 1) 命令必须在基线 ----
   $rec = Get-ReaCommandRecord -Command $cmd
   if ($null -eq $rec) {
-    Write-Host "rea-wrap: 未知命令：$cmd（不在 rea-agents 基线的 175 个命令内）" -ForegroundColor Red
+    Write-Host "rea-wrap: 未知命令：$cmd（不在 rea-agents 基线的 198 个命令内）" -ForegroundColor Red
     $script:ReaWrapExit = 2; return
   }
   if ($ExpectedDomain -ne '' -and $rec.Domain -ne $ExpectedDomain) {

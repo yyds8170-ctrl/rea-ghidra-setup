@@ -51,7 +51,7 @@ PowerShell 示例：
 | 退出码 | 含义 | 何时产生 |
 | --- | --- | --- |
 | `0` | 成功 | REA 执行成功（REA 原生退出 0）。 |
-| `2` | 用法错误 | 命令不在 175 命令基线内、包装器开关错误、`--out` 缺值、或 `dN` 入口校验命令不属于该领域——**调用 npx 之前**由包装器判定。 |
+| `2` | 用法错误 | 命令不在 196 命令基线内、包装器开关错误、`--out` 缺值、或 `dN` 入口校验命令不属于该领域——**调用 npx 之前**由包装器判定。 |
 | `3` | 前置缺失 | `1-core-native`（Ghidra 原生）命令解析不到可用的 JDK 21 或 Ghidra——**不调用 npx**，直接返回。 |
 | `4` | 运行时失败 | REA 已被执行但返回非 0（分析失败、文件不存在、坏 flag 等）。 |
 
@@ -60,7 +60,7 @@ PowerShell 示例：
 
 ## 领域路由
 
-运行时领域归属来自入库文件 [`config/command-baseline/command-domain.tsv`](../config/command-baseline/command-domain.tsv)（175 行，`命令名<TAB>domain<TAB>testability`，与 `rea-6.8.0.txt` 基线逐字一致）。
+运行时领域归属来自入库文件 [`config/command-baseline/command-domain.tsv`](../config/command-baseline/command-domain.tsv)（198 行，`命令名<TAB>domain<TAB>testability`，与 `rea-6.9.0.txt` 基线逐字一致）。
 
 | 入口 | 领域 | 命令数 | 说明 |
 | --- | --- | ---: | --- |

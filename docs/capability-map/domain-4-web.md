@@ -1,7 +1,7 @@
 # 领域④ · Web / JS / Electron
 
-> 基线：rea-agents 6.8.0（2026-11-05），数据底座 `research/B_commands_176.json`。
-> **本领域 28 个命令 / 28 commands in this domain。**
+> 基线：rea-agents 6.9.0（2026-11-05），数据底座 `research/B_commands_176.json`。
+> **本领域 33 个命令 / 33 commands in this domain。**
 > 可测性分布：✅ linux-testable 11 条；📱 needs-device 17 条（均依赖已运行的 Chromium/Electron/Node CDP 端点）。
 
 ## 目录 / TOC
@@ -400,3 +400,75 @@
   ```
 - **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯本地 source map 解码；本批文档未逐条跑通。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+1. [`compare-static-and-observed-endpoints`](#compare-static-and-observed-endpoints)
+2. [`inspect-api-contract`](#inspect-api-contract)
+3. [`inspect-playwright-trace`](#inspect-playwright-trace)
+4. [`inspect-v8-code-cache`](#inspect-v8-code-cache)
+5. [`validate-browser-scenario`](#validate-browser-scenario)
+
+### `compare-static-and-observed-endpoints`
+
+- **用途 / Purpose**：离线比对静态 JavaScript 端点与 HAR Evidence JSON；--detail summary 配合 --evidence_output 保存所选分析视图页的完整事实。 Compare static JavaScript endpoints and HAR Evidence JSON offline; --detail summary with --evidence_output saves full facts for selected inspect-analysis-view pages.
+- **前置与外部工具 / Prerequisites & external tools**：本地静态 JS 产物与 HAR Evidence JSON；离线解析，不启动浏览器。Local static JS bundle and HAR Evidence JSON; offline, no browser launch.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea compare-static-and-observed-endpoints <static> <har-evidence>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线解析，不启动浏览器）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-api-contract`
+
+- **用途 / Purpose**：离线检查本地 OpenAPI JSON 或 GraphQL SDL 声明与字段绑定。 Inspect local OpenAPI JSON or GraphQL SDL declarations and field bindings offline.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置纯解析 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-api-contract <contract-file>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线解析）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-playwright-trace`
+
+- **用途 / Purpose**：不启动浏览器，离线清点本地保存的 Playwright v10 trace ZIP 事件。 Inventory local saved Playwright v10 trace ZIP events offline without launching a browser.
+- **前置与外部工具 / Prerequisites & external tools**：本地保存的 Playwright trace ZIP。A saved local Playwright trace ZIP.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-playwright-trace <trace.zip>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线解析，不启动浏览器）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-v8-code-cache`
+
+- **用途 / Purpose**：不执行，检查 V8 code cache 头及其内嵌的可打印字节模式。 Inspect a V8 code cache header and its embedded printable byte patterns without executing it.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置纯解析 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-v8-code-cache <code-cache>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线解析，不执行）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `validate-browser-scenario`
+
+- **用途 / Purpose**：校验一个浏览器场景，不启动也不附加到浏览器。 Validate one browser scenario without launching or attaching to a browser.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置纯校验 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea validate-browser-scenario <scenario>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线校验，不启动浏览器）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

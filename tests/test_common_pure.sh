@@ -18,7 +18,7 @@ GHIDRA_VERSION=12.1.4
 GHIDRA_BUILD=Ghidra_12.1.4_build
 GHIDRA_DATE=20260921
 JDK_FEATURE=21
-REA_NODE_VERSION=24.22.2
+REA_NODE_VERSION=24.22.3
 
 assert_eq "ghidra_12.1.4_PUBLIC_20260921.zip" "$(ghidra_zip_name)" "ghidra_zip_name 派生正确"
 assert_eq "ghidra_12.1.4_PUBLIC" "$(ghidra_dir_name)" "ghidra_dir_name 派生正确"
@@ -29,12 +29,12 @@ assert_eq \
   "https://api.adoptium.net/v3/binary/latest/21/ga/linux/x64/jdk/hotspot/normal/eclipse" \
   "$(adoptium_jdk_url linux x64)" "adoptium_jdk_url 组装正确"
 assert_eq \
-  "https://nodejs.org/dist/v24.22.2/node-v24.22.2-linux-x64.tar.gz" \
+  "https://nodejs.org/dist/v24.22.3/node-v24.22.3-linux-x64.tar.gz" \
   "$(node_tarball_url linux x64)" "node_tarball_url linux-x64 正确"
 assert_eq \
-  "https://nodejs.org/dist/v24.22.2/node-v24.22.2-linux-arm64.tar.gz" \
+  "https://nodejs.org/dist/v24.22.3/node-v24.22.3-linux-arm64.tar.gz" \
   "$(node_tarball_url linux aarch64)" "node_tarball_url aarch64→arm64 重命名正确"
-assert_eq "node-v24.22.2-linux-arm64" "$(node_tarball_dir linux aarch64)" "node_tarball_dir aarch64→arm64"
+assert_eq "node-v24.22.3-linux-arm64" "$(node_tarball_dir linux aarch64)" "node_tarball_dir aarch64→arm64"
 
 # normalize_arch：本机是 x86_64 -> x64
 case "$(uname -m)" in
@@ -51,7 +51,7 @@ out="$(
   printf '%s|%s|%s|%s|%s|%s' \
     "$GHIDRA_VERSION" "$GHIDRA_BUILD" "$GHIDRA_DATE" "$JDK_FEATURE" "$REA_NODE_VERSION" "$REA_VERSION"
 )"
-assert_eq "12.1.4|Ghidra_12.1.4_build|20260921|21|24.22.2|6.8.0" "$out" \
+assert_eq "12.1.4|Ghidra_12.1.4_build|20260921|21|24.22.3|6.9.0" "$out" \
   "load_versions 装载 config/versions.env 全部锁定版本"
 
 tests_done

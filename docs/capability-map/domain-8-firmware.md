@@ -1,7 +1,7 @@
 # 领域⑧ · 固件 / 嵌入式 / Flutter / Dart / HarmonyOS
 
-> 基线：rea-agents 6.8.0（2026-11-05），数据底座 `research/B_commands_176.json`。
-> **本领域 9 个命令 / 9 commands in this domain。**
+> 基线：rea-agents 6.9.0（2026-11-05），数据底座 `research/B_commands_176.json`。
+> **本领域 10 个命令 / 10 commands in this domain。**
 > 可测性分布：✅ linux-testable 9 条（全部为静态解析；部分解包器另需安装解包工具）。
 
 ## 目录 / TOC
@@ -134,3 +134,19 @@
   ```
 - **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯 Evidence JSON 投影，无需真机；本批文档未逐条跑通。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+1. [`inspect-kernel-build-config`](#inspect-kernel-build-config)
+
+### `inspect-kernel-build-config`
+
+- **用途 / Purpose**：不执行内核镜像，检查其版本 banner 与内嵌 build config。 Inspect a Linux kernel image's version banner and embedded build config without executing it.
+- **前置与外部工具 / Prerequisites & external tools**：本地 Linux 内核镜像；离线解析。A local Linux kernel image; offline parse.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-kernel-build-config <kernel-image>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线镜像解析，不执行）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

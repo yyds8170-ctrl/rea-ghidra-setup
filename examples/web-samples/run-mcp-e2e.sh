@@ -28,7 +28,7 @@ REPO_ROOT="$(cd "$HERE/../.." && pwd)"
 # 版本号不硬编码：优先 config/versions.env，缺了再退默认
 # shellcheck source=../../config/versions.env
 [ -f "$REPO_ROOT/config/versions.env" ] && . "$REPO_ROOT/config/versions.env"
-REA_VERSION="${REA_VERSION:-6.8.0}"
+REA_VERSION="${REA_VERSION:-6.9.0}"
 
 TRANSCRIPT=""
 while [ $# -gt 0 ]; do

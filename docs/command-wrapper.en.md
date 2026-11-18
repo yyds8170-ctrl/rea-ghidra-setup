@@ -51,7 +51,7 @@ These switches are parsed **by the wrapper before passthrough**; everything afte
 | Code | Meaning | When produced |
 | --- | --- | --- |
 | `0` | Success | REA ran successfully (REA native exit 0). |
-| `2` | Usage error | Command not in the 175-command baseline, bad wrapper switch, missing `--out` value, or a `dN` entry whose command does not belong to that domain — judged by the wrapper **before npx**. |
+| `2` | Usage error | Command not in the 196-command baseline, bad wrapper switch, missing `--out` value, or a `dN` entry whose command does not belong to that domain — judged by the wrapper **before npx**. |
 | `3` | Prerequisite missing | A `1-core-native` (Ghidra-native) command cannot resolve a usable JDK 21 or Ghidra — **npx is not called**. |
 | `4` | Runtime failure | REA was executed but returned non-zero (analysis failure, missing file, bad flag, …). |
 
@@ -60,7 +60,7 @@ These switches are parsed **by the wrapper before passthrough**; everything afte
 
 ## Domain routing
 
-Runtime domain membership comes from the in-repo file [`config/command-baseline/command-domain.tsv`](../config/command-baseline/command-domain.tsv) (175 rows, `command<TAB>domain<TAB>testability`, matching `rea-6.8.0.txt` verbatim).
+Runtime domain membership comes from the in-repo file [`config/command-baseline/command-domain.tsv`](../config/command-baseline/command-domain.tsv) (198 rows, `command<TAB>domain<TAB>testability`, matching `rea-6.9.0.txt` verbatim).
 
 | Entry | Domain | Count | Notes |
 | --- | --- | ---: | --- |

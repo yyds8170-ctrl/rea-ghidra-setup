@@ -1,6 +1,6 @@
 # 领域 ③ · 动态调试 / 运行时 / UI 观察（Dynamic Debugging / Runtime / UI Observation）
 
-> 本领域共 **15 个命令**。数据底座：`research/B_commands_176.json`（rea-agents 6.8.0）。
+> 本领域共 **19 个命令**。数据底座：`research/B_commands_176.json`（rea-agents 6.9.0）。
 > 本领域多依赖真机/运行时会话、GDB/Rizin/Cutter/Frida 等外部调试器，凡未在本环境真实跑通的均标注"未实测/需 XX 前置"。
 
 ## 目录 / Table of contents
@@ -20,6 +20,10 @@
 13. [`observe-native-calls`](#observe-native-calls)
 14. [`observe-native-ui`](#observe-native-ui)
 15. [`trace-native-ui-action`](#trace-native-ui-action)
+16. [`capture-desktop-application`](#capture-desktop-application)
+17. [`describe-desktop-application-task`](#describe-desktop-application-task)
+18. [`export-desktop-application`](#export-desktop-application)
+19. [`inspect-desktop-application-state`](#inspect-desktop-application-state)
 
 ---
 
@@ -217,3 +221,56 @@
   ```
 - **可测性 / Testability**：📱 需真机/设备 / Requires device —— 依赖存活进程/UI 会话与 provider，本环境**未实测/需真机或运行时会话前置**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `capture-desktop-application`
+
+- **用途 / Purpose**：启动一个 Linux 桌面应用，在使用过程中监视，并按 stdin 读入的检查点记录窗口与状态。 Launch a Linux desktop application, watch it while it is used and record its windows and state at checkpoints read from stdin.
+- **前置与外部工具 / Prerequisites & external tools**：Linux 桌面会话与目标应用；需图形环境。A Linux desktop session and the target application; graphical session required.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea capture-desktop-application <app-command>
+  ```
+- **可测性 / Testability**：📱 需桌面会话/真机 / Requires device；本环境未实测。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `describe-desktop-application-task`
+
+- **用途 / Purpose**：描述桌面应用捕获从种子检查点到结束的文件变化，给出建议检查项与供 export-desktop-application --task 使用的任务草稿。 Describe how a desktop application capture's files changed from the seed checkpoint to the end, with suggested checks and a task draft for export-desktop-application --task.
+- **前置与外部工具 / Prerequisites & external tools**：capture-desktop-application 产出的捕获目录。A capture folder produced by capture-desktop-application.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea describe-desktop-application-task <capture-dir>
+  ```
+- **可测性 / Testability**：📱 需桌面捕获产物 / Requires captured session；本环境未实测。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `export-desktop-application`
+
+- **用途 / Purpose**：将桌面应用捕获目录导出为 agentenv 计算机应用 bundle：class、env.toml、skill 与 seed。 Export a desktop application capture folder as an agentenv computer app bundle: class, env.toml, skill and seed.
+- **前置与外部工具 / Prerequisites & external tools**：capture-desktop-application 产出的捕获目录。A capture folder produced by capture-desktop-application.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea export-desktop-application <capture-dir> --task <task>
+  ```
+- **可测性 / Testability**：📱 需桌面捕获产物 / Requires captured session；本环境未实测。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-desktop-application-state`
+
+- **用途 / Purpose**：读入桌面应用捕获目录，还原应用状态：角色、各版本的类型化 JSON 视图与变化类别。 Read a desktop application capture folder into the application's state: roles, typed JSON views of each version and kinds of change.
+- **前置与外部工具 / Prerequisites & external tools**：capture-desktop-application 产出的捕获目录。A capture folder produced by capture-desktop-application.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-desktop-application-state <capture-dir>
+  ```
+- **可测性 / Testability**：📱 需桌面捕获产物 / Requires captured session；本环境未实测。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

@@ -15,17 +15,18 @@
 
 ## 零、锁定版本与统一能力（v3.x）
 
-- 锁定版本（`config/versions.env`）：**Ghidra 12.1.4 / JDK 21 / 便携 Node 24.22.2 / REA 6.8.0**。
+- 锁定版本（`config/versions.env`）：**Ghidra 12.1.4 / JDK 21 / 便携 Node 24.22.3 / REA 6.9.0**。
 - 统一入口：`./rea-ghidra install|verify|doctor|mcp|export|batch|current|rollback|self-update`（Windows `.\rea-ghidra.ps1`）。
 - 能力：MCP 一键对接（[mcp.md](mcp.md)）、静态导出（[export.md](export.md)）、批量并行 + 快照缓存（[batch.md](batch.md)）、多架构 fixture CI（`fixture-multiarch`，ELF32/AArch64/PE32）、自更新 ff-only / checksums 校验、`current-ghidra`·`current-jdk` 软链与回滚、Docker amd64+arm64、Release 附带 `checksums.txt` + SBOM。
 - 新增（v3.4–v4.0）：**结构化报告生成器**（`scripts/ghidra-report.sh`，Markdown+自包含 HTML+10 类 JSON，见 [../README.md](../README.md)）；**端到端真实案例库**（`examples/cases/`，5 案例、带符号/strip 共 10 二进制，CI 自动断言）；**性能基准**（`scripts/benchmark.sh`，min/median/max）；容器**非 root + HEALTHCHECK + OCI 标签**；非 ASCII 文件名自愈；**双语文档站**（mkdocs，见 [mkdocs.yml](../mkdocs.yml)）；**Homebrew / Scoop 分发资产**（[packaging/README.md](../packaging/README.md)，个人 tap/bucket）。
 - 发现逻辑：显式 env（`JAVA_HOME`/`GHIDRA_INSTALL_DIR`）＞ `~/tools/current-*` 软链 ＞ 版本化目录枚举（旧行为兜底）。
 
-### 上游版本边界：Ghidra 12.2 暂不可用（2026-11-05 实测）
+### 上游版本边界：Ghidra 12.2 兼容状态（2026-11-18 复核）
 
 - Ghidra 上游已于 2026-10-22 发布 **12.2**，但它**最低要求 JDK 25**（12.1.x 用 JDK 21），属带前置变更的 minor 升级。
-- 本项目已在隔离环境真实下载 JDK 25.0.5 + Ghidra 12.2 验证：Ghidra 12.2 headless 本身可正常反编译（产出 16 个函数 .c），但 **REA 6.8.0 明确拒绝该版本**——doctor 报 `unsupported_version, 12.2; accepted releases are 12.1.x (verified build 12.1.4)`，存在版本白名单。
-- 因此本仓库**默认保持 Ghidra 12.1.4 + JDK 21**，不升级到 12.2（升级会导致 REA 无法工作，属效果回退）。weekly-audit 把 12.1.4→12.2 判为 **minor，hold 人审、不自动合并**；待 REA 官方发布支持 Ghidra 12.2 的版本后，再联动升级 JDK 25 + Ghidra 12.2。
+- **REA 6.8.0** 白名单硬阻断 12.2：doctor 报 `unsupported_version, 12.2; accepted releases are 12.1.x (verified build 12.1.4)`。
+- **REA 6.9.0** 放宽了判定（实测 `GhidraReleasePolicy`）：verified build 仍为 12.1.4；同 major 12 内 minor≥1 判 `compatible`，12.2 可运行但带 **unverified-build** 限制（provider 身份仍报实测版本）；仅当 major≠12 才判 `unsupported`。
+- 因此本仓库**默认保持 Ghidra 12.1.4 + JDK 21**，不自动跟随 12.2：12.2 虽在 6.9.0 下可跑，但属未验证构建且需切换 JDK 25，保守起见待 REA 把 12.2 列为 verified build 后再联动升级。weekly-audit 对 12.1.4→12.2 判为 `compatible unverified-build`、hold 人审、不自动合并；major≠12 的越线版本才标 `blocked`。
 - 若需单独使用 Ghidra 12.2（不经 REA），可自行安装，但不要把 `GHIDRA_INSTALL_DIR` 指向它后再跑 REA。
 
 ## 一、系统 × 运行环境总表

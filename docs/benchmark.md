@@ -16,7 +16,7 @@
 | 内存 | 总 8128 MB，测量时可用约 7.3 GB，**swap = 0** |
 | Ghidra | 12.1.4（`ghidra_12.1.4_PUBLIC`，current-ghidra 软链指向） |
 | JDK | Temurin 21（`jdk-21.0.12.1+1`，current-jdk） |
-| 便携 Node / REA | Node 24.22.2 / rea-agents 6.8.0（批量/导出场景不调用） |
+| 便携 Node / REA | Node 24.22.3 / rea-agents 6.9.0（批量/导出场景不调用） |
 | JVM 堆 | analyzeHeadless 默认 `-Xmx` 2G（未设 `GHIDRA_HEADLESS_MAXMEM`） |
 
 > 版本均来自 `config/versions.env`，不在本页硬编码。

@@ -1,7 +1,7 @@
 # 领域⑩ · JEB 商业软件 + 平台自身
 
-> 基线：rea-agents 6.8.0（2026-11-05），数据底座 `research/B_commands_176.json`。
-> **本领域 10 个命令 / 10 commands in this domain。**
+> 基线：rea-agents 6.9.0（2026-11-05），数据底座 `research/B_commands_176.json`。
+> **本领域 12 个命令 / 12 commands in this domain。**
 > 可测性分布：✅ linux-testable 6 条（平台自检/配置类）；💼 needs-jeb 4 条（JEB 项目/反编译/客户端，本环境无 JEB，未实测）。
 
 ## 目录 / TOC
@@ -148,3 +148,33 @@
   ```
 - **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 属自更新动作，会改动本环境 rea 安装版本，本环境未真实执行（**未实测/避免误升级**）。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+1. [`guidance`](#guidance)
+2. [`guided-workflows`](#guided-workflows)
+
+### `guidance`
+
+- **用途 / Purpose**：搜索或阅读已安装的 REA 工作流指引。 Search or read the installed REA workflow guidance.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置查询 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea guidance [query]
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（内置查询）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `guided-workflows`
+
+- **用途 / Purpose**：列出或渲染 REA 内置的引导工作流。 List or render REA's existing guided workflows.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置查询 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea guided-workflows [--render <id>]
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（内置查询）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

@@ -1,6 +1,6 @@
 # 领域 ⑥ · Apple / macOS / iOS（Apple / macOS / iOS）
 
-> 本领域共 **9 个命令**。数据底座：`research/B_commands_176.json`（rea-agents 6.8.0）。
+> 本领域共 **9 个命令**。数据底座：`research/B_commands_176.json`（rea-agents 6.9.0）。
 > 多数为 Apple 平台产物解析，依赖 macOS 目标产物；其中 `demangle-swift`、`inspect-native-dispatch-metadata` 为纯静态解析，可在 Linux 实测，其余本环境**未实测/需 Apple 产物或 macOS 前置**。
 
 ## 目录 / Table of contents

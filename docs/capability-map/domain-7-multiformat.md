@@ -1,6 +1,6 @@
 # 领域 ⑦ · 多格式（Multi-format：WASM / EVM / pyc / BEAM / SQLite / pcap 等）
 
-> 本领域共 **15 个命令**。数据底座：`research/B_commands_176.json`（rea-agents 6.8.0）。
+> 本领域共 **16 个命令**。数据底座：`research/B_commands_176.json`（rea-agents 6.9.0）。
 > 其中纯静态解析类（Erlang BEAM、EVM、GPU code object、IL2CPP、模型权重头、pyc、SQLite、pcap-client 自检）可在 Linux 实测；依赖 WABT / tshark / sigrok 等外部工具的命令本环境**未实测/需对应工具前置**。
 
 ## 目录 / Table of contents
@@ -20,6 +20,7 @@
 13. [`inspect-signal-decoders`](#inspect-signal-decoders)
 14. [`inspect-sqlite-database`](#inspect-sqlite-database)
 15. [`inspect-wasm-artifact`](#inspect-wasm-artifact)
+16. [`inspect-ntfs-journal`](#inspect-ntfs-journal)
 
 ---
 
@@ -217,3 +218,17 @@
   ```
 - **可测性 / Testability**：🔧 需安装工具 `WABT`（wasm-objdump / wasm2wat）/ Requires tool —— 装好 WABT 后可在 Linux 验证；本环境**未实测/需 WABT 前置**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-ntfs-journal`
+
+- **用途 / Purpose**：检查成对的离线 NTFS MFT 与 USN journal 取证映像。 Inspect paired offline NTFS MFT and USN journal acquisitions.
+- **前置与外部工具 / Prerequisites & external tools**：成对的 NTFS MFT 与 USN journal 映像。Paired NTFS MFT and USN journal acquisitions.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-ntfs-journal <mft> <usn-journal>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线文件系统解析）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

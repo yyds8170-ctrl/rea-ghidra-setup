@@ -1,7 +1,7 @@
-# 领域⑨ · Evidence 与工程化能力地图（rea-agents 6.8.0）
+# 领域⑨ · Evidence 与工程化能力地图（rea-agents 6.9.0）
 
-> 本领域共 **16 个命令**，全部为离线 Evidence JSON 处理 / 环境 bundle 构建与比对类命令（✅ 本机可实测）。
-> 基线版本：rea-agents 6.8.0（2026-11-05）。全局参数（`--format`、`--filter-output`、`--token-*` 等）见总索引 README，本文件不重复列出。
+> 本领域共 **18 个命令**，全部为离线 Evidence JSON 处理 / 环境 bundle 构建与比对类命令（✅ 本机可实测）。
+> 基线版本：rea-agents 6.9.0（2026-11-05）。全局参数（`--format`、`--filter-output`、`--token-*` 等）见总索引 README，本文件不重复列出。
 
 ## 目录
 
@@ -34,7 +34,7 @@
   ```bash
   rea build-reconstruction-obligation-ledger <inputJson>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线投影；本环境仅核对 6.8.0 help，**未跑通样本 Evidence JSON**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线投影；本环境仅核对 6.9.0 help，**未跑通样本 Evidence JSON**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `compare`
@@ -47,7 +47,7 @@
   ```bash
   rea compare <left> <right> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线比对；本环境仅核对 6.8.0 help，**未跑通样本 bundle**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线比对；本环境仅核对 6.9.0 help，**未跑通样本 bundle**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `environment-build`
@@ -60,7 +60,7 @@
   ```bash
   rea environment-build <capture> [directory] [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线；本环境仅核对 6.8.0 help，**未跑通样本 HAR/capture**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线；本环境仅核对 6.9.0 help，**未跑通样本 HAR/capture**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `environment-compare`
@@ -73,7 +73,7 @@
   ```bash
   rea environment-compare <manifest> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线；本环境仅核对 6.8.0 help，**未跑通样本环境与 probe**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线；本环境仅核对 6.9.0 help，**未跑通样本环境与 probe**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `environment-export`
@@ -86,7 +86,7 @@
   ```bash
   rea environment-export <manifest> <directory> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线；本环境仅核对 6.8.0 help，**未跑通样本环境**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线；本环境仅核对 6.9.0 help，**未跑通样本环境**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `environment-serve`
@@ -99,7 +99,7 @@
   ```bash
   rea environment-serve <manifest> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线自包含服务；本环境仅核对 6.8.0 help，**未跑通样本环境**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线自包含服务；本环境仅核对 6.9.0 help，**未跑通样本环境**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `evaluate-reconstruction-coverage`
@@ -112,7 +112,7 @@
   ```bash
   rea evaluate-reconstruction-coverage <inputJson>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线评估；本环境仅核对 6.8.0 help，**未跑通样本 Evidence JSON**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线评估；本环境仅核对 6.9.0 help，**未跑通样本 Evidence JSON**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `evidence-export`
@@ -125,7 +125,7 @@
   ```bash
   rea evidence-export <source> <output> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线文件操作；本环境仅核对 6.8.0 help，**未跑通样本 bundle**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线文件操作；本环境仅核对 6.9.0 help，**未跑通样本 bundle**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `evidence-import`
@@ -138,7 +138,7 @@
   ```bash
   rea evidence-import <path>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线文件操作；本环境仅核对 6.8.0 help，**未跑通样本 bundle**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线文件操作；本环境仅核对 6.9.0 help，**未跑通样本 bundle**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `import-managed-reconstruction`
@@ -151,7 +151,7 @@
   ```bash
   rea import-managed-reconstruction <inputJson>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线导入；本环境仅核对 6.8.0 help，**未跑通样本重建数据**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线导入；本环境仅核对 6.9.0 help，**未跑通样本重建数据**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `import-reference-source`
@@ -164,7 +164,7 @@
   ```bash
   rea import-reference-source <root> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线读取；本环境仅核对 6.8.0 help，**未跑通样本源码树**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线读取；本环境仅核对 6.9.0 help，**未跑通样本源码树**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `inspect-analysis-view`
@@ -177,7 +177,7 @@
   ```bash
   rea inspect-analysis-view <inputJson> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线投影；本环境仅核对 6.8.0 help，**未跑通样本 Evidence JSON**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线投影；本环境仅核对 6.9.0 help，**未跑通样本 Evidence JSON**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `inspect-evidence-bundle`
@@ -190,7 +190,7 @@
   ```bash
   rea inspect-evidence-bundle <inputJson>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线读取；本环境仅核对 6.8.0 help，**未跑通样本 bundle**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线读取；本环境仅核对 6.9.0 help，**未跑通样本 bundle**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `project-managed-application-graph`
@@ -203,7 +203,7 @@
   ```bash
   rea project-managed-application-graph <inputJson>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线投影；本环境仅核对 6.8.0 help，**未跑通样本 Evidence JSON**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线投影；本环境仅核对 6.9.0 help，**未跑通样本 Evidence JSON**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `trace-application-feature`
@@ -216,7 +216,7 @@
   ```bash
   rea trace-application-feature <inputJson>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线追踪；本环境仅核对 6.8.0 help，**未跑通样本 Evidence JSON**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线追踪；本环境仅核对 6.9.0 help，**未跑通样本 Evidence JSON**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `verify-managed-native-boundaries`
@@ -229,5 +229,35 @@
   ```bash
   rea verify-managed-native-boundaries <inputJson>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线校验；本环境仅核对 6.8.0 help，**未跑通样本 Evidence JSON**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线校验；本环境仅核对 6.9.0 help，**未跑通样本 Evidence JSON**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+1. [`audit-release-exposure`](#audit-release-exposure)
+2. [`compare-artifacts`](#compare-artifacts)
+
+### `audit-release-exposure`
+
+- **用途 / Purpose**：报告对已发布产物的静态分析可还原出的内容；选中为文件时列出同目录配套的 .pdb/.dSYM/.debug/.map 调试符号文件。 Report what static analysis of a shipped artifact recovers; lists sibling .pdb/.dSYM/.debug/.map debug companions when the selection is a file.
+- **前置与外部工具 / Prerequisites & external tools**：已发布产物及其调试配套文件路径。Shipped artifact and sibling debug companions.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea audit-release-exposure <artifact-path>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线静态分析，不执行产物）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `compare-artifacts`
+
+- **用途 / Purpose**：比对两份产物清单（含 FIT 与旧版 uImage 固件组件），输入为 {left,right} Evidence 或 evidence-file。 Compare two artifact inventories, including FIT and legacy uImage firmware components, named as {left,right} Evidence or evidence-file.
+- **前置与外部工具 / Prerequisites & external tools**：两份 Evidence/产物清单；离线比对。Two Evidence/artifact inventories; offline comparison.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea compare-artifacts <left> <right>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线 Evidence 比对，不执行）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

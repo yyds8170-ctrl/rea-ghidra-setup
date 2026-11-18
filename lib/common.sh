@@ -135,16 +135,16 @@ normalize_arch() {
   esac
 }
 
-# Node 解压后的目录名（tar.gz 包），如 node-v24.22.2-linux-x64
+# Node 解压后的目录名（tar.gz 包），如 node-v24.22.3-linux-x64
 node_tarball_dir() {
   local os="$1" arch="$2" narch="$2"
   [ "$arch" = "aarch64" ] && narch="arm64"
   printf 'node-v%s-%s-%s' "$REA_NODE_VERSION" "$os" "$narch"
 }
 
-# REA 6.8.0 engines：^22.23.4 || ^24.22.1 || >=26.12.1（Node 23/25 一律拒绝）。
+# REA 6.9.0 engines：^22.23.4 || ^24.22.1 || >=26.12.1（Node 23/25 一律拒绝）。
 # 检查当前 PATH 上的 node 是否满足。返回 0 满足、1 不满足（或没有 node）。
-# 注意必须比较到 patch 段：22.23.2 / 24.22.0 / 26.0.0 均不满足 6.8。
+# 注意必须比较到 patch 段：22.23.2 / 24.22.0 / 26.0.0 均不满足 6.9。
 node_satisfies_rea() {
   command -v node >/dev/null 2>&1 || return 1
   local v rest major minor patch

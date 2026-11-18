@@ -1,7 +1,7 @@
 # 领域 ② · 离线二进制 ELF / PE / Mach-O / Go / Rust（domain-2-binary）
 
-> REA 6.8.0 全量能力地图 · 本领域共 **20** 个命令 / 20 commands
-> 数据底座：`research/B_commands_176.json`（rea-agents 6.8.0，2026-11-05）
+> REA 6.9.0 全量能力地图 · 本领域共 **24** 个命令 / 24 commands
+> 数据底座：`research/B_commands_176.json`（rea-agents 6.9.0，2026-11-05）
 > 可测性图例：✅ 本机可实测 / Testable on Linux · 🔧 需安装工具 / Requires tool · 📱 需真机 / Requires device · 🍎 需 macOS / Requires macOS · 💼 需商业软件 JEB / Requires JEB
 
 ## 目录
@@ -26,6 +26,10 @@
 18. [`inspect-with-objdump`](#inspect-with-objdump)
 19. [`list-architectures`](#list-architectures)
 20. [`list-objdump-architectures`](#list-objdump-architectures)
+21. [`inspect-binary-hardening`](#inspect-binary-hardening)
+22. [`inspect-elf-unwind-ranges`](#inspect-elf-unwind-ranges)
+23. [`inspect-native-initializers`](#inspect-native-initializers)
+24. [`inspect-windows-shortcut`](#inspect-windows-shortcut)
 
 ---
 
@@ -288,3 +292,56 @@
   ```
 - **可测性 / Testability**：🔧 需安装工具 GNU `objdump`（binutils）/ Requires tool. 本环境未实测/需 binutils 前置。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-binary-hardening`
+
+- **用途 / Purpose**：不执行镜像，检查 ELF/PE/Mach-O 的加固项。 Inspect ELF, PE, and Mach-O hardening without executing the image.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置纯解析 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-binary-hardening <path>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（纯静态解析，不执行目标文件）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-elf-unwind-ranges`
+
+- **用途 / Purpose**：不执行镜像，检查 ELF 异常展开（unwind）函数范围。 Inspect ELF unwind function ranges without executing the image.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置纯解析 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-elf-unwind-ranges <path>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（纯静态解析，不执行目标文件）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-native-initializers`
+
+- **用途 / Purpose**：不执行镜像，列出 ELF/Mach-O 的初始化（initializer）与收尾（finalizer）函数。 List ELF and Mach-O initializer and finalizer functions without executing the image.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置纯解析 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-native-initializers <path>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（纯静态解析，不执行目标文件）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+### `inspect-windows-shortcut`
+
+- **用途 / Purpose**：检查 Windows 快捷方式（.lnk），不解析或执行其目标。 Inspect a Windows Shell Link (.lnk) without resolving or executing the target.
+- **前置与外部工具 / Prerequisites & external tools**：无，内置纯解析 / none, built-in。
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-windows-shortcut <path.lnk>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线解析，不解析/执行目标）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

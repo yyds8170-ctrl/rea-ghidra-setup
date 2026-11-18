@@ -16,7 +16,7 @@
 | RAM | 8128 MB total, ~7.3 GB free at measure time, **swap = 0** |
 | Ghidra | 12.1.4 (`ghidra_12.1.4_PUBLIC`, current-ghidra points here) |
 | JDK | Temurin 21 (`jdk-21.0.12.1+1`, current-jdk) |
-| Portable Node / REA | Node 24.22.2 / rea-agents 6.8.0 (not invoked by export/batch) |
+| Portable Node / REA | Node 24.22.3 / rea-agents 6.9.0 (not invoked by export/batch) |
 | JVM heap | analyzeHeadless default `-Xmx` 2G (`GHIDRA_HEADLESS_MAXMEM` unset) |
 
 > Versions come from `config/versions.env`; they are not hard-coded on this page.

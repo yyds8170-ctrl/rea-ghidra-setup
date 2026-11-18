@@ -14,7 +14,7 @@ Ghidra 12.x requires **exactly JDK 21**; the common error is system/CI default J
 - Too-new JDK (e.g. 25) may also be unsupported; use Temurin 21.
 
 ### 2. Node version not satisfied (^22.23.4 || ^24.22.1 || >=26.12.1)
-- REA 6.8 rejects Node 23/25 and older 22/24 (incl. 22.23.2 / 24.22.0). The installer ships portable Node 24.22.2; with `SKIP_NODE=1` switch yourself.
+- REA 6.8 rejects Node 23/25 and older 22/24 (incl. 22.23.2 / 24.22.0). The installer ships portable Node 24.22.3; with `SKIP_NODE=1` switch yourself.
 - With fnm/nvm, watch the injected `NODE_VERSION`; this project names its var `REA_NODE_VERSION`.
 - Verify: `node --version` must be ≥ v22.23.4 (or v24.22.1 / v26.12.1+).
 

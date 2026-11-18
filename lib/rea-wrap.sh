@@ -3,7 +3,7 @@
 # lib/rea-wrap.sh — v5.4.0 统一 REA 命令包装器（bash，仅被 source）
 #
 # 在 REA（rea-agents CLI）之上叠加一层：统一环境解析 + 包装器开关 + 稳定退出码。
-# 运行时只依赖入库基线 config/command-baseline/command-domain.tsv（175 行），
+# 运行时只依赖入库基线 config/command-baseline/command-domain.tsv（198 行），
 # 不依赖 gitignored 的 research/。
 #
 # 提供：
@@ -128,7 +128,7 @@ rea_wrap_exec() {
   [ -n "$cmd" ] || { echo "rea-wrap: 缺少命令名（用 run <命令>）" >&2; return 2; }
   local rec dom
   if ! rec="$(rea_tsv_lookup "$cmd")"; then
-    echo "rea-wrap: 未知命令：${cmd}（不在 rea-agents ${REA_VERSION} 基线的 175 个命令内）" >&2
+    echo "rea-wrap: 未知命令：${cmd}（不在 rea-agents ${REA_VERSION} 基线的 198 个命令内）" >&2
     return 2
   fi
   IFS=$'\t' read -r dom _ <<<"$rec"
@@ -200,7 +200,7 @@ rea_domain_dispatch() {
 
   local rec dom
   if ! rec="$(rea_tsv_lookup "$cmd")"; then
-    echo "rea-wrap: 未知命令：${cmd}（不在 rea-agents ${REA_VERSION} 基线的 175 个命令内）" >&2
+    echo "rea-wrap: 未知命令：${cmd}（不在 rea-agents ${REA_VERSION} 基线的 198 个命令内）" >&2
     return 2
   fi
   IFS=$'\t' read -r dom _ <<<"$rec"

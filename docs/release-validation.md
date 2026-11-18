@@ -15,7 +15,7 @@
 | 完整 CI（`.github/workflows/ci.yml`） | **9 / 9 全绿** | GitHub Actions 真实 runner 全量回归（见下方清单） |
 | CI `domain-cases` 作业 | **16 passed / 0 failed / 0 skipped** | ubuntu-24.04 + Node 24 + Wireshark 4.x + WABT 1.0.42 + 钉死 pwntools + rizin 0.9.1 |
 | CI `fixture-multiarch` 作业 | **三架构导入断言全过** | Ghidra 导入 ELF32→`x86:LE:32`、AArch64→`AARCH64:LE:64`、PE32 导出非空 |
-| MCP stdio 握手 | **通过** | `bash scripts/mcp-setup.sh --check`：`initialize` 返回 `server=rea 6.8.0`，`doctor --provider ghidra` 报 available / providerVersion=12.1.4 |
+| MCP stdio 握手 | **通过** | `bash scripts/mcp-setup.sh --check`：`initialize` 返回 `server=rea 6.9.0`，`doctor --provider ghidra` 报 available / providerVersion=12.1.4 |
 
 **完整 CI 9 条腿全绿**：`lint-build`、`lint-ps`、`e2e`（linux / macos / windows 三平台矩阵）、
 `docker`、`docker-arm64`、`checksum`、`fixture-multiarch`、`domain-cases`。
@@ -24,38 +24,38 @@
 
 ## 2. 覆盖矩阵摘要
 
-命令基线：**175 个真实命令**（不是 176），命令名与入库基线
-[`config/command-baseline/rea-6.8.0.txt`](../config/command-baseline/rea-6.8.0.txt) 逐行一致；
-另有 `completions`、`mcp` 两个集成入口，**不计入 175**。逐命令明细见
+命令基线：**196 个真实命令**，命令名与入库基线
+[`config/command-baseline/rea-6.9.0.txt`](../config/command-baseline/rea-6.9.0.txt) 逐行一致；
+另有 `completions`、`mcp` 两个集成入口，**不计入 196**（基线清单共 198 条）。逐命令明细见
 [`docs/capability-map/coverage-matrix.md`](capability-map/coverage-matrix.md)。
 
-### 2.1 按 10 领域计数（合计 175）
+### 2.1 按 10 领域计数（合计 196）
 
 | 领域 | 命令数 |
 |---|---:|
-| ① 核心 / Ghidra 原生 | 20 |
-| ② 离线二进制 | 20 |
-| ③ 动态调试 | 15 |
-| ④ Web / JS / Electron | 28 |
-| ⑤ Android / ADB | 33 |
+| ① 核心 / Ghidra 原生 | 21 |
+| ② 离线二进制 | 24 |
+| ③ 动态调试 | 19 |
+| ④ Web / JS / Electron | 33 |
+| ⑤ Android / ADB | 34 |
 | ⑥ Apple | 9 |
-| ⑦ 多格式 | 15 |
-| ⑧ 固件 / 嵌入式 | 9 |
-| ⑨ Evidence / 工程化 | 16 |
-| ⑩ JEB / 平台 | 10 |
-| **合计** | **175** |
+| ⑦ 多格式 | 16 |
+| ⑧ 固件 / 嵌入式 | 10 |
+| ⑨ Evidence / 工程化 | 18 |
+| ⑩ JEB / 平台 | 12 |
+| **合计** | **196** |
 
-### 2.2 按 5 类可测性计数（合计 175）
+### 2.2 按 5 类可测性计数（合计 196）
 
 | 可测性 | 数量 | 本发布如何对待 |
 |---|---:|---|
-| ✅ linux-testable（内置纯解析，无额外前置） | **78** | 本机 / Linux runner 可直接跑 |
-| 🔧 needs-tool（需安装对应工具链） | **35** | 前置装齐后在 CI 真实跑通并断言（见 §2.3） |
-| 📱 needs-device（需存活进程 / UI / 连接设备） | **50** | 本环境无 Android 真机 / 存活调试目标，**仅文档化，未实测** |
+| ✅ linux-testable（内置纯解析，无额外前置） | **94** | 本机 / Linux runner 可直接跑 |
+| 🔧 needs-tool（需安装对应工具链） | **36** | 前置装齐后在 CI 真实跑通并断言（见 §2.3） |
+| 📱 needs-device（需存活进程 / UI / 连接设备） | **54** | 本环境无 Android 真机 / 存活调试目标，**仅文档化，未实测** |
 | 🍎 needs-macos（需 macOS 宿主 + LLDB / Apple 产物） | **8** | 本环境为 Linux，**仅文档化，未实测**（macOS 装机/验证靠 `e2e` macos runner 回归） |
 | 💼 needs-jeb（需商用 JEB 运行 / 授权） | **4** | 本环境无 JEB 授权，**仅文档化，未实测** |
 
-> 78 + 35 + 50 + 8 + 4 = 175，与命令总数一致。
+> 94 + 36 + 54 + 8 + 4 = 196，与命令总数一致。
 
 ### 2.3 哪些真实跑通、哪些仅文档化
 
@@ -69,7 +69,7 @@
 - **真实跑通（本机 `verify.sh`）**：Ghidra 原生核心链 `analyze` / `decompile` / `search`
   （procs=28、strings=83、segments=39；`decompile secret_check` 命中 0x539、
   `calc_discount` 命中 0x32，均 confidence=observed）。
-- **仅文档化 / 本环境未实测**：50 条 needs-device（adb / frida / 浏览器 CDP / 存活 UI）、
+- **仅文档化 / 本环境未实测**：54 条 needs-device（adb / frida / 浏览器 CDP / 存活 UI）、
   8 条 needs-macos（Apple 专用）、4 条 needs-jeb（商用 JEB）。这些命令在能力地图中
   保留「未实测 / 需对应前置」标注，不冒充实测。
 
@@ -89,7 +89,7 @@
    （dry-run 成功、artifact 扁平落到工作区相对路径）。但「开 PR → 派 ci.yml 门禁 →
    轮询 → squash 合并 → 受阻 issue」这条**有副作用的写路径**，因当前无真实上游漂移、
    且不得人为制造漂移，**未做端到端**；仅完成静态校验 + 脚本级 / 临时 clone 验证。
-2. **needs-device（50 条）/ needs-macos（8 条）/ needs-jeb（4 条）无法在本环境验证**：
+2. **needs-device（54 条）/ needs-macos（8 条）/ needs-jeb（4 条）无法在本环境验证**：
    分别缺 Android 真机 / 存活调试目标、macOS 宿主、商用 JEB 授权。其中 macOS 装机与
    verify 由 CI `e2e` macos runner 回归覆盖；其余保持能力地图「未实测」标注。
 3. **Release 仍为手动确认**：合并 patch 升级进 main **不会自动打 tag / 发版**；需人工

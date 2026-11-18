@@ -267,7 +267,7 @@ switch -Wildcard ($sub) {
     foreach ($r in Get-ReaDomainsTable) {
       Write-Host ("  {0,-30} {1}" -f $r.Domain, $r.Count)
     }
-    Write-Host '  （共 175 个命令；详见 docs/capability-map/README.md）'
+    Write-Host '  （共 198 个命令；详见 docs/capability-map/README.md）'
     exit 0
   }
   'd1'  { . (Join-Path $RepoDir 'lib\rea-wrap.ps1'); Invoke-ReaCommand -ExpectedDomain (Get-ReaDomainName 'd1')  -Rest $rest; exit $script:ReaWrapExit }

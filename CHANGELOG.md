@@ -4,6 +4,39 @@
 
 文档中文；未列出的内部整理不单独记录。
 
+## [6.1.3] - 2026-11-18（上游 REA 6.9.0 适配 + 命令基线 +21 + Ghidra 兼容策略复核）
+
+### Upstream
+- **REA 锁定 6.8.0 → 6.9.0**（2026-11-12 发布，向后兼容 minor）：解包 6.8.0/6.9.0
+  两份 npm tgz 比对，`engines` 门禁未变（`^22.23.4 || ^24.22.1 || >=26.12.1`，不支持 Node 23/25），
+  bin 入口未变（`rea` / `rea-agents`），命令只增不减；依赖增量为 playwright-core、zod 升级与
+  graphql 新增、@electron/asar 移除。便携 Node 同 major v24 patch：24.22.2 → **24.22.3**。
+- **Ghidra 兼容策略按版本分流**（实测 6.9.0 `GhidraReleasePolicy`）：verified build 仍为 12.1.4；
+  同 major 12 内 minor≥1 判 `compatible`（12.2 可运行但带 unverified-build 限制，provider 身份仍报
+  实测版本）；仅 major≠12 才判 `unsupported`。6.8.0 分支保留旧的硬阻断规则。仓库保守仍锁定已验证的
+  **Ghidra 12.1.4 + JDK 21**，不自动跟随 12.2；major≠12 的越线版本标 `blocked`。
+
+### Added
+- 命令基线从 177 条补到 **198 条**（Commands 口径 175 → **196**，本轮 +21 / -0）：新建
+  `config/command-baseline/rea-6.9.0.txt`（字典序），旧 `rea-6.8.0.txt` 保留以追踪演进；
+  `command-domain.tsv` 重建为 198 行（命令/领域/可测性）。
+- 21 条新命令逐条写入能力地图（10 领域、7 字段、中英双语），覆盖二进制加固、ELF unwind 范围、
+  原生初始化/收尾函数、Windows 快捷方式、桌面应用捕获四连、API 契约、Playwright trace、V8 code
+  cache、浏览器场景校验、Android JNI 绑定、NTFS 日志、内核 build config、发布产物暴露审计、产物
+  比对、内置指引与引导工作流；覆盖矩阵重建为 196 行。
+
+### Changed
+- 离线预置包换新：`node-v24.22.3-linux-x64.tar.gz`、`rea-agents-6.9.0.tgz`，重算 SHA256 与
+  MANIFEST；SPDX SBOM 随 v6.1.3 重生成，版本/组件校验和与 `versions.env` 一致。
+- 全仓库文档与脚本注释同步到 6.9.0 / 24.22.3 / 196 命令口径；包装器基线计数与 TSV 198 行对齐。
+
+### Validation
+- 本机回归：`tests/run.sh` **117/117 通过**；ShellCheck 全仓库 **52 个脚本零告警**；
+  `verify.sh` **9/9**；`run-cases.sh` **10 个二进制**（5 案例 × 带符号/strip）断言全过；
+  `mcp-setup.sh --check` 握手通过，stdio `tools/list` 返回 **255** 个工具，Ghidra provider 12.1.4 可用。
+- 未实测项如实标注：needs-device（真机/存活调试目标）、needs-macos、needs-jeb、ChromeOS、Docker
+  容器与本机便携 pwsh 不在本 Linux 环境复现；macOS/Windows 装机与 PS1 侧由 CI runner 交叉回归覆盖。
+
 ## [6.1.2] - 2026-11-07（命令基线补齐 completions/mcp + SBOM 同步 + Ghidra 兼容边界）
 
 ### Fixed

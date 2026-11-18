@@ -16,7 +16,7 @@
 | Full CI (`.github/workflows/ci.yml`) | **9 / 9 green** | Real GitHub Actions runners, full regression (list below) |
 | CI `domain-cases` job | **16 passed / 0 failed / 0 skipped** | ubuntu-24.04 + Node 24 + Wireshark 4.x + WABT 1.0.42 + pinned pwntools + rizin 0.9.1 |
 | CI `fixture-multiarch` job | **Three-arch import assertions all pass** | Ghidra imports ELF32→`x86:LE:32`, AArch64→`AARCH64:LE:64`, PE32 export non-empty |
-| MCP stdio handshake | **Pass** | `bash scripts/mcp-setup.sh --check`: `initialize` returns `server=rea 6.8.0`, `doctor --provider ghidra` reports available / providerVersion=12.1.4 |
+| MCP stdio handshake | **Pass** | `bash scripts/mcp-setup.sh --check`: `initialize` returns `server=rea 6.9.0`, `doctor --provider ghidra` reports available / providerVersion=12.1.4 |
 
 **Full CI: all 9 legs green** — `lint-build`, `lint-ps`, `e2e` (linux / macos / windows
 matrix), `docker`, `docker-arm64`, `checksum`, `fixture-multiarch`, `domain-cases`.
@@ -25,39 +25,39 @@ matrix), `docker`, `docker-arm64`, `checksum`, `fixture-multiarch`, `domain-case
 
 ## 2. Coverage-matrix summary
 
-Command baseline: **175 real commands** (not 176); command names match the committed
-baseline [`config/command-baseline/rea-6.8.0.txt`](../config/command-baseline/rea-6.8.0.txt)
+Command baseline: **196 real commands**; command names match the committed
+baseline [`config/command-baseline/rea-6.9.0.txt`](../config/command-baseline/rea-6.9.0.txt)
 line for line. The `completions` and `mcp` integration entry points are **not counted in
-the 175**. Per-command detail:
+the 196** (198 entries in the baseline list). Per-command detail:
 [`docs/capability-map/coverage-matrix.md`](capability-map/coverage-matrix.md).
 
-### 2.1 Counts by 10 domains (total 175)
+### 2.1 Counts by 10 domains (total 196)
 
 | Domain | Commands |
 |---|---:|
-| ① Core / native Ghidra | 20 |
-| ② Offline binary | 20 |
-| ③ Dynamic debugging | 15 |
-| ④ Web / JS / Electron | 28 |
-| ⑤ Android / ADB | 33 |
+| ① Core / native Ghidra | 21 |
+| ② Offline binary | 24 |
+| ③ Dynamic debugging | 19 |
+| ④ Web / JS / Electron | 33 |
+| ⑤ Android / ADB | 34 |
 | ⑥ Apple | 9 |
-| ⑦ Multi-format | 15 |
-| ⑧ Firmware / embedded | 9 |
-| ⑨ Evidence / engineering | 16 |
-| ⑩ JEB / platform | 10 |
-| **Total** | **175** |
+| ⑦ Multi-format | 16 |
+| ⑧ Firmware / embedded | 10 |
+| ⑨ Evidence / engineering | 18 |
+| ⑩ JEB / platform | 12 |
+| **Total** | **196** |
 
-### 2.2 Counts by 5 testability classes (total 175)
+### 2.2 Counts by 5 testability classes (total 196)
 
 | Testability | Count | How this release treats it |
 |---|---:|---|
-| ✅ linux-testable (built-in pure parse, no extra prereq) | **78** | Runs directly on local / Linux runners |
-| 🔧 needs-tool (external toolchain required) | **35** | Prereqs installed, really run and asserted in CI (see §2.3) |
-| 📱 needs-device (live process / UI / connected device) | **50** | No physical Android device / live debug target here — **documented only, not tested** |
+| ✅ linux-testable (built-in pure parse, no extra prereq) | **94** | Runs directly on local / Linux runners |
+| 🔧 needs-tool (external toolchain required) | **36** | Prereqs installed, really run and asserted in CI (see §2.3) |
+| 📱 needs-device (live process / UI / connected device) | **54** | No physical Android device / live debug target here — **documented only, not tested** |
 | 🍎 needs-macos (macOS host + LLDB / Apple artifact) | **8** | This environment is Linux — **documented only, not tested** (macOS install/verify regressed by the `e2e` macos runner) |
 | 💼 needs-jeb (commercial JEB running / licensed) | **4** | No JEB license here — **documented only, not tested** |
 
-> 78 + 35 + 50 + 8 + 4 = 175, matching the command total.
+> 94 + 36 + 54 + 8 + 4 = 196, matching the command total.
 
 ### 2.3 What really ran vs. what is documented only
 
@@ -71,7 +71,7 @@ the 175**. Per-command detail:
 - **Really run (local `verify.sh`)**: the native Ghidra core chain `analyze` / `decompile` /
   `search` (procs=28, strings=83, segments=39; `decompile secret_check` hits 0x539 and
   `calc_discount` hits 0x32, both confidence=observed).
-- **Documentated only / not tested here**: 50 needs-device commands (adb / frida / browser
+- **Documentated only / not tested here**: 54 needs-device commands (adb / frida / browser
   CDP / live UI), 8 needs-macos (Apple-only), 4 needs-jeb (commercial JEB). These keep the
   "untested / requires X" note in the capability map and are not claimed as tested.
 

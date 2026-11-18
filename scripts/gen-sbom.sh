@@ -117,7 +117,7 @@ packages = [
         "https://nodejs.org/dist/v%s/%s" % (os.environ["REA_NODE_VERSION"], os.environ["NODE_TGZ"]),
         "MIT",
         os.environ["NODE_TGZ"],
-        "便携 Node；满足 rea-agents 6.8 engines（^22.23.4 || ^24.22.1 || >=26.12.1）。",
+        "便携 Node；满足 rea-agents 6.9 engines（^22.23.4 || ^24.22.1 || >=26.12.1）。",
     ),
     pkg(
         "SPDXRef-Package-rea", "rea-agents", os.environ["REA_VERSION"],

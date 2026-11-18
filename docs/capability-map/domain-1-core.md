@@ -1,7 +1,7 @@
 # 领域 ① · 核心 / Ghidra 原生（domain-1-core）
 
-> REA 6.8.0 全量能力地图 · 本领域共 **20** 个命令 / 20 commands
-> 数据底座：`research/B_commands_176.json`（rea-agents 6.8.0，2026-11-05）
+> REA 6.9.0 全量能力地图 · 本领域共 **21** 个命令 / 21 commands
+> 数据底座：`research/B_commands_176.json`（rea-agents 6.9.0，2026-11-05）
 > 可测性图例：✅ 本机可实测 / Testable on Linux · 🔧 需安装工具 / Requires tool · 📱 需真机 / Requires device · 🍎 需 macOS / Requires macOS · 💼 需商业软件 JEB / Requires JEB
 
 ## 目录
@@ -26,6 +26,7 @@
 18. [`trace`](#trace)
 19. [`trace-native-values`](#trace-native-values)
 20. [`xrefs`](#xrefs)
+21. [`procedure-references`](#procedure-references)
 
 ---
 
@@ -288,3 +289,17 @@
   ```
 - **可测性 / Testability**：🔧 需安装工具（Ghidra ≥12.1 / Hopper / IDA / Kuna provider）/ Requires tool. 本环境未实测/需配置原生分析 provider 并载入目标二进制前置。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea ；[docs] https://github.com/morluto/rea/blob/HEAD/docs/cli.md
+
+### `procedure-references`
+
+- **用途 / Purpose**：检查单个原生过程的入站/出站引用；至少提供位置参数地址或 --procedure 之一。 Inspect incoming or outgoing references for one native procedure; supply at least one of positional address or --procedure.
+- **前置与外部工具 / Prerequisites & external tools**：已配置原生分析 provider（Ghidra >=12.1 / Hopper / IDA / Kuna）并加载目标过程。A native analysis provider configured and the target procedure loaded.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea procedure-references <address|--procedure <id>
+  ```
+- **可测性 / Testability**：🔧 需安装原生分析工具（Ghidra/Hopper/IDA/Kuna）/ Requires tool；本环境未实测。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

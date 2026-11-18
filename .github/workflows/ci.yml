@@ -515,7 +515,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm/_npx
-          key: npx-rea-agents-6.8.0
+          key: npx-rea-agents-6.9.0
 
       - name: 安装系统工具（核心包装不上即失败）
         run: |

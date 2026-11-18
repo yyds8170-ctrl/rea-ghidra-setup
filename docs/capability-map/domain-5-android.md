@@ -1,7 +1,7 @@
-# 领域⑤ · Android / APK / ADB 能力地图（rea-agents 6.8.0）
+# 领域⑤ · Android / APK / ADB 能力地图（rea-agents 6.9.0）
 
-> 本领域共 **33 个命令**：其中 `adb-*` 设备侧命令 24 个（📱 需真机/模拟器），离线 APK 解析与投影类命令 9 个（✅ 本机可实测）。
-> 基线版本：rea-agents 6.8.0（2026-11-05）。全局参数（`--format`、`--filter-output`、`--token-*` 等）见总索引 README，本文件不重复列出。
+> 本领域共 **34 个命令**：其中 `adb-*` 设备侧命令 24 个（📱 需真机/模拟器），离线 APK 解析与投影类命令 10 个（✅ 本机可实测）。
+> 基线版本：rea-agents 6.9.0（2026-11-05）。全局参数（`--format`、`--filter-output`、`--token-*` 等）见总索引 README，本文件不重复列出。
 
 ## 目录
 
@@ -77,7 +77,7 @@
   ```bash
   rea decode-android-resources <path> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.8.0 help，**未跑通样本 APK**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.9.0 help，**未跑通样本 APK**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `inspect-adb-client`
@@ -155,7 +155,7 @@
   ```bash
   rea inspect-android-class <path> <className>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.8.0 help，**未跑通样本 APK**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.9.0 help，**未跑通样本 APK**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `inspect-android-method`
@@ -168,7 +168,7 @@
   ```bash
   rea inspect-android-method <path> <className> <methodName> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.8.0 help，**未跑通样本 APK**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.9.0 help，**未跑通样本 APK**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `inspect-android-package`
@@ -181,7 +181,7 @@
   ```bash
   rea inspect-android-package <path>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.8.0 help，**未跑通样本 APK**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.9.0 help，**未跑通样本 APK**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `inspect-apk-signature`
@@ -194,7 +194,7 @@
   ```bash
   rea inspect-apk-signature <path> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.8.0 help，**未跑通样本 APK**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.9.0 help，**未跑通样本 APK**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `inspect-apktool-client`
@@ -311,7 +311,7 @@
   ```bash
   rea project-android-application-graph <inputJson>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线投影；本环境仅核对 6.8.0 help，**未跑通样本 Evidence JSON**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线投影；本环境仅核对 6.9.0 help，**未跑通样本 Evidence JSON**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `pull-adb-file`
@@ -402,7 +402,7 @@
   ```bash
   rea search-android-classes <path> <query>
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.8.0 help，**未跑通样本 APK**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.9.0 help，**未跑通样本 APK**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `start-adb-activity`
@@ -454,7 +454,7 @@
   ```bash
   rea trace-android-references <path> <className> [options]
   ```
-- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.8.0 help，**未跑通样本 APK**。
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux —— 纯离线解析；本环境仅核对 6.9.0 help，**未跑通样本 APK**。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
 
 ### `uninstall-adb-package`
@@ -469,3 +469,19 @@
   ```
 - **可测性 / Testability**：📱 需真机/设备 —— 本环境无 Android 设备，**未实测/需 adb + 已连接授权设备前置**（该命令会删除设备上的应用与数据，不可逆）。
 - **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+
+1. [`inspect-android-jni-bindings`](#inspect-android-jni-bindings)
+
+### `inspect-android-jni-bindings`
+
+- **用途 / Purpose**：不执行 APK，将原始 DEX native 声明链接到静态 JNI 导出/表候选。 Link raw DEX native declarations to static JNI export/table candidates without executing the APK.
+- **前置与外部工具 / Prerequisites & external tools**：本地 APK/DEX；离线静态解析，不执行。Local APK/DEX; offline static parse, no execution.
+- **关键参数 / Key flags**：无专属命令级参数 / none（全局参数统一见 README）。
+- **Evidence 产出 / Evidence outputs**：通过 `--format json` 向 stdout 返回规范 Evidence JSON；除非显式指定参数，否则不产生副作用文件。Returns canonical Evidence JSON on stdout; no side-effect file unless flagged.
+- **示例 / Example**：
+  ```bash
+  rea inspect-android-jni-bindings <apk-or-dex>
+  ```
+- **可测性 / Testability**：✅ 本机可实测 / Testable on Linux（离线 DEX 静态解析）。
+- **来源 / Sources**：[help] https://www.npmjs.com/package/rea-agents ；[docs] https://github.com/morluto/rea
+

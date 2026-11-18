@@ -67,7 +67,7 @@ def load_versions(path):
         for line in fh:
             s = line.strip()
             if not s or s.startswith("#"):
-                # 形如：# Node：REA 6.8.0 engines = ^22.23.4 || ^24.22.1 || >=26.12.1（…
+                # 形如：# Node：REA 6.9.0 engines = ^22.23.4 || ^24.22.1 || >=26.12.1（…
                 m = re.search(r"engines\s*=\s*([^（]+)", s)
                 if m:
                     baseline_engines = m.group(1).strip()
@@ -79,7 +79,7 @@ def load_versions(path):
 
 
 def parse_ver_tuple(text):
-    """'6.8.0' / 'v24.22.2' / '21.0.13+9' -> (6,8,0)。非数字段取其前缀数字。"""
+    """'6.9.0' / 'v24.22.3' / '21.0.13+9' -> (6,8,0)。非数字段取其前缀数字。"""
     t = (text or "").strip().lstrip("v")
     t = t.split("+", 1)[0]          # 去掉 build metadata（21.0.13+9 -> 21.0.13）
     nums = []
@@ -255,16 +255,27 @@ def main():
     if g["upstream"]:
         lvl = semver_level(versions["GHIDRA_VERSION"], g["upstream"])
         note = "releases/latest；需人工核对 GHIDRA_BUILD/DATE"
-        # REA 版本白名单约束（2026-11-05 doctor 实测）：REA 6.8.0 仅接受 Ghidra 12.1.x；
-        # 越线版本（如 12.2，且需 JDK 25）即使 semver 是 minor 也会被 REA 判 unsupported_version，
-        # 不能自动升级，需等 REA 官方更新支持后再联动升级。
+        up_t = parse_ver_tuple(g["upstream"])
         if rea_ver == "6.8.0":
-            up = g["upstream"].split(".")
-            if not (len(up) >= 2 and up[0] == "12" and up[1] == "1"):
+            # 6.8.0 白名单（2026-11-05 doctor 实测）：仅接受 12.1.x；越线版本即使
+            # semver 是 minor 也会被 REA 判 unsupported_version，不能自动升级。
+            if not (up_t[0] == 12 and up_t[1] == 1):
                 note += ("；REA %s 仅支持 Ghidra 12.1.x（doctor 实测 unsupported_version），"
                          "上游 %s 被 REA 白名单阻断，需等 REA 更新，不自动升级"
                          % (rea_ver, g["upstream"]))
                 lvl = "blocked"
+        else:
+            # 6.9.0+ 策略（实测 GhidraReleasePolicy）：verified build=12.1.4；同 major 12
+            # 内 minor>=1 判 compatible（12.2 为 unverified-build compatible，provider 身份
+            # 仍报实测版本）；major≠12 才 unsupported。保守仍锁 verified 12.1.4，不自动跟随。
+            if up_t[0] != 12:
+                note += ("；REA %s 仅接受 Ghidra major 12，上游 %s 越线被阻断，不自动升级"
+                         % (rea_ver, g["upstream"]))
+                lvl = "blocked"
+            else:
+                note += ("；REA %s 接受同 major 12（minor>=1）：12.1.4 为 verified build，"
+                         "%s 属 compatible unverified-build；保守锁 12.1.4，不自动跟随"
+                         % (rea_ver, g["upstream"]))
     else:
         lvl = "unknown"
         note = g["note"]

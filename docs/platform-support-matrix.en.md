@@ -13,16 +13,17 @@
 
 ## 0. Locked versions and unified capability (v3.x)
 
-- Locked versions (`config/versions.env`): **Ghidra 12.1.4 / JDK 21 / portable Node 24.22.2 / REA 6.8.0**.
+- Locked versions (`config/versions.env`): **Ghidra 12.1.4 / JDK 21 / portable Node 24.22.3 / REA 6.9.0**.
 - Unified entrypoint: `./rea-ghidra install|verify|doctor|mcp|export|batch|current|rollback|self-update` (Windows `.\rea-ghidra.ps1`).
 - Capabilities: one-command MCP wiring, static export, parallel batch + snapshot cache, multi-arch fixture CI (`fixture-multiarch`: ELF32/AArch64/PE32), self-update ff-only / checksums verification, `current-ghidra`·`current-jdk` symlinks with rollback, Docker amd64+arm64, Release ships `checksums.txt` + SBOM.
 - Discovery: explicit env (`JAVA_HOME`/`GHIDRA_INSTALL_DIR`) > `~/tools/current-*` symlinks > versioned-directory enumeration (legacy fallback).
 
-### Upstream boundary: Ghidra 12.2 not usable yet (verified 2026-11-05)
+### Upstream boundary: Ghidra 12.2 compatibility status (reviewed 2026-11-18)
 
 - Upstream released **Ghidra 12.2** on 2026-10-22, but it **requires JDK 25 at minimum** (12.1.x uses JDK 21), a minor upgrade with a prerequisite change.
-- In an isolated environment we downloaded JDK 25.0.5 + Ghidra 12.2 and verified that Ghidra 12.2 headless itself decompiles correctly (16 functions emitted), but **REA 6.8.0 explicitly rejects it** — doctor reports `unsupported_version, 12.2; accepted releases are 12.1.x (verified build 12.1.4)` due to a version allow-list.
-- The repo therefore **keeps Ghidra 12.1.4 + JDK 21 by default** and does not move to 12.2 (doing so would break REA, a regression). weekly-audit classifies 12.1.4→12.2 as **minor, held for human review, never auto-merged**; once an REA release supports Ghidra 12.2, we will upgrade JDK 25 + Ghidra 12.2 together.
+- **REA 6.8.0** hard-blocks 12.2: doctor reports `unsupported_version, 12.2; accepted releases are 12.1.x (verified build 12.1.4)`.
+- **REA 6.9.0** relaxed the check (verified against `GhidraReleasePolicy`): the verified build remains 12.1.4; any same-major-12 minor ≥1 is judged `compatible`, so 12.2 can run but carries an **unverified-build** limitation (provider identity still reports the measured version); only a major ≠12 is judged `unsupported`.
+- The repo therefore **keeps Ghidra 12.1.4 + JDK 21 by default** and does not auto-follow 12.2: although runnable under 6.9.0, 12.2 is an unverified build and requires switching to JDK 25, so we wait until REA lists 12.2 as a verified build before upgrading together. weekly-audit classifies 12.1.4→12.2 as `compatible unverified-build`, held for human review and never auto-merged; only a major ≠12 crossing the line is marked `blocked`.
 - Standalone Ghidra 12.2 (without REA) is fine to install, but do not point `GHIDRA_INSTALL_DIR` at it when running REA.
 
 ## 1. OS × runtime table

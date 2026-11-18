@@ -8,8 +8,8 @@
 [![platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey.svg)](#我该用哪个快速选择)
 [![ghidra](https://img.shields.io/badge/Ghidra-12.1.4-4b4a9b.svg)](#版本历史)
 [![jdk](https://img.shields.io/badge/JDK-21-orange.svg)](#版本历史)
-[![rea](https://img.shields.io/badge/rea-6.8.0-green.svg)](#版本历史)
-[![node](https://img.shields.io/badge/Node-24.22.2-blue.svg)](#版本历史)
+[![rea](https://img.shields.io/badge/rea-6.9.0-green.svg)](#版本历史)
+[![node](https://img.shields.io/badge/Node-24.22.3-blue.svg)](#版本历史)
 
 在云电脑 / Linux 服务器上一键部署 **REA（Reverse Engineer Anything）+ Ghidra**，让 AI 智能体在没有源码的情况下分析二进制、App、抓包，产出带证据的结论。
 
@@ -63,13 +63,13 @@ irm https://raw.githubusercontent.com/yyds8170-ctrl/rea-ghidra-setup/main/instal
 > 提示：`curl | bash` 前可先 `curl -fsSL <url> -o install.sh` 审阅内容再执行。包管理器（Homebrew / Scoop）
 > 资产与步骤见 [packaging/README.md](packaging/README.md)。
 
-装完即得 JDK21 + Ghidra 12.1.4 + 便携 Node 24.22.2，并自动通过 9 项端到端验证。子命令一览与自更新/回滚见 [docs/entry.md](docs/entry.md)。
+装完即得 JDK21 + Ghidra 12.1.4 + 便携 Node 24.22.3，并自动通过 9 项端到端验证。子命令一览与自更新/回滚见 [docs/entry.md](docs/entry.md)。
 
 直接调用 REA 时用统一包装器：`./rea-ghidra run <命令> [--json|--out <文件>|--quiet] [-- 透传...]`，另有 `domains` 与 `d1..d10` 领域入口（校验命令归属、叠加稳定退出码 0/2/3/4），详见 [docs/command-wrapper.md](docs/command-wrapper.md)。
 
 能力地图里"本机可测/需安装工具"的命令已由 `scripts/run-domain-cases.sh` 纳入 Linux CI 自动化断言（多格式 pyc/sqlite/wasm/pcap、objdump/pwntools/gdb/rizin、平台自检；前置缺失显式 skip），覆盖清单与 passed/skipped 口径见 [docs/domain-cases.md](docs/domain-cases.md)。
 
-打 `v*` 标签发版前的最终验证结论（verify.sh 9/9、完整 CI 9/9、domain-cases 16/0/0、三架构 fixture、MCP 握手、175 命令覆盖矩阵与已知限制）汇总在 [docs/release-validation.md](docs/release-validation.md)。
+打 `v*` 标签发版前的最终验证结论（verify.sh 9/9、完整 CI 9/9、domain-cases 16/0/0、三架构 fixture、MCP 握手、196 命令覆盖矩阵与已知限制）汇总在 [docs/release-validation.md](docs/release-validation.md)。
 
 ## 我该用哪个？（快速选择）
 
@@ -124,7 +124,7 @@ int secret_check(int code)
 ```mermaid
 flowchart LR
     Entry["统一入口 rea-ghidra"] --> Ins["install.sh / install-macos.sh / install.ps1"]
-    Ins --> Tools[("~/tools<br/>JDK21 · Ghidra 12.1.4 · 便携 Node 24.22.2<br/>current-ghidra / current-jdk 链接")]
+    Ins --> Tools[("~/tools<br/>JDK21 · Ghidra 12.1.4 · 便携 Node 24.22.3<br/>current-ghidra / current-jdk 链接")]
     Tools --> P1["① REA MCP server<br/>↔ Claude / Cursor"]
     Tools --> P2["② Ghidra headless<br/>分析 / 反编译"]
     Tools --> P3["③ export / batch<br/>静态导出 JSON / C"]
@@ -193,7 +193,7 @@ Windows：`pwsh -File .\scripts\mcp-setup.ps1 -List/-DryRun/-Client claude-deskt
 
 - 无需 root，JDK 与 Ghidra 装在 `~/tools`，脚本幂等可重复运行；自动识别运行环境与 CPU 架构
 - 安装前自动检查磁盘空间（`~/tools` 约 2.6GB、临时目录约 0.8GB）
-- 环境要求：Linux **x86_64**（完整支持）或 **arm64**（自动构建 native decompiler）、`curl`、`unzip`、`tar`；REA 6.8 需 Node 22.23.4+ / 24.22.1+ / 26.12.1+（不支持 23/25；缺失时安装器自动装便携 Node 24.22.2）
+- 环境要求：Linux **x86_64**（完整支持）或 **arm64**（自动构建 native decompiler）、`curl`、`unzip`、`tar`；REA 6.9 需 Node 22.23.4+ / 24.22.1+ / 26.12.1+（不支持 23/25；缺失时安装器自动装便携 Node 24.22.3）
 - 物理机 / 虚拟机 / WSL2 / Docker / 云电脑各环境的差异与注意事项见 [docs/platform-linux.md](docs/platform-linux.md)
 - **版本集中管理**：Ghidra / JDK / Node / REA 的锁定版本统一在 [`config/versions.env`](config/versions.env)，升级只改这一个文件；`bash scripts/check-versions.sh` 可检查一致性并探测上游最新版
 - 临时覆盖版本仍可用环境变量：`GHIDRA_VERSION=12.1.4 GHIDRA_BUILD=Ghidra_12.1.4_build GHIDRA_DATE=20260921 bash install.sh`
@@ -267,12 +267,12 @@ bash verify.sh
 5. `decompile calc_discount` 置信度 `observed`，且常量 `0x32`（50）可见
 6. 剥离符号的 `demo_stripped` 仍可被导入分析
 
-全部通过退出码 0，可直接作为 CI 步骤。可覆盖：`REA_VERSION=6.8.0 ./verify.sh`。
+全部通过退出码 0，可直接作为 CI 步骤。可覆盖：`REA_VERSION=6.9.0 ./verify.sh`。
 
 ## Docker 容器（无需本机安装）
 
 ```bash
-# 构建镜像（含 JDK21 + 便携 Node 24.22.2 + Ghidra 12.1.4 + 全局 rea）
+# 构建镜像（含 JDK21 + 便携 Node 24.22.3 + Ghidra 12.1.4 + 全局 rea）
 docker build -t rea-ghidra .
 
 # 分析当前目录下的二进制
@@ -456,7 +456,7 @@ scripts/web-analyze.sh --har ./抓包.har                            # HAR 离�
 │   ├── offline.md            # 离线/内网安装（prepare-offline + OFFLINE_DIR + 镜像 save/load）
 │   ├── troubleshooting.md    # 跨平台故障排查
 │   └── platform-support-matrix.md  # 平台×环境支持矩阵
-├── Dockerfile                # 多架构容器镜像（JDK21 + 便携 Node 24.22.2 + Ghidra + rea，arm64 自动建 native）
+├── Dockerfile                # 多架构容器镜像（JDK21 + 便携 Node 24.22.3 + Ghidra + rea，arm64 自动建 native）
 ├── docker-compose.yml        # Compose 模板（挂载工作目录、透传 rea 命令与内存/超时）
 ├── skill/SKILL.md            # 逆向工程智能体技能（可装入 Agent）
 ├── scripts/

@@ -21,7 +21,7 @@ FAKEBIN="$WORK/fakebin"; mkdir -p "$FAKEBIN"
 printf '#!/bin/sh\nexit 7\n' > "$FAKEBIN/curl"
 chmod +x "$FAKEBIN/curl"
 
-export REA_NODE_VERSION=24.22.2
+export REA_NODE_VERSION=24.22.3
 export JDK_FEATURE=21
 
 # 1) global/cn 短路
@@ -35,21 +35,21 @@ out="$(PATH="$FAKEBIN:$PATH" REA_MIRROR=auto REA_MIRROR_MODE='' rea_mode)"
 assert_eq "cn" "$out" "auto 官方不可达时确定性降级 cn"
 
 # 3) node 候选 URL 顺序：cn 镜像在前官方兜底；global 官方在前
-out="$(REA_MIRROR=cn REA_MIRROR_MODE=cn node_candidate_urls node-v24.22.2-linux-x64.tar.gz)"
+out="$(REA_MIRROR=cn REA_MIRROR_MODE=cn node_candidate_urls node-v24.22.3-linux-x64.tar.gz)"
 case "$out" in
-  "https://registry.npmmirror.com/-/binary/node/v24.22.2/node-v24.22.2-linux-x64.tar.gz"*)
+  "https://registry.npmmirror.com/-/binary/node/v24.22.3/node-v24.22.3-linux-x64.tar.gz"*)
     printf 'PASS %s\n' "cn 模式 npmmirror 排在首位"; T_PASS=$((T_PASS+1)) ;;
   *) printf 'FAIL %s\n' "cn 模式 npmmirror 应排首位"; T_FAIL=$((T_FAIL+1)); printf '     got: %s\n' "$out" >&2 ;;
 esac
 case "$out" in
-  *" https://nodejs.org/dist/v24.22.2/node-v24.22.2-linux-x64.tar.gz")
+  *" https://nodejs.org/dist/v24.22.3/node-v24.22.3-linux-x64.tar.gz")
     printf 'PASS %s\n' "cn 模式官方源兜底在末位"; T_PASS=$((T_PASS+1)) ;;
   *) printf 'FAIL %s\n' "cn 模式官方源应在末位"; T_FAIL=$((T_FAIL+1)); printf '     got: %s\n' "$out" >&2 ;;
 esac
 
-out="$(REA_MIRROR=global REA_MIRROR_MODE=global node_candidate_urls node-v24.22.2-linux-x64.tar.gz)"
+out="$(REA_MIRROR=global REA_MIRROR_MODE=global node_candidate_urls node-v24.22.3-linux-x64.tar.gz)"
 case "$out" in
-  "https://nodejs.org/dist/v24.22.2/node-v24.22.2-linux-x64.tar.gz"*)
+  "https://nodejs.org/dist/v24.22.3/node-v24.22.3-linux-x64.tar.gz"*)
     printf 'PASS %s\n' "global 模式官方排首位"; T_PASS=$((T_PASS+1)) ;;
   *) printf 'FAIL %s\n' "global 模式官方应排首位"; T_FAIL=$((T_FAIL+1)); printf '     got: %s\n' "$out" >&2 ;;
 esac
