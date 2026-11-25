@@ -193,6 +193,20 @@ run_rea() {
   local rc=0
   rea_wrap_exec "$case" --json --out "$out" -- "$@" || rc=$?
   if [ "$rc" -ne 0 ]; then
+    # 失败时把 REA 错误信封的 code/message 透出到 CI 日志，便于定位（不改变通过/失败判定）
+    if [ -s "$out" ]; then
+      python3 - "$out" <<'PY' 2>/dev/null || true
+import json, sys
+try:
+    d = json.load(open(sys.argv[1]))
+    code = d.get("code") or (d.get("error") or {}).get("code")
+    msg = d.get("message") or (d.get("error") or {}).get("message")
+    if code or msg:
+        print(f"  [diag] REA 错误信封: code={code} message={msg}", file=sys.stderr)
+except Exception:
+    pass
+PY
+    fi
     fail "$label" "rea-wrap 退出 rc=${rc}（详见 $out 与上方 stderr）"
     return 1
   fi
