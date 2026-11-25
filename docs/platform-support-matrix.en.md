@@ -26,6 +26,12 @@
 - The repo therefore **keeps Ghidra 12.1.4 + JDK 21 by default** and does not auto-follow 12.2: although runnable under 6.9.0, 12.2 is an unverified build and requires switching to JDK 25, so we wait until REA lists 12.2 as a verified build before upgrading together. weekly-audit classifies 12.1.4→12.2 as `compatible unverified-build`, held for human review and never auto-merged; only a major ≠12 crossing the line is marked `blocked`.
 - Standalone Ghidra 12.2 (without REA) is fine to install, but do not point `GHIDRA_INSTALL_DIR` at it when running REA.
 
+### Upstream boundary: REA 6.10.1 rollout status (reviewed 2026-11-25)
+
+- The latest REA **6.10.1** raises the verified build to **12.2** and admits Ghidra ≥12.2 with JDK 25 at minimum; the bridge does not compile on 12.1.x (`PrototypeModel.getStorageLocations` now takes a four-argument form).
+- The repo installers / CI / offline bundle still lock 12.1.4 + JDK 21. The cross-major prerequisite move (JDK 25, Ghidra 12.2) has not yet been ported across all three platforms and regressed in CI, so per the upgrade policy **REA stays on 6.9.0 and 6.10.1 is held/blocked** until the link is migrated and verified in CI before rolling forward together.
+- The 6.10.1 command list was collected at 206 entries (204 Commands, **+8 / -0** vs 6.9.0); MCP `tools/list` returns 263 tools. Its Evidence output has a schema tweak: `format` / `architecture` moved under `subject.identity`.
+
 ## 1. OS × runtime table
 
 | OS | Bare metal | VM | WSL | Docker | Cloud VDI |

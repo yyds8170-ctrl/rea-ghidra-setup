@@ -29,6 +29,12 @@
 - 因此本仓库**默认保持 Ghidra 12.1.4 + JDK 21**，不自动跟随 12.2：12.2 虽在 6.9.0 下可跑，但属未验证构建且需切换 JDK 25，保守起见待 REA 把 12.2 列为 verified build 后再联动升级。weekly-audit 对 12.1.4→12.2 判为 `compatible unverified-build`、hold 人审、不自动合并；major≠12 的越线版本才标 `blocked`。
 - 若需单独使用 Ghidra 12.2（不经 REA），可自行安装，但不要把 `GHIDRA_INSTALL_DIR` 指向它后再跑 REA。
 
+### 上游版本边界：REA 6.10.1 联动状态（2026-11-25 复核）
+
+- 最新 REA **6.10.1** 已把 verified build 提升到 **12.2**，最低接受 Ghidra ≥12.2、JDK 25；12.1.x 的 bridge 无法编译（`PrototypeModel.getStorageLocations` 已改为四参数形式）。
+- 本仓库安装器 / CI / 离线包当前仍锁定 12.1.4 + JDK 21；跨 major 前置（JDK 25、Ghidra 12.2）的三平台改造与 CI 回归尚未完成，按升级规则 **REA 暂留 6.9.0，6.10.1 标记 held/blocked**，待链路改造并在 CI 验证通过后再联动。
+- 6.10.1 命令清单采集为 206 条（Commands 204，相对 6.9.0 **+8 / -0**），MCP `tools/list` 263 个；其 Evidence 输出有 schema 微调：`format` / `architecture` 迁至 `subject.identity` 下。
+
 ## 一、系统 × 运行环境总表
 
 | 操作系统 | 物理本机 | 虚拟机 | WSL | Docker 容器 | 云电脑 VDI |

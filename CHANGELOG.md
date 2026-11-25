@@ -37,6 +37,13 @@
 - 未实测项如实标注：needs-device（真机/存活调试目标）、needs-macos、needs-jeb、ChromeOS、Docker
   容器与本机便携 pwsh 不在本 Linux 环境复现；macOS/Windows 装机与 PS1 侧由 CI runner 交叉回归覆盖。
 
+### Weekly audit（2026-11-25）
+- 上游复核：REA latest **6.10.1**（命令清单 206 / Commands 204，相对 6.9.0 **+8 / -0**；MCP `tools/list` 263 个工具）。
+  其 Ghidra 策略跳变到 verified build **12.2**、最低 **JDK 25**，12.1.x 的 bridge 无法编译；
+  当前安装器 / CI / 离线包仍锁 **12.1.4 + JDK 21**，跨 major 前置尚未完成三平台改造与 CI 回归。
+  按升级规则 **REA 暂留 6.9.0，6.10.1 标记 held/blocked**，待链路改造并在 CI 验证通过后再联动。
+- 6.10.1 Evidence schema 微调：`format` / `architecture` 迁至 `subject.identity` 下（未来联动时复核断言器两层读取兼容）。
+
 ## [6.1.2] - 2026-11-07（命令基线补齐 completions/mcp + SBOM 同步 + Ghidra 兼容边界）
 
 ### Fixed
